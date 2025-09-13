@@ -1,26 +1,25 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Optional: define your brand colours here so classes like bg-brand-600 work */
+@theme {
+  --color-brand-50: #eef7ff;
+  --color-brand-100: #d8ebff;
+  --color-brand-500: #0b6bff;
+  --color-brand-600: #0756cc;
+  --color-brand-900: #072a66;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Base tweaks */
+@layer base {
+  :root { --radius: 14px; }
+  html, body { height: 100%; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Reusable utility classes used in your components */
+@layer components {
+  .input { @apply w-full rounded-xl border px-4 py-3; }
+  .btn-primary { @apply rounded-full bg-brand-600 text-white px-6 py-3 font-semibold shadow hover:bg-brand-500; }
+  .step { @apply rounded-full border px-3 py-1; }
+  .step.active { @apply bg-brand-600 text-white border-brand-600; }
+  .addon { @apply flex items-center gap-2 text-sm; }
 }
