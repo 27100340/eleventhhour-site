@@ -8,8 +8,14 @@ const supabase = createClient(
   { auth: { persistSession: true } }
 )
 
+interface DebugState {
+  role?: string
+  error: string | null
+  sample: unknown[]
+}
+
 export default function Debug() {
-  const [state, setState] = useState<any>({})
+  const [state, setState] = useState<DebugState>({ role: undefined, error: null, sample: [] })
   useEffect(() => {
     (async () => {
       const sess = await supabase.auth.getSession()

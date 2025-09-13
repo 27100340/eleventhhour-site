@@ -14,8 +14,9 @@ export async function GET() {
       .single()
     if (error) return Response.json({ error }, { status: 400 })
     return Response.json({ data }, { headers: { 'Cache-Control': 'no-store' } })
-  } catch (e: any) {
-    return Response.json({ error: { message: e?.message || 'Unexpected error' } }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unexpected error'
+    return Response.json({ error: { message } }, { status: 500 })
   }
 }
 
@@ -39,7 +40,8 @@ export async function PUT(req: Request) {
       status: 200,
       headers: { 'content-type': 'application/json', 'Cache-Control': 'no-store' },
     })
-  } catch (e: any) {
-    return Response.json({ error: { message: e?.message || 'Unexpected error' } }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unexpected error'
+    return Response.json({ error: { message } }, { status: 500 })
   }
 }

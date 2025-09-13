@@ -7,13 +7,13 @@ import 'react-phone-number-input/style.css'
 import jsPDF from 'jspdf'
 
 type Service = { id: string; name: string; price: number; time_minutes: number }
-type Allowed = { service_id: string; default_qty: number }
+type Allowed = { service_id?: string; serviceId?: string; default_qty?: number }
 type FormConfig = {
-  base_fields: string[] // supports: email, first_name, last_name, name, phone, address, city, postcode
+  base_fields: string[] // email, first_name, last_name, name, phone, address, city, postcode
   arrival_windows: string[]
   frequencies: Array<'one_time' | 'weekly' | 'bi_weekly' | 'monthly'>
   service_selector: 'quantities' | 'checkboxes'
-  allowed_services: Allowed[]
+  allowed_services?: Allowed[]
 }
 type Values = {
   email?: string
@@ -32,14 +32,9 @@ type Values = {
 
 const SILENT_FORM_RAW = process.env.NEXT_PUBLIC_FORMSPREE_SILENT_ID || ''
 const CONTACT_FORM_RAW = process.env.NEXT_PUBLIC_FORMSPREE_CONTACT_ID || ''
-
-function formspreeEndpoint(raw: string) {
-  if (!raw) return ''
-  if (/^https?:\/\/formspree\.io\/f\//i.test(raw)) return raw
-  return `https://formspree.io/f/${raw}`
-}
-const SILENT_ENDPOINT = formspreeEndpoint(SILENT_FORM_RAW)
-const CONTACT_ENDPOINT = formspreeEndpoint(CONTACT_FORM_RAW)
+const toFs = (raw: string) => (raw ? (/^https?:\/\//i.test(raw) ? raw : `https://formspree.io/f/${raw}`) : '')
+const SILENT_ENDPOINT = toFs(SILENT_FORM_RAW)
+const CONTACT_ENDPOINT = toFs(CONTACT_FORM_RAW)
 
 function joinCompact(...parts: (string | undefined)[]) {
   return parts.filter(Boolean).join(' • ')
@@ -56,36 +51,60 @@ export default function BookPage() {
     defaultValues: { items: {}, frequency: 'one_time', arrivalWindow: 'exact' },
   })
 
-  // Helpers to check what Admin enabled
   const has = (k: string) => !!cfg?.base_fields?.includes(k)
   const hasNamePair = has('first_name') || has('last_name') || has('name')
 
-  // Load services + form config (no-cache + bust)
+  // Load services + form config (no-cache + cache-bust)
   useEffect(() => {
     ;(async () => {
       const bust = Date.now()
       const [sRes, cRes] = await Promise.all([
-        fetch(`/api/public/services?v=${bust}`, { cache: 'no-store' as RequestCache }).then(r => r.json()),
-        fetch(`/api/public/form?v=${bust}`, { cache: 'no-store' as RequestCache }).then(r => r.json()),
+        fetch(`/api/public/services?v=${bust}`, { cache: 'no-store' as RequestCache }).then((r) => r.json()),
+        fetch(`/api/public/form?v=${bust}`, { cache: 'no-store' as RequestCache }).then((r) => r.json()),
       ])
+
       const svc: Service[] = sRes?.data || []
       setServices(svc)
-      const c: FormConfig | null = cRes?.data?.config || null
+
+      // safe defaults if admin row is missing or malformed
+      const c: FormConfig | null =
+        (cRes?.data?.config as FormConfig) ?? {
+          base_fields: ['email', 'first_name', 'last_name', 'phone', 'address', 'city', 'postcode'],
+          arrival_windows: ['exact', 'morning', 'afternoon'],
+          frequencies: ['one_time', 'weekly', 'bi_weekly', 'monthly'],
+          service_selector: 'quantities',
+          allowed_services: [],
+        }
       setCfg(c)
+
+      // Seed default qtys only if admin specified allowed services
       if (c?.allowed_services?.length) {
         const def: Record<string, number> = {}
-        for (const a of c.allowed_services) def[a.service_id] = a.default_qty ?? 0
+        for (const a of c.allowed_services) {
+          const id = (a.service_id || a.serviceId) as string | undefined
+          if (id) def[id] = a.default_qty ?? 0
+        }
         setValue('items', def, { shouldDirty: false })
       }
     })()
   }, [setValue])
 
-  // Build rows for UI
-  const allowed = useMemo(() => new Set(cfg?.allowed_services?.map(a => a.service_id) || []), [cfg])
+  // Build allowed set; if none given → show ALL active services
+  const allowedIds = useMemo(() => {
+    const arr = cfg?.allowed_services || []
+    const ids = arr
+      .map((a) => (a.service_id || (a as any).serviceId) as string | undefined)
+      .filter(Boolean) as string[]
+    return ids.length ? new Set(ids) : null
+  }, [cfg])
+
   const items = watch('items')
   const rows = useMemo(
-    () => services.filter(s => allowed.has(s.id)).map(s => ({ ...s, qty: items?.[s.id] ?? 0 })),
-    [services, allowed, items]
+    () =>
+      services
+        .filter((s) => !allowedIds || allowedIds.has(s.id)) // fallback: all services when admin list is empty
+        .map((s) => ({ ...s, qty: items?.[s.id] ?? 0 })),
+    [services, allowedIds, items],
   )
 
   // Totals
@@ -109,7 +128,7 @@ export default function BookPage() {
     const last = (getValues('lastName') || '').trim() || undefined
     const phoneRaw = (getValues('phone') || '').trim()
 
-    // Only require phone if the phone field is enabled
+    // Require phone only if phone field is enabled
     if (has('phone') && !phoneRaw) return
 
     let e164 = phoneRaw
@@ -129,15 +148,19 @@ export default function BookPage() {
     fd.append('Source', 'booking-step-1')
 
     try {
-      const resp = await fetch(SILENT_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
+      const resp = await fetch(SILENT_ENDPOINT, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: fd,
+      })
       if (resp.ok) sentOnceRef.current = true
     } catch {
-      // ignore
+      // ignore; non-blocking
     }
   }
 
   async function goToStep2() {
-    // Enforce only what is visible on Step 1
+    // Validate only fields that are visible on Step 1
     const missing: string[] = []
     if (has('email') && !(getValues('email') || '').trim()) missing.push('Email')
     if ((has('first_name') || has('name')) && !(getValues('firstName') || '').trim()) missing.push('First name')
@@ -160,11 +183,9 @@ export default function BookPage() {
     if (has('city') && !(v.city || '').trim()) missing.push('City')
     if (has('postcode') && !(v.postcode || '').trim()) missing.push('Postcode')
     if (has('phone') && !(v.phone || '').trim()) missing.push('Phone')
-    if (has('email') && !(v.email || '').trim()) {
-      // email optional — don’t add to missing; remove this line to make it required
-    }
+    // email optional if hidden — don’t require
 
-    const chosen = rows.filter(r => r.qty > 0)
+    const chosen = rows.filter((r) => r.qty > 0)
     if (!chosen.length) missing.push('At least one service')
 
     if (missing.length) {
@@ -177,7 +198,7 @@ export default function BookPage() {
       subtotal,
       total: subtotal,
       total_time_minutes: totalTime,
-      items: chosen.map(r => ({
+      items: chosen.map((r) => ({
         service_id: r.id,
         qty: r.qty,
         unit_price: r.price,
@@ -204,12 +225,12 @@ export default function BookPage() {
         if (v.email) fd.append('Email', v.email)
         if (v.phone) fd.append('Phone', v.phone)
         fd.append('Location', joinCompact(v.postcode, v.city))
-        fd.append('Total', `£${payload.total.toFixed(2)}`)
+        fd.append('Total', `£${subtotal.toFixed(2)}`)
         await fetch(CONTACT_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
       } catch {}
     }
 
-    setDone({ id: data.booking?.id || data.bookingId || '', total: payload.total })
+    setDone({ id: data.booking?.id || data.bookingId || '', total: subtotal })
     setStep(3)
   }
 
@@ -221,7 +242,8 @@ export default function BookPage() {
     doc.setFontSize(11)
     doc.text('Estimated Quote', 20, 30)
     const fn = (watch('firstName') || '') + ' ' + (watch('lastName') || '')
-    doc.text(`Name: ${fn.trim()}`, 20, 40)
+    const name = fn.trim()
+    if (name) doc.text(`Name: ${name}`, 20, 40)
     const emailVal = watch('email') || ''
     if (emailVal) doc.text(`Email: ${emailVal}`, 20, 48)
     const phoneVal = watch('phone') || ''
@@ -230,10 +252,12 @@ export default function BookPage() {
     if (addr) doc.text(`Address: ${addr}`, 20, 64)
     doc.text('Items:', 20, 74)
     let y = 82
-    rows.filter(r => r.qty > 0).forEach(r => {
-      doc.text(`- ${r.name} x${r.qty} · £${(r.qty * r.price).toFixed(2)} · ${r.qty * r.time_minutes} mins`, 22, y)
-      y += 8
-    })
+    rows
+      .filter((r) => r.qty > 0)
+      .forEach((r) => {
+        doc.text(`- ${r.name} x${r.qty} · £${(r.qty * r.price).toFixed(2)} · ${r.qty * r.time_minutes} mins`, 22, y)
+        y += 8
+      })
     doc.text(`Subtotal: £${subtotal.toFixed(2)}`, 20, y + 8)
     doc.text(`Estimated time: ${totalTime} mins`, 20, y + 16)
     doc.save('eleventhhour-estimate.pdf')
@@ -249,10 +273,8 @@ export default function BookPage() {
         {/* STEP 1 */}
         {step === 1 && (
           <div className="mt-6 grid gap-4">
-            {has('email') && (
-              <input className="input" type="email" placeholder="Email" {...register('email')} />
-            )}
-            {hasNamePair && (
+            {has('email') && <input className="input" type="email" placeholder="Email" {...register('email')} />}
+            {(hasNamePair) && (
               <div className="grid md:grid-cols-2 gap-4">
                 {(has('first_name') || has('name')) && (
                   <input className="input" placeholder="First name" {...register('firstName')} />
@@ -281,20 +303,20 @@ export default function BookPage() {
         {/* STEP 2 */}
         {step === 2 && (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-4">
-            {has('address') && (<input className="input" placeholder="Address" {...register('address')} />)}
+            {has('address') && <input className="input" placeholder="Address" {...register('address')} />}
             <div className="grid md:grid-cols-3 gap-4">
-              {has('city') && (<input className="input" placeholder="City" {...register('city')} />)}
-              {has('postcode') && (<input className="input" placeholder="Postcode" {...register('postcode')} />)}
+              {has('city') && <input className="input" placeholder="City" {...register('city')} />}
+              {has('postcode') && <input className="input" placeholder="Postcode" {...register('postcode')} />}
               <input className="input" type="datetime-local" {...register('serviceDate')} />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <select className="input" {...register('frequency')}>
-                {cfg.frequencies.map((f) => (
+                {(cfg.frequencies || ['one_time']).map((f) => (
                   <option key={f} value={f}>{f.replace('_', ' ')}</option>
                 ))}
               </select>
               <select className="input" {...register('arrivalWindow')}>
-                {cfg.arrival_windows.map((w) => (
+                {(cfg.arrival_windows || ['exact', 'morning', 'afternoon']).map((w) => (
                   <option key={w} value={w}>{w}</option>
                 ))}
               </select>
@@ -307,8 +329,13 @@ export default function BookPage() {
                   <div key={r.id} className="grid grid-cols-[110px_1fr] items-center gap-3">
                     <div className="flex items-center gap-2">
                       <button type="button" className="rounded-full border w-8 h-8" onClick={() => setQty(r.id, r.qty - 1)}>-</button>
-                      <input type="number" min={0} className="input w-16 text-center" value={r.qty}
-                        onChange={(e) => setQty(r.id, Number(e.target.value))} />
+                      <input
+                        type="number"
+                        min={0}
+                        className="input w-16 text-center"
+                        value={r.qty}
+                        onChange={(e) => setQty(r.id, Number(e.target.value))}
+                      />
                       <button type="button" className="rounded-full border w-8 h-8" onClick={() => setQty(r.id, r.qty + 1)}>+</button>
                     </div>
                     <div>
@@ -317,6 +344,9 @@ export default function BookPage() {
                     </div>
                   </div>
                 ))}
+                {rows.length === 0 && (
+                  <div className="text-sm text-slate-600">No services available.</div>
+                )}
               </div>
             </div>
 
@@ -344,13 +374,15 @@ export default function BookPage() {
       <aside className="rounded-2xl border p-4 h-max sticky top-20">
         <p className="font-semibold">Your Estimate</p>
         <div className="mt-3 space-y-2">
-          {rows.filter(r => r.qty > 0).map(r => (
-            <div key={r.id} className="flex items-center justify-between text-sm">
-              <span>{r.name} × {r.qty}</span>
-              <span>£{(r.qty * r.price).toFixed(2)}</span>
-            </div>
-          ))}
-          {rows.every(r => r.qty === 0) && <p className="text-sm text-slate-600">Add services to see your total.</p>}
+          {rows
+            .filter((r) => r.qty > 0)
+            .map((r) => (
+              <div key={r.id} className="flex items-center justify-between text-sm">
+                <span>{r.name} × {r.qty}</span>
+                <span>£{(r.qty * r.price).toFixed(2)}</span>
+              </div>
+            ))}
+          {rows.every((r) => r.qty === 0) && <p className="text-sm text-slate-600">Add services to see your total.</p>}
         </div>
         <hr className="my-3" />
         <div className="flex items-center justify-between"><span className="text-sm">Time</span><span className="font-medium">{totalTime} mins</span></div>

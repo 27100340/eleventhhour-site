@@ -7,7 +7,8 @@ export default function AdminIndex() {
   const router = useRouter()
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      const role = (data.session?.user?.app_metadata as any)?.role
+      const appMeta = data.session?.user?.app_metadata as Record<string, unknown> | undefined
+      const role = typeof appMeta?.role === 'string' ? appMeta.role : undefined
       if (!data.session || role !== 'admin') router.replace('/admin/login')
       else router.replace('/admin/dashboard')
     })

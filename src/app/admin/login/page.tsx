@@ -33,7 +33,7 @@ export default function AdminLogin() {
       // Always clear any stale session first
       await supabase.auth.signOut()
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setErr(error.message)
         return
@@ -49,8 +49,8 @@ export default function AdminLogin() {
       }
 
       router.replace('/admin/dashboard')
-    } catch (e: any) {
-      setErr(e?.message || 'Unexpected error during login')
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Unexpected error during login')
     } finally {
       setLoading(false)
     }

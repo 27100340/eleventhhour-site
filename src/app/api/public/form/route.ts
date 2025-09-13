@@ -7,7 +7,7 @@ export const revalidate = 0
 
 export async function GET() {
   try {
-    // anon is fine for public read
+    // anon read is fine for public form config
     const supabase = createServerSupabase(false)
 
     const { data, error } = await supabase

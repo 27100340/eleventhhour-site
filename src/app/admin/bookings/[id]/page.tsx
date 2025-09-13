@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -57,17 +56,19 @@ export default function BookingEditor() {
         setServices(svc)
 
         const b: Booking = bRes.booking
-        const its: Item[] = (bRes.items || []).map((it: any) => ({
-          service_id: it.service_id,
-          qty: it.qty,
-          unit_price: it.unit_price,
-          time_minutes: it.time_minutes,
-          name: it.services?.name || svc.find(s => s.id === it.service_id)?.name,
+        const its: Item[] = (bRes.items || []).map((it: Record<string, unknown>) => ({
+          service_id: typeof it.service_id === 'string' ? it.service_id : '',
+          qty: typeof it.qty === 'number' ? it.qty : 0,
+          unit_price: typeof it.unit_price === 'number' ? it.unit_price : 0,
+          time_minutes: typeof it.time_minutes === 'number' ? it.time_minutes : 0,
+          name: typeof it.services === 'object' && it.services !== null && 'name' in it.services
+            ? (it.services as { name?: string }).name
+            : svc.find(s => s.id === it.service_id)?.name,
         }))
         setBooking(b)
         setItems(its)
-      } catch (e: any) {
-        if (!abort) setErr(e?.message || 'Failed to load')
+      } catch (e) {
+        if (!abort) setErr(e instanceof Error ? e.message : 'Failed to load')
       } finally {
         if (!abort) setLoading(false)
       }
@@ -132,11 +133,11 @@ export default function BookingEditor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const json = await res.json()
+      const json: { error?: { message?: string } } = await res.json()
       if (!res.ok) throw new Error(json?.error?.message || 'Save failed')
       router.refresh()
-    } catch (e: any) {
-      setErr(e?.message || 'Save failed')
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -148,11 +149,11 @@ export default function BookingEditor() {
     setSaving(true); setErr(null)
     try {
       const res = await fetch(`/api/admin/bookings/${booking.id}`, { method: 'DELETE' })
-      const json = await res.json()
+      const json: { error?: { message?: string } } = await res.json()
       if (!res.ok) throw new Error(json?.error?.message || 'Delete failed')
       router.replace('/admin/dashboard')
-    } catch (e: any) {
-      setErr(e?.message || 'Delete failed')
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Delete failed')
     } finally {
       setSaving(false)
     }

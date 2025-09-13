@@ -126,10 +126,11 @@ export async function POST(req: Request) {
       status: 200,
       headers: { 'content-type': 'application/json' },
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     // This catches network/timeout/etc. and returns a clear error to the client
+    const message = e instanceof Error ? e.message : 'Unexpected error'
     console.error('api/public/booking fatal ->', e)
-    return new Response(JSON.stringify({ error: { message: e?.message || 'Unexpected error' } }), {
+    return new Response(JSON.stringify({ error: { message } }), {
       status: 500,
       headers: { 'content-type': 'application/json' },
     })
