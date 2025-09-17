@@ -57,10 +57,24 @@ export default function BookingsTab() {
         <button onClick={load} className="btn-primary">Filter</button>
 
         <div className="ml-auto flex gap-2">
-          <button className={`rounded-full border px-3 py-1 text-sm ${mode === 'table' ? 'bg-brand-600 text-white border-brand-600' : ''}`} onClick={() => setMode('table')}>
+          <button
+            className={`rounded-full border px-3 py-1 text-sm font-medium transition-all duration-200 ${
+              mode === 'table'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+            onClick={() => setMode('table')}
+          >
             Table
           </button>
-          <button className={`rounded-full border px-3 py-1 text-sm ${mode === 'calendar' ? 'bg-brand-600 text-white border-brand-600' : ''}`} onClick={() => setMode('calendar')}>
+          <button
+            className={`rounded-full border px-3 py-1 text-sm font-medium transition-all duration-200 ${
+              mode === 'calendar'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+            onClick={() => setMode('calendar')}
+          >
             Calendar
           </button>
         </div>

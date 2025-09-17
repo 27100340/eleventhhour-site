@@ -263,12 +263,34 @@ export default function BookPage() {
     doc.save('eleventhhour-estimate.pdf')
   }
 
-  if (!cfg) return <div className="mx-auto max-w-3xl px-4 py-10">Loading…</div>
+  if (!cfg) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 grid lg:grid-cols-[2fr_1fr] gap-8">
-      <div>
-        <h1 className="text-3xl font-bold">Book Now</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Book Your Service</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Get started with professional service booking in just a few simple steps.
+          </p>
+
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <div className={`step ${step >= 1 ? 'active' : ''}`}>1</div>
+            <div className="h-px bg-gray-300 w-8"></div>
+            <div className={`step ${step >= 2 ? 'active' : ''}`}>2</div>
+            <div className="h-px bg-gray-300 w-8"></div>
+            <div className={`step ${step >= 3 ? 'active' : ''}`}>3</div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[2fr_1fr] gap-12">
+          <div className="bg-white rounded-2xl p-8 shadow-lg">
 
         {/* STEP 1 */}
         {step === 1 && (
@@ -370,24 +392,61 @@ export default function BookPage() {
         )}
       </div>
 
-      {/* Live receipt */}
-      <aside className="rounded-2xl border p-4 h-max sticky top-20">
-        <p className="font-semibold">Your Estimate</p>
-        <div className="mt-3 space-y-2">
-          {rows
-            .filter((r) => r.qty > 0)
-            .map((r) => (
-              <div key={r.id} className="flex items-center justify-between text-sm">
-                <span>{r.name} × {r.qty}</span>
-                <span>£{(r.qty * r.price).toFixed(2)}</span>
-              </div>
-            ))}
-          {rows.every((r) => r.qty === 0) && <p className="text-sm text-slate-600">Add services to see your total.</p>}
+          {/* Live receipt */}
+          <aside className="bg-white rounded-2xl p-6 shadow-lg h-max sticky top-24">
+            <div className="border-b border-gray-200 pb-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Booking Summary</h3>
+              <p className="text-sm text-gray-600 mt-1">Review your selected services</p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {rows
+                .filter((r) => r.qty > 0)
+                .map((r) => (
+                  <div key={r.id} className="flex items-center justify-between py-2">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{r.name}</p>
+                      <p className="text-xs text-gray-500">Quantity: {r.qty}</p>
+                    </div>
+                    <span className="font-semibold text-gray-900">£{(r.qty * r.price).toFixed(2)}</span>
+                  </div>
+                ))}
+
+              {rows.every((r) => r.qty === 0) && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gray-600">Select services to see your estimate</p>
+                </div>
+              )}
+            </div>
+
+            {rows.some((r) => r.qty > 0) && (
+              <>
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Estimated Time</span>
+                    <span className="font-medium text-gray-900">{Math.ceil(totalTime / 60)}h {totalTime % 60}m</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-2xl font-bold text-blue-600">£{subtotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                  <p className="text-xs text-blue-800">
+                    <strong>Note:</strong> This is an estimate. Final pricing may vary based on specific requirements and will be confirmed before service.
+                  </p>
+                </div>
+              </>
+            )}
+          </aside>
         </div>
-        <hr className="my-3" />
-        <div className="flex items-center justify-between"><span className="text-sm">Time</span><span className="font-medium">{totalTime} mins</span></div>
-        <div className="flex items-center justify-between"><span className="text-sm">Subtotal</span><span className="font-semibold">£{subtotal.toFixed(2)}</span></div>
-      </aside>
+      </div>
     </div>
   )
 }

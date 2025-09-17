@@ -116,7 +116,7 @@ export default function FormBuilderTab() {
             const selected = (c.allowed_services||[]).some((x:any)=>x.service_id===s.id)
             const current = (c.allowed_services||[]).find((x:any)=>x.service_id===s.id)
             return (
-              <div key={s.id} className={`rounded-xl border p-3 ${selected?'border-brand-600':''}`}>
+              <div key={s.id} className={`rounded-xl border p-3 transition-all duration-200 ${selected?'border-blue-600 bg-blue-50':'border-gray-200 hover:border-gray-300'}`}>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" checked={!!selected} onChange={()=>toggleService(s.id)} />
                   <span className="font-medium">{s.name}</span>

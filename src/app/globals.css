@@ -1,25 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
-
-/* Optional: define your brand colours here so classes like bg-brand-600 work */
-@theme {
-  --color-brand-50: #eef7ff;
-  --color-brand-100: #d8ebff;
-  --color-brand-500: #0b6bff;
-  --color-brand-600: #0756cc;
-  --color-brand-900: #072a66;
-}
 
 /* Base tweaks */
 @layer base {
-  :root { --radius: 14px; }
-  html, body { height: 100%; }
+  :root {
+    --radius: 12px;
+    --shadow-color: 220 3% 15%;
+    --shadow-strength: 1%;
+  }
+
+  html {
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
 }
 
 /* Reusable utility classes used in your components */
 @layer components {
-  .input { @apply w-full rounded-xl border px-4 py-3; }
-  .btn-primary { @apply rounded-full bg-brand-600 text-white px-6 py-3 font-semibold shadow hover:bg-brand-500; }
-  .step { @apply rounded-full border px-3 py-1; }
-  .step.active { @apply bg-brand-600 text-white border-brand-600; }
-  .addon { @apply flex items-center gap-2 text-sm; }
+  .input {
+    @apply w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white
+    placeholder:text-gray-500
+    focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+    transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold
+    text-white bg-gradient-to-r from-blue-600 to-blue-700
+    hover:from-blue-700 hover:to-blue-800
+    rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-blue-700/25
+    transition-all duration-200 hover:-translate-y-0.5
+    focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold
+    text-gray-700 bg-white border border-gray-200
+    hover:bg-gray-50 hover:border-gray-300
+    rounded-xl shadow-sm hover:shadow-md
+    transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-gray-200/80 shadow-lg
+    transition-all duration-300 hover:shadow-xl hover:border-gray-300/80;
+  }
+
+  .step {
+    @apply rounded-full border border-gray-300 px-4 py-2 text-sm font-medium
+    transition-all duration-200;
+  }
+
+  .step.active {
+    @apply bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(135deg,
+      rgb(239 246 255) 0%,
+      rgb(219 234 254) 25%,
+      rgb(191 219 254) 50%,
+      rgb(147 197 253) 100%);
+  }
+
+  .glass {
+    @apply backdrop-blur-xl bg-white/80 border border-gray-200/50
+    supports-[backdrop-filter]:bg-white/60;
+  }
+
+  /* Text effects */
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent;
+  }
+
+  /* Focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2;
+  }
 }
