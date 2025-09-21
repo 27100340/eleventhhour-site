@@ -235,32 +235,319 @@ export default function BookPage() {
   }
 
   // PDF
-  function downloadQuote() {
+  async function downloadQuote() {
     const doc = new jsPDF()
-    doc.setFontSize(16)
-    doc.text('EleventhHour Cleaning Services', 20, 20)
-    doc.setFontSize(11)
-    doc.text('Estimated Quote', 20, 30)
+
+    // Modern color palette matching site design
+    const colors = {
+      primary: '#2563eb',      // blue-600
+      primaryDark: '#1d4ed8',  // blue-700
+      gray900: '#111827',
+      gray700: '#374151',
+      gray600: '#4b5563',
+      gray400: '#9ca3af',
+      gray200: '#e5e7eb',
+      gray100: '#f3f4f6',
+      gray50: '#f9fafb',
+      white: '#ffffff',
+      green600: '#059669'
+    }
+
+    // Helper function to convert hex to RGB
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 }
+    }
+
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 20
+
+    // Header with gradient background effect
+    const headerHeight = 45
+    const primaryRgb = hexToRgb(colors.primary)
+    const primaryDarkRgb = hexToRgb(colors.primaryDark)
+
+    // Create gradient effect with multiple rectangles
+    for (let i = 0; i < headerHeight; i++) {
+      const ratio = i / headerHeight
+      const r = Math.round(primaryRgb.r + (primaryDarkRgb.r - primaryRgb.r) * ratio)
+      const g = Math.round(primaryRgb.g + (primaryDarkRgb.g - primaryRgb.g) * ratio)
+      const b = Math.round(primaryRgb.b + (primaryDarkRgb.b - primaryRgb.b) * ratio)
+
+      doc.setFillColor(r, g, b)
+      doc.rect(0, i, pageWidth, 1, 'F')
+    }
+
+    // Load and add logo
+    let logoAdded = false
+    try {
+      // Create a white rounded background for the logo
+      doc.setFillColor(255, 255, 255, 0.95)
+      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'F')
+
+      // Create a subtle border
+      doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
+      doc.setLineWidth(0.5)
+      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'S')
+
+      // Try to load and add the actual logo
+      const loadLogo = () => new Promise<string>((resolve, reject) => {
+        const logoImg = new Image()
+        logoImg.crossOrigin = 'anonymous'
+
+        logoImg.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+
+          if (ctx) {
+            canvas.width = logoImg.width
+            canvas.height = logoImg.height
+            ctx.drawImage(logoImg, 0, 0)
+            try {
+              const logoBase64 = canvas.toDataURL('image/png')
+              resolve(logoBase64)
+            } catch (e) {
+              reject(e)
+            }
+          } else {
+            reject(new Error('Canvas context not available'))
+          }
+        }
+
+        logoImg.onerror = () => reject(new Error('Logo failed to load'))
+        logoImg.src = '/el_logo.png'
+      })
+
+      try {
+        const logoBase64 = await loadLogo()
+        doc.addImage(logoBase64, 'PNG', margin + 3, 14, 29, 16)
+        logoAdded = true
+      } catch (e) {
+        // Logo loading failed, will add fallback below
+      }
+
+    } catch (e) {
+      // Error in logo section
+    }
+
+    // Fallback logo design if actual logo couldn't be loaded
+    if (!logoAdded) {
+      // Create an elegant monogram design
+      doc.setFillColor(hexToRgb(colors.primary).r, hexToRgb(colors.primary).g, hexToRgb(colors.primary).b)
+      doc.circle(margin + 17.5, 22, 8, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'bold')
+      doc.text('EH', margin + 17.5, 24, { align: 'center' })
+    }
+
+    // Company name and tagline
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.text('EleventhHour', margin + 45, 22)
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Professional Home & Commercial Services', margin + 45, 28)
+
+    // Contact info in header (right aligned)
+    doc.setFontSize(8)
+    doc.text('020 8000 0000', pageWidth - margin, 18, { align: 'right' })
+    doc.text('hello@eleventhhour.co.uk', pageWidth - margin, 23, { align: 'right' })
+    doc.text('Greater London & Surrounding Areas', pageWidth - margin, 28, { align: 'right' })
+
+    // Document title section
+    let currentY = headerHeight + 25
+    doc.setTextColor(colors.gray900)
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Service Estimate', margin, currentY)
+
+    // Add current date
+    doc.setFontSize(10)
+    doc.setTextColor(colors.gray600)
+    doc.setFont('helvetica', 'normal')
+    const currentDate = new Date().toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+    doc.text(`Generated on ${currentDate}`, pageWidth - margin, currentY, { align: 'right' })
+
+    currentY += 20
+
+    // Customer information section
+    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 40, 4, 4, 'F')
+
+    doc.setTextColor(colors.primary)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Customer Information', margin + 10, currentY + 12)
+
     const fn = (watch('firstName') || '') + ' ' + (watch('lastName') || '')
     const name = fn.trim()
-    if (name) doc.text(`Name: ${name}`, 20, 40)
     const emailVal = watch('email') || ''
-    if (emailVal) doc.text(`Email: ${emailVal}`, 20, 48)
     const phoneVal = watch('phone') || ''
-    if (phoneVal) doc.text(`Phone: ${phoneVal}`, 20, 56)
     const addr = [watch('address') || '', watch('city') || '', watch('postcode') || ''].filter(Boolean).join(', ')
-    if (addr) doc.text(`Address: ${addr}`, 20, 64)
-    doc.text('Items:', 20, 74)
-    let y = 82
-    rows
-      .filter((r) => r.qty > 0)
-      .forEach((r) => {
-        doc.text(`- ${r.name} x${r.qty} · £${(r.qty * r.price).toFixed(2)} · ${r.qty * r.time_minutes} mins`, 22, y)
-        y += 8
-      })
-    doc.text(`Subtotal: £${subtotal.toFixed(2)}`, 20, y + 8)
-    doc.text(`Estimated time: ${totalTime} mins`, 20, y + 16)
-    doc.save('eleventhhour-estimate.pdf')
+
+    doc.setTextColor(colors.gray900)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+
+    let infoY = currentY + 20
+    if (name) {
+      doc.setFont('helvetica', 'bold')
+      doc.text('Name:', margin + 10, infoY)
+      doc.setFont('helvetica', 'normal')
+      doc.text(name, margin + 35, infoY)
+      infoY += 6
+    }
+
+    if (emailVal) {
+      doc.setFont('helvetica', 'bold')
+      doc.text('Email:', margin + 10, infoY)
+      doc.setFont('helvetica', 'normal')
+      doc.text(emailVal, margin + 35, infoY)
+    }
+
+    if (phoneVal) {
+      doc.setFont('helvetica', 'bold')
+      doc.text('Phone:', pageWidth/2 + 10, currentY + 20)
+      doc.setFont('helvetica', 'normal')
+      doc.text(phoneVal, pageWidth/2 + 35, currentY + 20)
+    }
+
+    if (addr) {
+      doc.setFont('helvetica', 'bold')
+      doc.text('Address:', pageWidth/2 + 10, currentY + 26)
+      doc.setFont('helvetica', 'normal')
+      // Split long addresses
+      const maxWidth = pageWidth/2 - 50
+      const addressLines = doc.splitTextToSize(addr, maxWidth)
+      doc.text(addressLines, pageWidth/2 + 45, currentY + 26)
+    }
+
+    currentY += 55
+
+    // Services section
+    doc.setTextColor(colors.primary)
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Selected Services', margin, currentY)
+    currentY += 15
+
+    // Services table header
+    const tableStartY = currentY
+    doc.setFillColor(hexToRgb(colors.gray100).r, hexToRgb(colors.gray100).g, hexToRgb(colors.gray100).b)
+    doc.rect(margin, currentY, pageWidth - 2 * margin, 12, 'F')
+
+    doc.setTextColor(colors.gray700)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Service', margin + 5, currentY + 8)
+    doc.text('Qty', pageWidth - 100, currentY + 8)
+    doc.text('Rate', pageWidth - 70, currentY + 8)
+    doc.text('Time', pageWidth - 45, currentY + 8)
+    doc.text('Total', pageWidth - margin - 5, currentY + 8, { align: 'right' })
+
+    currentY += 12
+
+    // Service items
+    const selectedServices = rows.filter((r) => r.qty > 0)
+    selectedServices.forEach((r, index) => {
+      // Alternating row colors
+      if (index % 2 === 0) {
+        doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
+        doc.rect(margin, currentY, pageWidth - 2 * margin, 10, 'F')
+      }
+
+      doc.setTextColor(colors.gray900)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+
+      // Service name (truncate if too long)
+      const serviceNameMaxWidth = pageWidth - 130
+      const serviceName = doc.splitTextToSize(r.name, serviceNameMaxWidth)[0]
+      doc.text(serviceName, margin + 5, currentY + 7)
+
+      doc.text(r.qty.toString(), pageWidth - 100, currentY + 7)
+      doc.text(`£${r.price.toFixed(2)}`, pageWidth - 70, currentY + 7)
+      doc.text(`${r.time_minutes}m`, pageWidth - 45, currentY + 7)
+      doc.text(`£${(r.qty * r.price).toFixed(2)}`, pageWidth - margin - 5, currentY + 7, { align: 'right' })
+
+      currentY += 10
+    })
+
+    // Add bottom border to table
+    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
+    doc.line(margin, currentY, pageWidth - margin, currentY)
+
+    currentY += 15
+
+    // Summary section
+    const summaryBoxY = currentY
+    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
+    doc.roundedRect(pageWidth - 120, currentY, 100, 35, 4, 4, 'F')
+
+    doc.setTextColor(colors.gray700)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Estimated Time:', pageWidth - 115, currentY + 10)
+    doc.text(`${Math.floor(totalTime / 60)}h ${totalTime % 60}m`, pageWidth - 25, currentY + 10, { align: 'right' })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(colors.primary)
+    doc.text('Total Estimate:', pageWidth - 115, currentY + 25)
+    doc.setFontSize(14)
+    doc.text(`£${subtotal.toFixed(2)}`, pageWidth - 25, currentY + 25, { align: 'right' })
+
+    currentY += 50
+
+    // Important notes section
+    doc.setTextColor(colors.gray700)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Important Notes:', margin, currentY)
+    currentY += 8
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    const notes = [
+      '• This is an estimate only. Final pricing may vary based on specific requirements.',
+      '• All services include professional supplies and equipment.',
+      '• Our team is fully insured and DBS-checked.',
+      '• We offer a 100% satisfaction guarantee on all services.',
+      '• Payment is due upon completion of services.'
+    ]
+
+    notes.forEach(note => {
+      doc.text(note, margin, currentY)
+      currentY += 5
+    })
+
+    // Footer
+    const footerY = pageHeight - 25
+    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5)
+
+    doc.setTextColor(colors.gray600)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.text('EleventhHour Professional Services', margin, footerY)
+    doc.text(`Generated on ${new Date().toLocaleString('en-GB')}`, pageWidth - margin, footerY, { align: 'right' })
+
+    // Save the PDF
+    doc.save('eleventhhour-service-estimate.pdf')
   }
 
   if (!cfg) {
