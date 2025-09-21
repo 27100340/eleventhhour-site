@@ -1,0 +1,112 @@
+CLEANING SERVICE IMAGES DOWNLOAD GUIDE
+=====================================
+
+STEP 1: Visit these FREE stock photo websites
+---------------------------------------------
+1. Pexels: https://www.pexels.com/search/cleaning/
+2. Unsplash: https://unsplash.com/s/photos/cleaning
+3. Pixabay: https://pixabay.com/images/search/cleaning/
+
+STEP 2: Search for specific image types
+--------------------------------------
+
+HOUSEHOLD GALLERY IMAGES (4 needed):
+- Search: "house cleaning service", "domestic cleaning", "home cleaning professional"
+- Download as: hh-gallery-1.jpg, hh-gallery-2.jpg, hh-gallery-3.jpg, hh-gallery-4.jpg
+
+COMMERCIAL GALLERY IMAGES (4 needed):
+- Search: "office cleaning", "commercial cleaning", "industrial cleaning"
+- Download as: com-gallery-1.jpg, com-gallery-2.jpg, com-gallery-3.jpg, com-gallery-4.jpg
+
+HOUSEHOLD SERVICE IMAGES (6 needed):
+- Search "regular house cleaning" → save as hh-regular.jpg
+- Search "deep cleaning service" → save as hh-deep.jpg
+- Search "end of tenancy cleaning" → save as hh-eot.jpg
+- Search "carpet cleaning professional" → save as hh-carpet.jpg
+- Search "oven cleaning" → save as hh-oven.jpg
+- Search "window cleaning residential" → save as hh-windows.jpg
+
+COMMERCIAL SERVICE IMAGES (6 needed):
+- Search "office cleaning service" → save as com-office.jpg
+- Search "retail store cleaning" → save as com-retail.jpg
+- Search "hotel cleaning restaurant cleaning" → save as com-hospitality.jpg
+- Search "school cleaning classroom" → save as com-education.jpg
+- Search "warehouse cleaning industrial" → save as com-industrial.jpg
+- Search "construction cleanup" → save as com-builders.jpg
+
+STEP 3: Download specifications
+------------------------------
+- Format: JPG
+- Resolution: Minimum 1200x800 pixels (prefer 1920x1080)
+- File size: 500KB - 2MB ideal for web
+- Quality: High, professional appearance
+- License: Free for commercial use (all above sites provide this)
+
+STEP 4: Save location
+--------------------
+Save all images to: C:\Users\Baqir\Documents\EleventhHour Cleaning Website\eleventhhour\public\
+
+STEP 5: Quick download using browser
+-----------------------------------
+1. Right-click on the image you want
+2. Select "Save image as..."
+3. Navigate to the public folder
+4. Rename the file to match the exact name needed (e.g., hh-gallery-1.jpg)
+5. Click Save
+
+STEP 6: Verify all images are downloaded
+---------------------------------------
+Check that you have all 16 files:
+
+Household Gallery:
+☐ hh-gallery-1.jpg
+☐ hh-gallery-2.jpg
+☐ hh-gallery-3.jpg
+☐ hh-gallery-4.jpg
+
+Commercial Gallery:
+☐ com-gallery-1.jpg
+☐ com-gallery-2.jpg
+☐ com-gallery-3.jpg
+☐ com-gallery-4.jpg
+
+Household Services:
+☐ hh-regular.jpg
+☐ hh-deep.jpg
+☐ hh-eot.jpg
+☐ hh-carpet.jpg
+☐ hh-oven.jpg
+☐ hh-windows.jpg
+
+Commercial Services:
+☐ com-office.jpg
+☐ com-retail.jpg
+☐ com-hospitality.jpg
+☐ com-education.jpg
+☐ com-industrial.jpg
+☐ com-builders.jpg
+
+ALTERNATIVE: Using curl/wget commands
+------------------------------------
+If you find direct image URLs, you can use these commands in Command Prompt:
+
+cd "C:\Users\Baqir\Documents\EleventhHour Cleaning Website\eleventhhour\public"
+
+curl -o hh-gallery-1.jpg "https://example.com/image1.jpg"
+curl -o hh-gallery-2.jpg "https://example.com/image2.jpg"
+[etc. for each image]
+
+TIPS FOR FINDING GOOD IMAGES:
+- Look for images with people actively cleaning
+- Prefer professional-looking cleaners in uniforms
+- Choose bright, well-lit photos
+- Avoid overly staged or stock-looking photos
+- Select images that show cleaning equipment/supplies
+- For commercial images, prefer office/business settings
+- For household images, prefer home/residential settings
+
+All recommended websites offer images that are:
+✓ Free for commercial use
+✓ High quality
+✓ Professional appearance
+✓ No attribution required (though appreciated)

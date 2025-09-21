@@ -13,21 +13,21 @@ const faqs = [
 ]
 
 const householdTiles: Tile[] = [
-  { title: 'Regular Cleaning', href: '/services/cleaning', img: '/hh-regular.jpg', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
-  { title: 'Deep Cleaning', href: '/services/cleaning', img: '/hh-deep.jpg', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
-  { title: 'End of Tenancy', href: '/services/cleaning', img: '/hh-eot.jpg', desc: 'Inventory-ready cleans for tenants & landlords.' },
-  { title: 'Carpet & Upholstery', href: '/services/cleaning', img: '/hh-carpet.jpg', desc: 'Hot water extraction for carpets, rugs & sofas.' },
-  { title: 'Oven Cleaning', href: '/services/cleaning', img: '/hh-oven.jpg', desc: 'Dip-tank oven cleaning for a showroom shine.' },
-  { title: 'Window Cleaning', href: '/services/cleaning', img: '/hh-windows.jpg', desc: 'Streak-free interiors and reachable exteriors.' },
+  { title: 'Regular Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=250&fit=crop&crop=center', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
+  { title: 'Deep Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=250&fit=crop&crop=center', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
+  { title: 'End of Tenancy', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=250&fit=crop&crop=center', desc: 'Inventory-ready cleans for tenants & landlords.' },
+  { title: 'Carpet & Upholstery', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=400&h=250&fit=crop&crop=center', desc: 'Hot water extraction for carpets, rugs & sofas.' },
+  { title: 'Oven Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop&crop=center', desc: 'Dip-tank oven cleaning for a showroom shine.' },
+  { title: 'Window Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1527515637462-cfc2a9b22c7e?w=400&h=250&fit=crop&crop=center', desc: 'Streak-free interiors and reachable exteriors.' },
 ]
 
 const commercialTiles: Tile[] = [
-  { title: 'Office Cleaning', href: '/services/cleaning', img: '/com-office.jpg', desc: 'Daily/weekly office contracts with audits & sign-off.' },
-  { title: 'Retail & Showrooms', href: '/services/cleaning', img: '/com-retail.jpg', desc: 'Front-of-house shine to match your brand.' },
-  { title: 'Hospitality', href: '/services/cleaning', img: '/com-hospitality.jpg', desc: 'Bars, cafés & restaurants—FOH & BOH standards.' },
-  { title: 'Education', href: '/services/cleaning', img: '/com-education.jpg', desc: 'Schools & nurseries with safer products and rotas.' },
-  { title: 'Industrial & Warehousing', href: '/services/cleaning', img: '/com-industrial.jpg', desc: 'High-traffic floors, welfare areas & mezzanines.' },
-  { title: 'After Builders', href: '/services/cleaning', img: '/com-builders.jpg', desc: 'Dust control, sparkle cleans & handover.' },
+  { title: 'Office Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=250&fit=crop&crop=center', desc: 'Daily/weekly office contracts with audits & sign-off.' },
+  { title: 'Retail & Showrooms', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center', desc: 'Front-of-house shine to match your brand.' },
+  { title: 'Hospitality', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=250&fit=crop&crop=center', desc: 'Bars, cafés & restaurants—FOH & BOH standards.' },
+  { title: 'Education', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop&crop=center', desc: 'Schools & nurseries with safer products and rotas.' },
+  { title: 'Industrial & Warehousing', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=400&h=250&fit=crop&crop=center', desc: 'High-traffic floors, welfare areas & mezzanines.' },
+  { title: 'After Builders', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400&h=250&fit=crop&crop=center', desc: 'Dust control, sparkle cleans & handover.' },
 ]
 
 const householdTestimonials = [
@@ -101,9 +101,6 @@ export default function HomePage() {
                 <Link href="/book" className="btn-primary group">
                   Get Started Today
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link href="/services/cleaning" className="btn-secondary">
-                  View All Services
                 </Link>
               </div>
 
@@ -214,12 +211,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Link href="/services" className="btn-secondary">
-              View All Services
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -379,10 +370,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <Link href="/contact" className="btn-primary">
-                Check Your Area
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
             </div>
 
             <div className="relative">
@@ -482,14 +469,29 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-12">
           <h2 className="text-2xl font-semibold">Recent work</h2>
           <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <img
-                key={i}
-                src={isHousehold ? `/hh-gallery-${(i % 4) + 1}.jpg` : `/com-gallery-${(i % 4) + 1}.jpg`}
-                alt="Cleaning example"
-                className="rounded-xl object-cover w-full h-40"
-              />
-            ))}
+            {Array.from({ length: 8 }).map((_, i) => {
+              const householdImages = [
+                'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=300&h=200&fit=crop&crop=center'
+              ];
+              const commercialImages = [
+                'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=200&fit=crop&crop=center',
+                'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=300&h=200&fit=crop&crop=center'
+              ];
+              const images = isHousehold ? householdImages : commercialImages;
+              return (
+                <img
+                  key={i}
+                  src={images[i % 4]}
+                  alt="Cleaning example"
+                  className="rounded-xl object-cover w-full h-40"
+                />
+              );
+            })}
           </div>
         </div>
       </section>

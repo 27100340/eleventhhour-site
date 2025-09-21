@@ -20,8 +20,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const timeoutRef = useRef<NodeJS.Timeout>()
-
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -98,13 +97,7 @@ export default function Navbar() {
                     ))}
                   </div>
                   <div className="mt-6 pt-4 border-t border-gray-100">
-                    <Link
-                      href="/services"
-                      className="flex items-center justify-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      View all services →
-                    </Link>
+
                   </div>
                 </div>
               </div>
@@ -157,13 +150,6 @@ export default function Navbar() {
                   </Link>
                 ))}
               </div>
-              <Link
-                href="/services"
-                className="block text-sm font-medium text-blue-600 hover:text-blue-700 py-2 px-3"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                View all services →
-              </Link>
             </div>
 
             <div className="pt-3 border-t border-gray-200">
