@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, Download, Home } from 'lucide-react'
 
-export default function BookingSuccessPage() {
+function BookingSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const bookingId = searchParams.get('booking_id')
@@ -153,5 +153,23 @@ export default function BookingSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  )
+}
+
+// Main export wrapped in Suspense
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <BookingSuccessContent />
+    </Suspense>
   )
 }
