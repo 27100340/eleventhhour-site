@@ -45,6 +45,7 @@ export default function BookPage() {
   const [cfg, setCfg] = useState<FormConfig | null>(null)
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [done, setDone] = useState<{ id: string; total: number } | null>(null)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -183,7 +184,7 @@ export default function BookPage() {
     if (has('city') && !(v.city || '').trim()) missing.push('City')
     if (has('postcode') && !(v.postcode || '').trim()) missing.push('Postcode')
     if (has('phone') && !(v.phone || '').trim()) missing.push('Phone')
-    // email optional if hidden — don’t require
+    // email optional if hidden — don't require
 
     const chosen = rows.filter((r) => r.qty > 0)
     if (!chosen.length) missing.push('At least one service')
@@ -193,45 +194,93 @@ export default function BookPage() {
       return
     }
 
-    const payload = {
-      ...v,
-      subtotal,
-      total: subtotal,
-      total_time_minutes: totalTime,
-      items: chosen.map((r) => ({
-        service_id: r.id,
-        qty: r.qty,
-        unit_price: r.price,
-        time_minutes: r.time_minutes,
-      })),
-    }
+    setIsProcessingPayment(true)
 
-    const res = await fetch('/api/public/booking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      alert(data?.error?.message || data?.error?.hint || data?.error?.details || 'Could not save booking.')
-      return
-    }
+    try {
+      const payload = {
+        ...v,
+        subtotal,
+        total: subtotal,
+        total_time_minutes: totalTime,
+        items: chosen.map((r) => ({
+          service_id: r.id,
+          qty: r.qty,
+          unit_price: r.price,
+          time_minutes: r.time_minutes,
+        })),
+      }
 
-    if (CONTACT_ENDPOINT) {
-      try {
-        const fd = new FormData()
-        fd.append('Subject', 'New booking request')
-        fd.append('Name', `${v.firstName || ''} ${v.lastName || ''}`.trim())
-        if (v.email) fd.append('Email', v.email)
-        if (v.phone) fd.append('Phone', v.phone)
-        fd.append('Location', joinCompact(v.postcode, v.city))
-        fd.append('Total', `£${subtotal.toFixed(2)}`)
-        await fetch(CONTACT_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
-      } catch {}
-    }
+      // Create booking in database
+      const res = await fetch('/api/public/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data?.error?.message || data?.error?.hint || data?.error?.details || 'Could not save booking.')
+        setIsProcessingPayment(false)
+        return
+      }
 
-    setDone({ id: data.booking?.id || data.bookingId || '', total: subtotal })
-    setStep(3)
+      const bookingId = data.booking?.id || data.bookingId || ''
+
+      // Send notification email
+      if (CONTACT_ENDPOINT) {
+        try {
+          const fd = new FormData()
+          fd.append('Subject', 'New booking request')
+          fd.append('Name', `${v.firstName || ''} ${v.lastName || ''}`.trim())
+          if (v.email) fd.append('Email', v.email)
+          if (v.phone) fd.append('Phone', v.phone)
+          fd.append('Location', joinCompact(v.postcode, v.city))
+          fd.append('Total', `£${subtotal.toFixed(2)}`)
+          await fetch(CONTACT_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
+        } catch {}
+      }
+
+      // Create Stripe checkout session
+      const checkoutRes = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId,
+          items: chosen.map((r) => ({
+            service_id: r.id,
+            name: r.name,
+            qty: r.qty,
+            unit_price: r.price,
+            time_minutes: r.time_minutes,
+          })),
+          total: subtotal,
+          customerEmail: v.email,
+          customerName: `${v.firstName || ''} ${v.lastName || ''}`.trim(),
+        }),
+      })
+
+      const checkoutData = await checkoutRes.json()
+      if (!checkoutRes.ok) {
+        alert(checkoutData?.error?.message || 'Failed to create checkout session.')
+        setIsProcessingPayment(false)
+        return
+      }
+
+      // Redirect to Stripe Checkout using the new method
+      console.log('✅ Checkout session created successfully')
+      console.log('🔄 Redirecting to Stripe checkout...')
+
+      // Use the direct URL from the session instead of redirectToCheckout
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url
+      } else {
+        throw new Error('No checkout URL received from Stripe')
+      }
+    } catch (error: any) {
+      console.error('Booking error:', error)
+      const errorMsg = error?.message || 'An unexpected error occurred. Please try again.'
+      alert(`Error: ${errorMsg}\n\nPlease check the console for more details.`)
+      setIsProcessingPayment(false)
+    }
   }
 
   // PDF
@@ -660,8 +709,20 @@ export default function BookPage() {
             </div>
 
             <div className="flex gap-3">
-              <button type="button" onClick={() => setStep(1)} className="rounded-full border px-6 py-3">Back</button>
-              <button className="btn-primary">Submit Request</button>
+              <button type="button" onClick={() => setStep(1)} className="rounded-full border px-6 py-3" disabled={isProcessingPayment}>Back</button>
+              <button className="btn-primary" disabled={isProcessingPayment}>
+                {isProcessingPayment ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  'Proceed to Payment'
+                )}
+              </button>
             </div>
           </form>
         )}
