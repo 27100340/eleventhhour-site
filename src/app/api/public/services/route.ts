@@ -12,9 +12,9 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('services')
-      .select('id, name, price, time_minutes, active')
+      .select('id, name, price, time_minutes, active, order_index, question_type, dropdown_options')
       .eq('active', true)
-      .order('name', { ascending: true })
+      .order('order_index', { ascending: true })
 
     if (error) {
       return new Response(JSON.stringify({ error }), {

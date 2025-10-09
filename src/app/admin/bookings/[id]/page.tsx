@@ -8,6 +8,7 @@ type Item = { service_id: string; qty: number; unit_price: number; time_minutes:
 type Booking = {
   id: string
   status: 'draft'|'active'|'cancelled'|'completed'
+  source: 'web'|'admin'
   email: string
   first_name: string
   last_name: string
@@ -20,10 +21,11 @@ type Booking = {
   arrival_window: 'exact'|'morning'|'afternoon'
   discount: number | null
   admin_time_override: number | null
-  admin_total_override: number | null      // << NEW
+  admin_total_override: number | null
   subtotal: number
   total: number
   total_time_minutes: number
+  payment_status?: 'pending'|'paid'|'failed'|'refunded'
   notes: string | null
 }
 
@@ -221,25 +223,80 @@ export default function BookingEditor() {
           </div>
 
           <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">Status & Notes</p>
+            <p className="font-medium mb-3">Status & Payment</p>
             <div className="grid md:grid-cols-3 gap-3">
-              <select className="input" value={booking.status} onChange={e=>setBooking({...booking, status: e.target.value as Booking['status']})}>
-                <option value="draft">draft</option>
-                <option value="active">active</option>
-                <option value="cancelled">cancelled</option>
-                <option value="completed">completed</option>
-              </select>
-              <input className="input" type="number" step="0.01" placeholder="Discount"
-                value={booking.discount ?? 0}
-                onChange={e=>setBooking({...booking, discount: Number(e.target.value)})}
-              />
-              <input className="input" type="number" placeholder="Admin time override (mins)"
-                value={booking.admin_time_override ?? ''}
-                onChange={e=>setBooking({...booking, admin_time_override: e.target.value === '' ? null : Number(e.target.value)})}
-              />
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Booking Status</label>
+                <select className="input" value={booking.status} onChange={e=>setBooking({...booking, status: e.target.value as Booking['status']})}>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Payment Status</label>
+                <select
+                  className="input"
+                  value={booking.payment_status || 'pending'}
+                  onChange={e=>setBooking({...booking, payment_status: e.target.value as Booking['payment_status']})}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="failed">Failed</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Source</label>
+                <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium capitalize">
+                  {booking.source || 'web'}
+                </div>
+              </div>
             </div>
-            <textarea className="input mt-3" rows={4} placeholder="Notes"
-              value={booking.notes ?? ''} onChange={e=>setBooking({...booking, notes: e.target.value})}/>
+            <div className="grid md:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Discount (£)</label>
+                <input className="input" type="number" step="0.01" placeholder="0.00"
+                  value={booking.discount ?? 0}
+                  onChange={e=>setBooking({...booking, discount: Number(e.target.value)})}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 mb-1 block">Time Override (mins)</label>
+                <input className="input" type="number" placeholder="Auto-calculated"
+                  value={booking.admin_time_override ?? ''}
+                  onChange={e=>setBooking({...booking, admin_time_override: e.target.value === '' ? null : Number(e.target.value)})}
+                />
+              </div>
+            </div>
+
+            {/* Quick payment confirmation buttons for draft bookings */}
+            {booking.status === 'draft' && booking.payment_status === 'pending' && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-blue-900 mb-2">Quick Actions for Draft Booking</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setBooking({...booking, payment_status: 'paid', status: 'active'})}
+                    className="rounded-full bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700"
+                  >
+                    Mark as Paid & Activate
+                  </button>
+                  <button
+                    onClick={() => setBooking({...booking, status: 'active'})}
+                    className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50"
+                  >
+                    Activate (Keep Payment Pending)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3">
+              <label className="text-xs text-gray-600 mb-1 block">Notes</label>
+              <textarea className="input" rows={4} placeholder="Add notes about this booking..."
+                value={booking.notes ?? ''} onChange={e=>setBooking({...booking, notes: e.target.value})}/>
+            </div>
           </div>
         </div>
 

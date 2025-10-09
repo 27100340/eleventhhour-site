@@ -8,6 +8,8 @@ type Row = {
   created_at: string
   service_date: string | null
   status: string
+  source: string
+  payment_status: string | null
   first_name: string
   last_name: string
   email: string
@@ -91,6 +93,7 @@ export default function BookingsTab() {
                 <th className="py-2 pr-3">Contact</th>
                 <th className="py-2 pr-3">Location</th>
                 <th className="py-2 pr-3">Status</th>
+                <th className="py-2 pr-3">Payment</th>
                 <th className="py-2 pr-3">Total</th>
                 <th className="py-2 pr-3">Time</th>
                 <th className="py-2 pr-3"></th>
@@ -98,13 +101,20 @@ export default function BookingsTab() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={9} className="py-6 text-center text-slate-500">Loading…</td></tr>
+                <tr><td colSpan={10} className="py-6 text-center text-slate-500">Loading…</td></tr>
               )}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={9} className="py-6 text-center text-slate-500">No bookings yet</td></tr>
+                <tr><td colSpan={10} className="py-6 text-center text-slate-500">No bookings yet</td></tr>
               )}
               {rows.map((r) => {
                 const displayTotal = typeof r.admin_total_override === 'number' ? r.admin_total_override : r.total || 0
+                const paymentStatus = r.payment_status || 'pending'
+                const paymentColors = {
+                  pending: 'bg-yellow-100 text-yellow-800',
+                  paid: 'bg-green-100 text-green-800',
+                  failed: 'bg-red-100 text-red-800',
+                  refunded: 'bg-gray-100 text-gray-800',
+                }
                 return (
                   <tr key={r.id} className="border-b hover:bg-slate-50">
                     <td className="py-2 pr-3">{new Date(r.created_at).toLocaleString()}</td>
@@ -117,7 +127,17 @@ export default function BookingsTab() {
                       </div>
                     </td>
                     <td className="py-2 pr-3">{r.postcode} • {r.city}</td>
-                    <td className="py-2 pr-3">{r.status}</td>
+                    <td className="py-2 pr-3">
+                      <span className="capitalize">{r.status}</span>
+                      {r.source === 'admin' && (
+                        <span className="ml-1 text-xs text-blue-600">(Admin)</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${paymentColors[paymentStatus as keyof typeof paymentColors]}`}>
+                        {paymentStatus}
+                      </span>
+                    </td>
                     <td className="py-2 pr-3">£{Number(displayTotal).toFixed(2)}</td>
                     <td className="py-2 pr-3">{r.total_time_minutes || 0} mins</td>
                     <td className="py-2 pr-3">

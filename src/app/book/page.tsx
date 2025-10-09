@@ -6,7 +6,15 @@ import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import jsPDF from 'jspdf'
 
-type Service = { id: string; name: string; price: number; time_minutes: number }
+type Service = {
+  id: string
+  name: string
+  price: number
+  time_minutes: number
+  order_index: number
+  question_type: 'plus_minus' | 'checkbox' | 'dropdown'
+  dropdown_options: { label: string; value: string | number }[]
+}
 type Allowed = { service_id?: string; serviceId?: string; default_qty?: number }
 type FormConfig = {
   base_fields: string[] // email, first_name, last_name, name, phone, address, city, postcode
@@ -26,8 +34,9 @@ type Values = {
   frequency: 'one_time' | 'weekly' | 'bi_weekly' | 'monthly'
   serviceDate?: string
   arrivalWindow?: 'exact' | 'morning' | 'afternoon'
-  items: Record<string, number>
+  items: Record<string, number | string>
   notes?: string
+  acceptTerms?: boolean
 }
 
 const SILENT_FORM_RAW = process.env.NEXT_PUBLIC_FORMSPREE_SILENT_ID || ''
@@ -100,11 +109,25 @@ export default function BookPage() {
   }, [cfg])
 
   const items = watch('items')
+  const acceptTerms = watch('acceptTerms')
+
   const rows = useMemo(
     () =>
       services
         .filter((s) => !allowedIds || allowedIds.has(s.id)) // fallback: all services when admin list is empty
-        .map((s) => ({ ...s, qty: items?.[s.id] ?? 0 })),
+        .map((s) => {
+          const value = items?.[s.id] ?? 0
+          // Convert to number for calculations (checkbox: 1 or 0, dropdown: numeric value, plus_minus: qty)
+          let qty = 0
+          if (s.question_type === 'checkbox') {
+            qty = value ? 1 : 0
+          } else if (s.question_type === 'dropdown') {
+            qty = typeof value === 'number' ? value : Number(value) || 0
+          } else {
+            qty = typeof value === 'number' ? value : Number(value) || 0
+          }
+          return { ...s, qty, rawValue: value }
+        }),
     [services, allowedIds, items],
   )
 
@@ -116,6 +139,18 @@ export default function BookPage() {
     const safe = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0
     const current = getValues('items') || {}
     const next = { ...current, [id]: safe }
+    setValue('items', next, { shouldDirty: true, shouldValidate: true })
+  }
+
+  function toggleCheckbox(id: string) {
+    const current = getValues('items') || {}
+    const next = { ...current, [id]: current[id] ? 0 : 1 }
+    setValue('items', next, { shouldDirty: true, shouldValidate: true })
+  }
+
+  function setDropdownValue(id: string, value: string | number) {
+    const current = getValues('items') || {}
+    const next = { ...current, [id]: value }
     setValue('items', next, { shouldDirty: true, shouldValidate: true })
   }
 
@@ -188,6 +223,9 @@ export default function BookPage() {
 
     const chosen = rows.filter((r) => r.qty > 0)
     if (!chosen.length) missing.push('At least one service')
+
+    // Check terms acceptance
+    if (!v.acceptTerms) missing.push('You must accept the Terms and Services')
 
     if (missing.length) {
       alert(`Please complete: ${missing.join(', ')}`)
@@ -680,28 +718,93 @@ export default function BookPage() {
               </select>
             </div>
 
+            {/* Terms & Services Checkbox - BEFORE services */}
+            <div className="rounded-2xl border p-4 bg-blue-50 border-blue-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms || false}
+                  onChange={(e) => setValue('acceptTerms', e.target.checked, { shouldValidate: true })}
+                  className="mt-1"
+                  required
+                />
+                <span className="text-sm">
+                  I accept the{' '}
+                  <a href="/terms" target="_blank" className="text-blue-600 hover:underline font-medium">
+                    Terms and Services
+                  </a>
+                  <span className="text-red-600 ml-1">*</span>
+                </span>
+              </label>
+            </div>
+
             <div className="rounded-2xl border p-4">
               <p className="font-medium mb-3">Services</p>
-              <div className="grid md:grid-cols-2 gap-4">
-                {rows.map((r) => (
-                  <div key={r.id} className="grid grid-cols-[110px_1fr] items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <button type="button" className="rounded-full border w-8 h-8" onClick={() => setQty(r.id, r.qty - 1)}>-</button>
-                      <input
-                        type="number"
-                        min={0}
-                        className="input w-16 text-center"
-                        value={r.qty}
-                        onChange={(e) => setQty(r.id, Number(e.target.value))}
-                      />
-                      <button type="button" className="rounded-full border w-8 h-8" onClick={() => setQty(r.id, r.qty + 1)}>+</button>
-                    </div>
-                    <div>
-                      <p className="font-medium">{r.name}</p>
-                      <p className="text-xs text-slate-600">£{Number(r.price).toFixed(2)} · {r.time_minutes} mins</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid gap-4">
+                {rows.map((r) => {
+                  // Render based on question type
+                  if (r.question_type === 'checkbox') {
+                    return (
+                      <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={!!r.rawValue}
+                          onChange={() => toggleCheckbox(r.id)}
+                          className="w-5 h-5"
+                        />
+                        <p className="font-medium flex-1">{r.name}</p>
+                      </div>
+                    )
+                  } else if (r.question_type === 'dropdown') {
+                    return (
+                      <div key={r.id} className="p-3 rounded-lg border">
+                        <p className="font-medium mb-2">{r.name}</p>
+                        <select
+                          className="input w-full"
+                          value={r.rawValue || ''}
+                          onChange={(e) => setDropdownValue(r.id, e.target.value)}
+                        >
+                          <option value="">Select an option</option>
+                          {r.dropdown_options?.map((opt, idx) => (
+                            <option key={idx} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )
+                  } else {
+                    // plus_minus (default)
+                    return (
+                      <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="rounded-full border w-8 h-8 hover:bg-gray-100"
+                            onClick={() => setQty(r.id, r.qty - 1)}
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            className="input w-16 text-center"
+                            value={r.qty}
+                            onChange={(e) => setQty(r.id, Number(e.target.value))}
+                          />
+                          <button
+                            type="button"
+                            className="rounded-full border w-8 h-8 hover:bg-gray-100"
+                            onClick={() => setQty(r.id, r.qty + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <p className="font-medium flex-1">{r.name}</p>
+                      </div>
+                    )
+                  }
+                })}
                 {rows.length === 0 && (
                   <div className="text-sm text-slate-600">No services available.</div>
                 )}
@@ -754,9 +857,11 @@ export default function BookPage() {
                   <div key={r.id} className="flex items-center justify-between py-2">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">{r.name}</p>
-                      <p className="text-xs text-gray-500">Quantity: {r.qty}</p>
+                      <p className="text-xs text-gray-500">
+                        {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
+                      </p>
                     </div>
-                    <span className="font-semibold text-gray-900">£{(r.qty * r.price).toFixed(2)}</span>
+                    <span className="text-sm text-gray-600">{r.qty * r.time_minutes} min</span>
                   </div>
                 ))}
 

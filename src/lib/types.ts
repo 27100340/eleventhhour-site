@@ -4,6 +4,9 @@ export type Service = {
   price: number
   time_minutes: number
   active: boolean
+  order_index: number
+  question_type: 'plus_minus' | 'checkbox' | 'dropdown'
+  dropdown_options: { label: string; value: string | number }[]
 }
 
 export type FormConfig = {
@@ -21,7 +24,7 @@ export type FormConfig = {
 
 export type Booking = {
   id: string
-  status: 'draft'|'active'|'cancelled'
+  status: 'draft'|'active'|'cancelled'|'completed'
   source: 'web'|'admin'
   email: string
   first_name: string
@@ -38,6 +41,7 @@ export type Booking = {
   subtotal: number
   total: number
   total_time_minutes: number
+  payment_status?: 'pending'|'paid'|'failed'|'refunded'
   created_at: string
 }
 
