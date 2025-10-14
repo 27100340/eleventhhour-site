@@ -12,7 +12,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
         <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
           <div className="max-w-3xl">
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-gray-900 mb-6">
@@ -67,9 +67,9 @@ export default function AboutPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="card p-8 text-center group hover:bg-blue-50 transition-colors">
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-200 transition-colors">
-                <ShieldCheck className="h-8 w-8 text-blue-600" />
+            <div className="card p-8 text-center group hover:bg-brand-sage/20 transition-colors">
+              <div className="w-16 h-16 bg-brand-sage/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-brand-sage/60 transition-colors">
+                <ShieldCheck className="h-8 w-8 text-brand-amber" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Fully insured & background-checked staff</h3>
               <p className="text-gray-600 leading-relaxed">

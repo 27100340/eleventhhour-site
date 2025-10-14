@@ -82,11 +82,11 @@ export default function Navbar() {
                         className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors duration-200 group"
                         onClick={() => setDropdownOpen(false)}
                       >
-                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center group-hover:from-blue-100 group-hover:to-indigo-100 transition-colors">
-                          <Icon className="h-5 w-5 text-blue-600" />
+                        <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-lg flex items-center justify-center group-hover:bg-brand-sage/60 transition-colors">
+                          <Icon className="h-5 w-5 text-brand-amber" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                          <p className="text-sm font-medium text-brand-charcoal group-hover:text-brand-amber transition-colors">
                             {label}
                           </p>
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">

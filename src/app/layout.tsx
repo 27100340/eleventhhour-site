@@ -1,7 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { ModeProvider } from '@/components/ModeContext'
-import TopSelectorBar from '@/components/TopSelectorBar'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
@@ -28,7 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen flex flex-col bg-gray-50 text-gray-900 antialiased">
         <ModeProvider>
-          <TopSelectorBar />
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />

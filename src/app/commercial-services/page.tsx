@@ -45,16 +45,16 @@ export default function CommercialServicesPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
         <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
           <div className="max-w-3xl">
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-gray-900 mb-6">
+            <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-brand-charcoal mb-6">
               Professional Office & <span className="text-gradient">Commercial Cleaning</span>
             </h1>
-            <p className="text-xl text-gray-700 leading-relaxed mb-4">
+            <p className="text-xl text-brand-charcoal/80 leading-relaxed mb-4">
               Our commercial cleaning teams work quietly, efficiently, and after-hours — keeping your workspace spotless and inviting.
             </p>
-            <p className="text-lg text-gray-600 leading-relaxed">
+            <p className="text-lg text-brand-charcoal/70 leading-relaxed">
               We cater to offices, retail stores, restaurants, and more, ensuring your brand looks as polished as your business.
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function CommercialServicesPage() {
             <Link href="/book" className="btn-primary">
               Book Commercial Clean
             </Link>
-            <Link href="/contact" className="rounded-full border-2 border-gray-300 px-8 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors text-center">
+            <Link href="/contact" className="rounded-full border-2 border-brand-stone px-8 py-3 font-semibold text-brand-charcoal hover:bg-brand-cream transition-colors text-center">
               Get a Site Quote
             </Link>
           </div>
@@ -71,7 +71,7 @@ export default function CommercialServicesPage() {
       </section>
 
       {/* Services Grid */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-brand-cream">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Solutions for Your Business</h2>
@@ -86,14 +86,14 @@ export default function CommercialServicesPage() {
               return (
                 <div
                   key={service.title}
-                  className="card p-8 group hover:bg-blue-50 transition-colors"
+                  className="card p-8 group hover:bg-brand-sage/20 transition-colors"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-200 transition-colors">
-                    <Icon className="h-8 w-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-brand-sage/40 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-sage/60 transition-colors">
+                    <Icon className="h-8 w-8 text-brand-amber" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{service.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{service.description}</p>
+                  <h3 className="text-xl font-semibold text-brand-charcoal mb-3">{service.title}</h3>
+                  <p className="text-brand-charcoal/70 leading-relaxed">{service.description}</p>
                 </div>
               )
             })}
@@ -106,7 +106,7 @@ export default function CommercialServicesPage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-3xl blur-2xl" />
+              <div className="absolute -inset-4 bg-gradient-to-r from-brand-amber/10 to-brand-sage/10 rounded-3xl blur-2xl" />
               <img
                 src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center"
                 alt="Professional office cleaning"
@@ -118,8 +118,8 @@ export default function CommercialServicesPage() {
               <h2 className="text-4xl font-bold text-gray-900 mb-6">Why Choose Us for Your Business?</h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                  <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-full flex items-center justify-center mt-1">
+                    <CheckCircle className="h-5 w-5 text-brand-amber" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Dedicated Support</h3>
@@ -128,8 +128,8 @@ export default function CommercialServicesPage() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                  <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-full flex items-center justify-center mt-1">
+                    <CheckCircle className="h-5 w-5 text-brand-amber" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Flexible Scheduling</h3>
@@ -163,10 +163,10 @@ export default function CommercialServicesPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-brand-cream">
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Clients Say</h2>
+            <h2 className="text-4xl font-bold text-brand-charcoal mb-4">What Our Clients Say</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Trusted by businesses across London for reliable commercial cleaning services.
             </p>

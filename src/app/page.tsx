@@ -1,5 +1,6 @@
 'use client'
 import { useMode } from '@/components/ModeContext'
+import TopSelectorBar from '@/components/TopSelectorBar'
 import Link from 'next/link'
 import { ShieldCheck, Leaf, Clock, Sparkles, Users, CreditCard, ArrowRight, Star, MapPin, CheckCircle } from 'lucide-react'
 
@@ -13,12 +14,12 @@ const faqs = [
 ]
 
 const householdTiles: Tile[] = [
-  { title: 'Regular Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=250&fit=crop&crop=center', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
-  { title: 'Deep Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=250&fit=crop&crop=center', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
-  { title: 'End of Tenancy', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=250&fit=crop&crop=center', desc: 'Inventory-ready cleans for tenants & landlords.' },
-  { title: 'Carpet & Upholstery', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=400&h=250&fit=crop&crop=center', desc: 'Hot water extraction for carpets, rugs & sofas.' },
-  { title: 'Oven Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop&crop=center', desc: 'Dip-tank oven cleaning for a showroom shine.' },
-  { title: 'Window Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1527515637462-cfc2a9b22c7e?w=400&h=250&fit=crop&crop=center', desc: 'Streak-free interiors and reachable exteriors.' },
+  { title: 'Regular Cleaning', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/sinksoap.jpg', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
+  { title: 'Deep Cleaning', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/deepclean.jpg', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
+  { title: 'End of Tenancy', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/eotclean.jpg', desc: 'Inventory-ready cleans for tenants & landlords.' },
+  { title: 'Carpet & Upholstery', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/carp1.jpg', desc: 'Hot water extraction for carpets, rugs & sofas.' },
+  { title: 'Oven Cleaning', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/oven_cleaning.jpg', desc: 'Dip-tank oven cleaning for a showroom shine.' },
+  { title: 'Window Cleaning', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/window.jpg', desc: 'Streak-free interiors and reachable exteriors.' },
 ]
 
 const commercialTiles: Tile[] = [
@@ -74,13 +75,14 @@ export default function HomePage() {
 
   return (
     <>
+      <TopSelectorBar />
       {/* Hero */}
       <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
         <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-sage/30 text-brand-charcoal text-sm font-medium rounded-full mb-6">
                 <Star className="h-4 w-4" fill="currentColor" />
                 Trusted by 10,000+ customers
               </div>
@@ -105,14 +107,14 @@ export default function HomePage() {
 
               <div className="mt-10 grid sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-3 text-gray-700">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-brand-sage/40 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-brand-amber" />
                   </div>
                   <span>Fully insured & DBS-checked</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-700">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-blue-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-brand-sage/40 rounded-full flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-brand-amber" />
                   </div>
                   <span>Same/next-day availability</span>
                 </div>
@@ -133,13 +135,13 @@ export default function HomePage() {
 
             <div className="animate-slide-up">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-3xl blur-2xl" />
+                <div className="absolute -inset-4 bg-gradient-to-r from-brand-amber/15 to-brand-sage/15 rounded-3xl blur-2xl" />
                 <div className="relative bg-white rounded-2xl p-6 shadow-soft-lg border border-gray-200/50">
                   <img
                     className="rounded-xl w-full h-72 object-cover"
                     src={isHousehold
-                      ? 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop&crop=center'
-                      : 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center'
+                      ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg'
+                      : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg'
                     }
                     alt={isHousehold ? 'Professional home cleaning' : 'Commercial office cleaning'}
                   />
@@ -147,16 +149,16 @@ export default function HomePage() {
                     <img
                       className="rounded-lg w-full h-32 object-cover"
                       src={isHousehold
-                        ? 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop&crop=center'
-                        : 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=300&h=200&fit=crop&crop=center'
+                        ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg'
+                        : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg'
                       }
                       alt="Service example 1"
                     />
                     <img
                       className="rounded-lg w-full h-32 object-cover"
                       src={isHousehold
-                        ? 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&h=200&fit=crop&crop=center'
-                        : 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&h=200&fit=crop&crop=center'
+                        ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
+                        : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
                       }
                       alt="Service example 2"
                     />
@@ -193,18 +195,18 @@ export default function HomePage() {
               >
                 <div className="relative overflow-hidden rounded-t-2xl">
                   <img
-                    src={`https://images.unsplash.com/photo-${getServiceImage(t.title, isHousehold)}?w=400&h=250&fit=crop&crop=center`}
+                    src={t.img ? (t.img.startsWith('http') ? t.img : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_BUCKET || 'website-images'}/${t.img}`) : `https://images.unsplash.com/photo-${getServiceImage(t.title, isHousehold)}?w=400&h=250&fit=crop&crop=center`}
                     alt={t.title}
                     className="h-48 w-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="p-6">
-                  <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
+                  <h3 className="font-semibold text-lg text-brand-charcoal group-hover:text-brand-amber transition-colors">
                     {t.title}
                   </h3>
                   <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
-                  <div className="mt-4 flex items-center text-blue-600 text-sm font-medium">
+                  <div className="mt-4 flex items-center text-brand-amber text-sm font-medium">
                     Learn more
                     <ArrowRight className="ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -229,7 +231,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center group">
               <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
-                <div className="absolute -inset-2 bg-blue-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -inset-2 bg-brand-amber/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 1
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Choose your service</h3>
@@ -241,8 +243,8 @@ export default function HomePage() {
             </div>
 
             <div className="text-center group">
-              <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
-                <div className="absolute -inset-2 bg-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative mx-auto w-16 h-16 bg-brand-amber rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="absolute -inset-2 bg-brand-amber/25 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 2
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Schedule & book</h3>
@@ -280,17 +282,17 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="card p-8 text-center group hover:bg-blue-50">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
-                <ShieldCheck className="h-6 w-6 text-blue-600" />
+            <div className="card p-8 text-center group hover:bg-brand-sage/20">
+              <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
+                <ShieldCheck className="h-6 w-6 text-brand-amber" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Vetted & insured staff</h3>
               <p className="text-gray-600 text-sm leading-relaxed">All our professionals undergo DBS checks, reference verification, and regular quality audits.</p>
             </div>
 
-            <div className="card p-8 text-center group hover:bg-indigo-50">
-              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-indigo-200 transition-colors">
-                <Clock className="h-6 w-6 text-indigo-600" />
+            <div className="card p-8 text-center group hover:bg-brand-sage/20">
+              <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
+                <Clock className="h-6 w-6 text-brand-amber" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Flexible scheduling</h3>
               <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'One-off, weekly, or bi-weekly visits that fit your lifestyle.' : 'Daily, weekly, or out-of-hours contracts tailored to your business.'}</p>
@@ -320,9 +322,9 @@ export default function HomePage() {
               <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'Comprehensive room-by-room checklists ensure nothing is missed.' : 'Photo reports and detailed sign-off sheets for full transparency.'}</p>
             </div>
 
-            <div className="card p-8 text-center group hover:bg-green-50">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
-                <CreditCard className="h-6 w-6 text-green-600" />
+            <div className="card p-8 text-center group hover:bg-brand-sage/20">
+              <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
+                <CreditCard className="h-6 w-6 text-brand-amber" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Transparent pricing</h3>
               <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'Clear, upfront rates with no hidden fees or surprises.' : 'Choose between fixed-rate contracts or flexible time-and-materials pricing.'}</p>
@@ -466,37 +468,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Gallery */}
-      <section className="bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <h2 className="text-2xl font-semibold">Recent work</h2>
-          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => {
-              const householdImages = [
-                'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=300&h=200&fit=crop&crop=center'
-              ];
-              const commercialImages = [
-                'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=200&fit=crop&crop=center',
-                'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=300&h=200&fit=crop&crop=center'
-              ];
-              const images = isHousehold ? householdImages : commercialImages;
-              return (
-                <img
-                  key={i}
-                  src={images[i % 4]}
-                  alt="Cleaning example"
-                  className="rounded-xl object-cover w-full h-40"
-                />
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* Gallery removed per request */}
 
       {/* CTA band */}
       <section className="bg-brand-600">
