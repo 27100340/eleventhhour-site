@@ -60,17 +60,7 @@ export default function ServicePage({ params }: { params: { slug: string } }) {
         </section>
       )}
 
-      {/* Images Section */}
-      <section className="py-16 bg-white">
-        <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-3xl font-bold text-brand-charcoal mb-8">See Our Work</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {svc.images.map(src => (
-              <img key={src} src={src} alt={svc.name} className="rounded-2xl shadow-lg w-full h-80 object-cover" />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Gallery removed per request */}
 
       {/* CTA Section */}
       <section className="bg-brand-charcoal py-16">
