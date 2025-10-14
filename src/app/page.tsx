@@ -25,9 +25,9 @@ const householdTiles: Tile[] = [
 const commercialTiles: Tile[] = [
   { title: 'Office Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=250&fit=crop&crop=center', desc: 'Daily/weekly office contracts with audits & sign-off.' },
   { title: 'Retail & Showrooms', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center', desc: 'Front-of-house shine to match your brand.' },
-  { title: 'Hospitality', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=250&fit=crop&crop=center', desc: 'Bars, cafés & restaurants—FOH & BOH standards.' },
+  { title: 'Hospitality', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/resclean.jpg', desc: 'Bars, cafés & restaurants—FOH & BOH standards.' },
   { title: 'Education', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=250&fit=crop&crop=center', desc: 'Schools & nurseries with safer products and rotas.' },
-  { title: 'Industrial & Warehousing', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1586023492304-3b503d85e6ff?w=400&h=250&fit=crop&crop=center', desc: 'High-traffic floors, welfare areas & mezzanines.' },
+  { title: 'Industrial & Warehousing', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/warehouse.jpg', desc: 'High-traffic floors, welfare areas & mezzanines.' },
   { title: 'After Builders', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400&h=250&fit=crop&crop=center', desc: 'Dust control, sparkle cleans & handover.' },
 ]
 
