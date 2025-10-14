@@ -1,5 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Brand Fonts - Eleventh Hour Cleaning */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* Tailwind v4 theme tokens for brand colors, fonts, and shadows */
+@theme {
+  /* Colors: map CSS vars to Tailwind tokens */
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-dark: var(--brand-amber-dark);
+  --color-brand-charcoal: var(--brand-charcoal);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-stone: var(--brand-stone);
+  --color-brand-sage: var(--brand-sage);
+
+  /* Brand scale (used by classes like bg-brand-600, text-brand-100) */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-500: #E2852B;
+  --color-brand-600: #cf741f;
+
+  /* Fonts */
+  --font-montserrat: "Montserrat", system-ui, sans-serif;
+  --font-playfair: "Playfair Display", serif;
+  --font-lora: "Lora", serif;
+
+  /* Shadows */
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-soft-lg: 0 10px 40px -15px rgba(0, 0, 0, 0.1), 0 4px 25px -5px rgba(0, 0, 0, 0.04);
+}
 
 /* Base tweaks */
 @layer base {
@@ -7,6 +34,12 @@
     --radius: 12px;
     --shadow-color: 220 3% 15%;
     --shadow-strength: 1%;
+    --brand-amber: #E2852B;
+    --brand-amber-dark: #cf741f;
+    --brand-charcoal: #2C2C2C;
+    --brand-cream: #FAF9F5;
+    --brand-stone: #E0E0E0;
+    --brand-sage: #D7E1C5;
   }
 
   html {
@@ -16,79 +49,119 @@
   }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
     line-height: 1.6;
+    color: var(--brand-charcoal);
+    background-color: var(--brand-cream);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--brand-charcoal);
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.875rem; /* 46px */
+    font-weight: 700;
+    line-height: 1.06;
+  }
+
+  h2 {
+    font-family: 'Lora', serif;
+    font-size: 1.875rem; /* 30px */
+    font-weight: 700;
+  }
+
+  h3 {
+    font-family: 'Lora', serif;
+    font-size: 1.25rem; /* 20px */
+    font-weight: 600;
+  }
+
   * {
-    @apply border-gray-200;
+    border-color: var(--brand-stone);
   }
 }
 
 /* Reusable utility classes used in your components */
 @layer components {
   .input {
-    @apply w-full rounded-xl border border-gray-200 px-4 py-3 text-sm bg-white
+    @apply w-full rounded-xl border border-brand-stone px-4 py-3 text-base bg-white
+    font-montserrat
     placeholder:text-gray-500
-    focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+    focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:border-brand-amber
     transition-all duration-200;
   }
 
+  /* Primary button: amber background, white text */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold
-    text-white bg-gradient-to-r from-blue-600 to-blue-700
-    hover:from-blue-700 hover:to-blue-800
-    rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-blue-700/25
+    @apply inline-flex items-center justify-center px-6 py-2.5
+    font-montserrat text-base font-semibold uppercase tracking-wider
+    text-white bg-brand-amber
+    hover:bg-brand-amber-dark
+    rounded-xl shadow-lg hover:shadow-xl
     transition-all duration-200 hover:-translate-y-0.5
-    focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2;
+    focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:ring-offset-2;
   }
 
+  /* Secondary button: transparent with charcoal border */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold
-    text-gray-700 bg-white border border-gray-200
-    hover:bg-gray-50 hover:border-gray-300
+    @apply inline-flex items-center justify-center px-6 py-2.5
+    font-montserrat text-base font-semibold uppercase tracking-wider
+    text-brand-charcoal bg-transparent border border-brand-charcoal
+    hover:bg-brand-charcoal hover:text-brand-amber
     rounded-xl shadow-sm hover:shadow-md
     transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-gray-500/20 focus:ring-offset-2;
+    focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:ring-offset-2;
   }
 
+  /* Card with brand styling */
   .card {
-    @apply bg-white rounded-2xl border border-gray-200/80 shadow-lg
-    transition-all duration-300 hover:shadow-xl hover:border-gray-300/80;
+    @apply bg-white rounded-2xl border border-brand-stone shadow-soft
+    transition-all duration-300 hover:shadow-soft-lg hover:-translate-y-1;
   }
 
+  /* Step indicator with amber for active */
   .step {
-    @apply rounded-full border border-gray-300 px-4 py-2 text-sm font-medium
+    @apply rounded-full border border-brand-stone px-4 py-2 text-sm font-medium
+    font-montserrat uppercase tracking-wide
     transition-all duration-200;
   }
 
   .step.active {
-    @apply bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25;
+    @apply bg-brand-amber text-white border-brand-amber shadow-lg;
   }
 
   .gradient-bg {
     background: linear-gradient(135deg,
-      rgb(239 246 255) 0%,
-      rgb(219 234 254) 25%,
-      rgb(191 219 254) 50%,
-      rgb(147 197 253) 100%);
+      var(--brand-cream) 0%,
+      #ffffff 50%,
+      var(--brand-cream) 100%);
   }
 
   .glass {
-    @apply backdrop-blur-xl bg-white/80 border border-gray-200/50
-    supports-[backdrop-filter]:bg-white/60;
+    @apply backdrop-blur-xl bg-brand-cream/80 border border-brand-stone/50
+    supports-[backdrop-filter]:bg-brand-cream/60;
   }
 
-  /* Text effects */
+  /* Text effects with brand amber */
   .text-gradient {
-    @apply bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-amber to-brand-amber-dark bg-clip-text text-transparent;
   }
 
-  /* Focus states */
+  /* Focus states with brand amber */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-amber/20 focus:ring-offset-2;
+  }
+
+  /* Link hover with amber underline */
+  a:hover {
+    text-decoration-color: var(--brand-amber);
   }
 }

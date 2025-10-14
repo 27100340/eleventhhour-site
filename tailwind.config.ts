@@ -10,47 +10,46 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        playfair: ['Playfair Display', 'serif'],
+        lora: ['Lora', 'serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
+        sans: ['Montserrat', 'system-ui', 'sans-serif'],
       },
       colors: {
+        // Brand colors from design document
+        brand: {
+          amber: '#E2852B',
+          'amber-dark': '#cf741f',
+          charcoal: '#2C2C2C',
+          cream: '#FAF9F5',
+          stone: '#E0E0E0',
+          sage: '#D7E1C5',
+        },
+        // Keep existing colors for compatibility
         gray: {
-          50: '#f8fafc',
+          50: '#FAF9F5', // Cream
           100: '#f1f5f9',
-          200: '#e2e8f0',
+          200: '#E0E0E0', // Stone grey
           300: '#cbd5e1',
           400: '#94a3b8',
           500: '#64748b',
           600: '#475569',
           700: '#334155',
           800: '#1e293b',
-          900: '#0f172a',
+          900: '#2C2C2C', // Charcoal
           950: '#020617',
         },
-        blue: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
-        },
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+        amber: {
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#E2852B', // Brand amber
+          600: '#cf741f', // Brand amber dark
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
         },
       },
       animation: {

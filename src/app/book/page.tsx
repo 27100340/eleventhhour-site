@@ -651,7 +651,7 @@ export default function BookPage() {
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Book Your Service</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Get started with professional service booking in just a few simple steps.
+            Fill in your details, choose your service, and we'll handle the rest. Whether you need a one-time emergency clean or regular maintenance, our team is ready — 7 days a week.
           </p>
 
           <div className="flex items-center justify-center gap-4 mt-8">

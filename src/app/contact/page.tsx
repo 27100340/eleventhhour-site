@@ -1,5 +1,6 @@
 'use client'
 import { useForm } from 'react-hook-form'
+import type { Metadata } from 'next'
 
 type FormValues = {
   firstName: string
@@ -30,8 +31,16 @@ export default function ContactPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-3xl font-bold">Contact Us</h1>
-      <p className="mt-2">Phone: 020 8000 0000 · Email: hello@eleventhhour.co.uk</p>
+      <h1 className="text-3xl font-bold">Contact Eleventh Hour Cleaning</h1>
+      <p className="mt-4 text-lg text-gray-700">
+        We'd love to hear from you!
+      </p>
+      <p className="mt-2 text-gray-600">
+        <strong>Phone:</strong> [Insert number] · <strong>Email:</strong> [Insert email] · <strong>Location:</strong> London & Greater London
+      </p>
+      <p className="mt-4 text-gray-600">
+        Or simply click Book Now to schedule your next clean in under 60 seconds.
+      </p>
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-4">
         <div className="grid md:grid-cols-2 gap-4">
           <input {...register('firstName', { required: true })} placeholder="First name *" className="input" />

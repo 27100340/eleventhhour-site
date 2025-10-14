@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms and Services | EleventhHour',
-  description: 'Terms and conditions for EleventhHour professional cleaning services',
+  title: 'Terms of Service | Eleventh Hour Cleaning',
+  description: 'Review Eleventh Hour Cleaning\'s service terms, cancellation policy, and client commitments for residential and commercial cleaning services.',
 }
 
 export default function TermsPage() {
@@ -13,10 +13,14 @@ export default function TermsPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Terms and Services</h1>
 
           <div className="prose prose-gray max-w-none">
+            <p className="text-gray-700 leading-relaxed mb-8">
+              By booking with us, you agree to transparent pricing, fair use of services, and respectful communication between our team and clients.
+            </p>
+
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Service Agreement</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                By booking our services, you agree to these terms and conditions. EleventhHour provides professional
+                By booking our services, you agree to these terms and conditions. Eleventh Hour Cleaning provides professional
                 cleaning and maintenance services for residential and commercial properties in Greater London and
                 surrounding areas.
               </p>

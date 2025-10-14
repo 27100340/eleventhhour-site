@@ -41,7 +41,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 bg-brand-cream/90 backdrop-blur-xl border-b border-brand-stone/50 shadow-sm supports-[backdrop-filter]:bg-brand-cream/80">
       <div className="mx-auto max-w-7xl flex items-center justify-between py-4 px-6">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative">
@@ -62,8 +62,8 @@ export default function Navbar() {
             onMouseLeave={handleMouseLeave}
           >
             <button
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 ${
-                dropdownOpen ? 'bg-gray-50 text-gray-900' : ''
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200 ${
+                dropdownOpen ? 'bg-white/50 text-brand-amber' : ''
               }`}
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
@@ -105,8 +105,15 @@ export default function Navbar() {
           </div>
 
           <Link
+            href="/about"
+            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200"
+          >
+            About
+          </Link>
+
+          <Link
             href="/contact"
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200"
+            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200"
           >
             Contact
           </Link>
@@ -115,16 +122,16 @@ export default function Navbar() {
         {/* Mobile menu button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="lg:hidden p-2 text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
 
-        {/* CTA Button */}
+        {/* CTA Button - Brand Amber */}
         <div className="hidden lg:block">
           <Link
             href="/book"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-blue-700/25 transition-all duration-200 hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
           >
             Book Now
           </Link>
@@ -133,29 +140,36 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-200">
+        <div className="lg:hidden bg-brand-cream border-t border-brand-stone">
           <div className="px-6 py-4 space-y-3">
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Services</p>
+              <p className="text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wide">Services</p>
               <div className="grid grid-cols-1 gap-1">
                 {navServices.slice(0, 6).map(({ slug, label, Icon }) => (
                   <Link
                     key={slug}
                     href={`/services/${slug}`}
-                    className="flex items-center gap-3 p-3 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center gap-3 p-3 text-sm font-montserrat text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Icon className="h-4 w-4 text-blue-600" />
+                    <Icon className="h-4 w-4 text-brand-amber" />
                     {label}
                   </Link>
                 ))}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-brand-stone space-y-2">
+              <Link
+                href="/about"
+                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </Link>
               <Link
                 href="/contact"
-                className="block text-sm font-medium text-gray-700 hover:text-gray-900 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
@@ -165,7 +179,7 @@ export default function Navbar() {
             <div className="pt-3">
               <Link
                 href="/book"
-                className="flex items-center justify-center w-full px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg transition-colors"
+                className="flex items-center justify-center w-full px-6 py-3 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg transition-all"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Book Now

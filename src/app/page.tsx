@@ -86,21 +86,20 @@ export default function HomePage() {
               </div>
 
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-gray-900">
-                {isHousehold ? (
-                  <>Spotless homes, <span className="text-gradient">on your schedule</span></>
-                ) : (
-                  <>Professional cleaning <span className="text-gradient">that scales</span></>
-                )}
+                When Time Matters, <span className="text-gradient">Quality Counts.</span>
               </h1>
 
               <p className="mt-6 text-lg text-gray-600 max-w-lg">
-                EleventhHour provides {isHousehold ? 'domestic' : 'commercial'} services across the UK with vetted professionals, transparent pricing, and flexible booking.
+                At Eleventh Hour Cleaning, we take care of your space like it's our own. Whether it's a last-minute home refresh or a full commercial clean, our team delivers spotless results — every time.
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link href="/book" className="btn-primary group">
-                  Get Started Today
+                  Book Now
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link href="/contact" className="rounded-full border-2 border-gray-300 px-8 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors text-center">
+                  Request a Quote
                 </Link>
               </div>
 
@@ -177,7 +176,10 @@ export default function HomePage() {
               {isHousehold ? 'Popular household services' : 'Solutions for your business'}
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From regular maintenance to specialized services, we've got you covered with professional expertise.
+              From elegant townhouses to bustling offices, we understand what true cleanliness looks like. Our team of vetted professionals handles everything — cleaning, gardening, handyman work, and complete property maintenance — so you can relax and focus on what truly matters.
+            </p>
+            <p className="text-lg text-gray-900 font-semibold mt-4">
+              Premium cleaning. Reliable service. Exceptional care.
             </p>
           </div>
 

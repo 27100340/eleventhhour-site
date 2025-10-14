@@ -6,13 +6,13 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'EleventhHour - Professional Home & Commercial Services',
-  description: 'UK-based professional cleaning, maintenance, and home services. Trusted, insured, and available when you need us most.',
-  keywords: 'cleaning services, home maintenance, commercial cleaning, UK services, professional cleaning',
-  authors: [{ name: 'EleventhHour' }],
+  title: 'Premium Residential & Commercial Cleaning | Eleventh Hour Cleaning UK',
+  description: 'Discover Eleventh Hour Cleaning — London\'s trusted name for immaculate homes and pristine workspaces. Expert cleaning, gardening, and maintenance tailored for premium lifestyles.',
+  keywords: 'premium cleaning London, residential cleaning, commercial cleaning, professional cleaning services, gardening services, property maintenance, London cleaning company',
+  authors: [{ name: 'Eleventh Hour Cleaning' }],
   openGraph: {
-    title: 'EleventhHour - Professional Home & Commercial Services',
-    description: 'UK-based professional cleaning, maintenance, and home services.',
+    title: 'Premium Residential & Commercial Cleaning | Eleventh Hour Cleaning UK',
+    description: 'Discover Eleventh Hour Cleaning — London\'s trusted name for immaculate homes and pristine workspaces. Expert cleaning, gardening, and maintenance tailored for premium lifestyles.',
     type: 'website',
   },
 }
