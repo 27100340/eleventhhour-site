@@ -452,14 +452,24 @@ export default function HomePage() {
                 <div className="rounded-2xl border p-6">
                   <p className="font-semibold">One-Off / Deep Clean</p>
                   <p className="text-3xl font-bold mt-2">fixed quote</p>
-                  <p className="text-sm text-slate-600 mt-2">We’ll estimate based on size and extras.</p>
+                  <p className="text-sm text-slate-600 mt-2">We'll estimate based on size and extras.</p>
                 </div>
+              </div>
+              <div className="mt-6 flex items-center justify-center gap-3 text-sm text-slate-500">
+                <CreditCard className="h-4 w-4" />
+                <span>Secure online payments powered by</span>
+                <img src="/stripe.png" alt="Stripe" className="h-5 w-auto" />
               </div>
             </>
           ) : (
             <>
               <h2 className="text-2xl font-semibold">Tailored quotes for every site</h2>
-              <p className="mt-3 text-slate-700">Send us your scope and we’ll price fairly—no surprises. We can work around opening hours and security procedures.</p>
+              <p className="mt-3 text-slate-700">Send us your scope and we'll price fairly—no surprises. We can work around opening hours and security procedures.</p>
+              <div className="mt-6 flex items-center gap-3 text-sm text-slate-500">
+                <CreditCard className="h-4 w-4" />
+                <span>Secure online payments powered by</span>
+                <img src="/stripe.png" alt="Stripe" className="h-5 w-auto" />
+              </div>
             </>
           )}
           <div className="mt-6">

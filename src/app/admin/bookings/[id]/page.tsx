@@ -40,6 +40,8 @@ export default function BookingEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [invoicing, setInvoicing] = useState(false)
+  const [invoices, setInvoices] = useState<Array<{ id: string; invoice_number: string | null; status: string; created_at: string }>>([])
 
   useEffect(() => {
     if (!bookingId) return
@@ -47,9 +49,10 @@ export default function BookingEditor() {
     ;(async () => {
       try {
         setLoading(true)
-        const [bRes, sRes] = await Promise.all([
+        const [bRes, sRes, iRes] = await Promise.all([
           fetch(`/api/admin/bookings/${bookingId}`).then(r => r.json()),
           fetch('/api/public/services').then(r => r.json()),
+          fetch(`/api/admin/invoices?bookingId=${bookingId}`).then(r => r.json()),
         ])
         if (abort) return
         if (bRes?.error) throw new Error(bRes.error.message || 'Failed to load booking')
@@ -69,6 +72,7 @@ export default function BookingEditor() {
         }))
         setBooking(b)
         setItems(its)
+        setInvoices(iRes?.data || [])
       } catch (e) {
         if (!abort) setErr(e instanceof Error ? e.message : 'Failed to load')
       } finally {
@@ -142,6 +146,32 @@ export default function BookingEditor() {
       setErr(e instanceof Error ? e.message : 'Save failed')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function onCreateInvoice() {
+    if (!bookingId) return
+    try {
+      setInvoicing(true)
+      const res = await fetch('/api/admin/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to create invoice')
+
+      // Refresh invoices list
+      const iRes = await fetch(`/api/admin/invoices?bookingId=${bookingId}`)
+      const iData = await iRes.json()
+      setInvoices(iData?.data || [])
+
+      // Navigate to the new invoice
+      router.push(`/admin/invoices/${data.id}`)
+    } catch (e: any) {
+      alert(e?.message || 'Failed to create invoice')
+    } finally {
+      setInvoicing(false)
     }
   }
 
@@ -369,7 +399,56 @@ export default function BookingEditor() {
               </div>
             </div>
           </div>
+
+          {/* Invoices section */}
+          {invoices.length > 0 && (
+            <div className="rounded-2xl border p-4">
+              <p className="font-medium mb-3">Invoices</p>
+              <div className="space-y-2">
+                {invoices.map((inv) => (
+                  <Link
+                    key={inv.id}
+                    href={`/admin/invoices/${inv.id}`}
+                    className="flex items-center justify-between p-3 bg-gray-50 hover:bg-brand-sage/20 rounded-lg transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-brand-charcoal">{inv.invoice_number || inv.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="text-xs text-gray-500">{new Date(inv.created_at).toLocaleDateString('en-GB')}</p>
+                    </div>
+                    <span className={`text-xs font-semibold uppercase px-2 py-1 rounded ${
+                      inv.status === 'paid' ? 'bg-green-100 text-green-700' :
+                      inv.status === 'sent' ? 'bg-blue-100 text-blue-700' :
+                      inv.status === 'void' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {inv.status}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
+      </div>
+      {/* Actions footer */}
+      <div className="mt-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onSave}
+            disabled={saving || loading || !booking}
+            className="rounded-full bg-brand-amber text-white px-5 py-2 text-sm font-semibold hover:bg-brand-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : 'Save Booking'}
+          </button>
+          <button
+            onClick={onCreateInvoice}
+            disabled={invoicing || loading}
+            className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {invoicing ? 'Creating Invoice…' : 'Create Invoice'}
+          </button>
+        </div>
+        <Link href="/admin/bookings" className="text-sm text-slate-600 hover:underline">Back to list</Link>
       </div>
     </div>
   )

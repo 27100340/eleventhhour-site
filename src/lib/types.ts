@@ -53,3 +53,17 @@ export type BookingItem = {
   unit_price: number
   time_minutes: number
 }
+
+export type Invoice = {
+  id: string
+  booking_id: string
+  invoice_number: string | null
+  amount: number
+  currency: string
+  status: 'draft' | 'sent' | 'paid' | 'void'
+  due_date: string | null
+  issued_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
