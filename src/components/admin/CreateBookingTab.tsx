@@ -22,6 +22,8 @@ export default function CreateBookingTab() {
     items: {} as Record<string, number | string>,
     notes: '',
     discount: 0,
+    processStripePayment: false,
+    generateInvoice: true,
   })
 
   useEffect(() => {
@@ -118,6 +120,64 @@ export default function CreateBookingTab() {
 
       if (itemsError) throw itemsError
 
+      // Generate invoice if requested
+      if (form.generateInvoice) {
+        try {
+          const invoiceRes = await fetch('/api/admin/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: booking.id,
+              amount: total,
+              currency: 'GBP',
+            }),
+          })
+
+          if (invoiceRes.ok) {
+            console.log('Invoice created successfully')
+          }
+        } catch (invoiceError) {
+          console.error('Error creating invoice:', invoiceError)
+          // Don't fail the booking creation if invoice fails
+        }
+      }
+
+      // If Stripe payment is requested, redirect to checkout
+      if (form.processStripePayment) {
+        // Create Stripe checkout session
+        const checkoutItems = selectedServices.map((s) => ({
+          service_id: s.id,
+          name: s.name,
+          qty: s.qty,
+          unit_price: s.price,
+          time_minutes: s.time_minutes,
+        }))
+
+        const checkoutRes = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: booking.id,
+            items: checkoutItems,
+            subtotal,
+            discount: form.discount || 0,
+            total,
+            customerEmail: form.email,
+            customerName: `${form.firstName} ${form.lastName}`,
+          }),
+        })
+
+        const checkoutData = await checkoutRes.json()
+
+        if (checkoutRes.ok && checkoutData.url) {
+          // Redirect to Stripe checkout
+          window.location.href = checkoutData.url
+          return
+        } else {
+          throw new Error(checkoutData.error?.message || 'Failed to create checkout session')
+        }
+      }
+
       alert(`Draft booking created successfully! ID: ${booking.id}`)
 
       // Reset form
@@ -135,6 +195,8 @@ export default function CreateBookingTab() {
         items: {},
         notes: '',
         discount: 0,
+        processStripePayment: false,
+        generateInvoice: true,
       })
 
       // Redirect to booking detail page
@@ -361,12 +423,71 @@ export default function CreateBookingTab() {
             />
           </div>
 
+          {/* Payment & Invoice Options */}
+          <div className="rounded-lg border p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h3 className="font-semibold mb-3 text-gray-900">Payment & Invoice Options</h3>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border hover:border-blue-400 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={form.generateInvoice}
+                  onChange={(e) => setForm((f) => ({ ...f, generateInvoice: e.target.checked }))}
+                  className="mt-1 w-5 h-5 accent-blue-600"
+                />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Generate Invoice</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Automatically create an invoice for this booking that can be viewed and printed later
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border hover:border-green-400 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={form.processStripePayment}
+                  onChange={(e) => setForm((f) => ({ ...f, processStripePayment: e.target.checked }))}
+                  className="mt-1 w-5 h-5 accent-green-600"
+                />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">Process Stripe Payment</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Redirect to Stripe checkout page to process payment immediately (same as customer booking flow)
+                  </p>
+                </div>
+              </label>
+
+              {form.processStripePayment && !form.email && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-xs text-amber-800">
+                    <strong>Note:</strong> Email address is recommended for Stripe payment receipts
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <button
             onClick={createDraftBooking}
             disabled={loading}
-            className="btn-primary"
+            className="btn-primary text-lg py-4"
           >
-            {loading ? 'Creating...' : 'Create Draft Booking'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Creating Booking...
+              </span>
+            ) : form.processStripePayment ? (
+              'Create Booking & Process Payment'
+            ) : (
+              'Create Draft Booking'
+            )}
           </button>
         </div>
       </div>
@@ -410,11 +531,35 @@ export default function CreateBookingTab() {
               </div>
             </div>
 
-            <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-800">
-                <strong>Draft Status:</strong> This booking will be created as a draft with payment pending.
-                You can mark it as paid after receiving payment.
+            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800 mb-2">
+                <strong>Booking Options:</strong>
               </p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                {form.generateInvoice && (
+                  <li className="flex items-center gap-1">
+                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Invoice will be generated
+                  </li>
+                )}
+                {form.processStripePayment ? (
+                  <li className="flex items-center gap-1">
+                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Will redirect to Stripe payment
+                  </li>
+                ) : (
+                  <li className="flex items-center gap-1">
+                    <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Payment status: Pending
+                  </li>
+                )}
+              </ul>
             </div>
           </>
         ) : (

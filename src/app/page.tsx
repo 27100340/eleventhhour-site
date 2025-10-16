@@ -18,7 +18,7 @@ const householdTiles: Tile[] = [
   { title: 'Deep Cleaning', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/deepclean.jpg', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
   { title: 'End of Tenancy', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/eotclean.jpg', desc: 'Inventory-ready cleans for tenants & landlords.' },
   { title: 'Carpet & Upholstery', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/carp1.jpg', desc: 'Hot water extraction for carpets, rugs & sofas.' },
-  { title: 'Oven Cleaning', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/oven_cleaning.jpg', desc: 'Dip-tank oven cleaning for a showroom shine.' },
+  { title: 'Oven Cleaning', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/oven_cleaning.jpg', desc: 'Dip-tanKOk oven cleaning for a showroom shine.' },
   { title: 'Window Cleaning', href: '/services/cleaning', img: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/window.jpg', desc: 'Streak-free interiors and reachable exteriors.' },
 ]
 

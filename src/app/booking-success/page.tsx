@@ -3,7 +3,35 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle, Download, Home } from 'lucide-react'
+import { CheckCircle, Download, Home, FileText } from 'lucide-react'
+import { downloadInvoice, viewInvoice } from '@/lib/invoice-generator'
+
+type BookingData = {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  postcode: string
+  service_date: string | null
+  subtotal: number
+  discount: number
+  total: number
+  payment_status: string
+  created_at: string
+}
+
+type BookingItem = {
+  id: string
+  service_id: string
+  qty: number
+  unit_price: number
+  services: {
+    name: string
+  }
+}
 
 function BookingSuccessContent() {
   const searchParams = useSearchParams()
@@ -11,16 +39,99 @@ function BookingSuccessContent() {
   const bookingId = searchParams.get('booking_id')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [bookingData, setBookingData] = useState<BookingData | null>(null)
+  const [bookingItems, setBookingItems] = useState<BookingItem[]>([])
 
   useEffect(() => {
     if (sessionId && bookingId) {
-      // Optional: Verify payment status with your backend
-      setLoading(false)
+      fetchBookingDetails()
     } else {
       setError('Missing session information')
       setLoading(false)
     }
   }, [sessionId, bookingId])
+
+  async function fetchBookingDetails() {
+    try {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`)
+      if (!response.ok) throw new Error('Failed to fetch booking details')
+
+      const data = await response.json()
+      setBookingData(data.booking)
+      setBookingItems(data.items || [])
+      setLoading(false)
+    } catch (err) {
+      console.error('Error fetching booking:', err)
+      setLoading(false)
+      // Don't show error, just proceed without invoice generation
+    }
+  }
+
+  function handleDownloadInvoice() {
+    if (!bookingData || !bookingId) return
+
+    const invoiceData = {
+      invoice_number: `INV-${new Date().toISOString().slice(0, 7).replace('-', '')}-${bookingId.slice(0, 4).toUpperCase()}`,
+      invoice_date: new Date().toLocaleDateString('en-GB'),
+      booking_id: bookingId,
+      customer: {
+        name: `${bookingData.first_name} ${bookingData.last_name}`,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        postcode: bookingData.postcode,
+      },
+      service_date: bookingData.service_date
+        ? new Date(bookingData.service_date).toLocaleDateString('en-GB')
+        : undefined,
+      items: bookingItems.map((item) => ({
+        service_name: item.services?.name || 'Service',
+        qty: item.qty,
+        unit_price: item.unit_price,
+        total: item.qty * item.unit_price,
+      })),
+      subtotal: bookingData.subtotal,
+      discount: bookingData.discount,
+      total: bookingData.total,
+      payment_status: bookingData.payment_status,
+    }
+
+    downloadInvoice(invoiceData)
+  }
+
+  function handleViewInvoice() {
+    if (!bookingData || !bookingId) return
+
+    const invoiceData = {
+      invoice_number: `INV-${new Date().toISOString().slice(0, 7).replace('-', '')}-${bookingId.slice(0, 4).toUpperCase()}`,
+      invoice_date: new Date().toLocaleDateString('en-GB'),
+      booking_id: bookingId,
+      customer: {
+        name: `${bookingData.first_name} ${bookingData.last_name}`,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        postcode: bookingData.postcode,
+      },
+      service_date: bookingData.service_date
+        ? new Date(bookingData.service_date).toLocaleDateString('en-GB')
+        : undefined,
+      items: bookingItems.map((item) => ({
+        service_name: item.services?.name || 'Service',
+        qty: item.qty,
+        unit_price: item.unit_price,
+        total: item.qty * item.unit_price,
+      })),
+      subtotal: bookingData.subtotal,
+      discount: bookingData.discount,
+      total: bookingData.total,
+      payment_status: bookingData.payment_status,
+    }
+
+    viewInvoice(invoiceData)
+  }
 
   if (loading) {
     return (
@@ -118,6 +229,24 @@ function BookingSuccessContent() {
                 <Home className="w-4 h-4" />
                 Back to Home
               </Link>
+              {bookingData && (
+                <>
+                  <button
+                    onClick={handleDownloadInvoice}
+                    className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-3 font-semibold text-white hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Invoice
+                  </button>
+                  <button
+                    onClick={handleViewInvoice}
+                    className="rounded-full border-2 border-emerald-500 px-6 py-3 font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    View Invoice
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => window.print()}
                 className="rounded-full border-2 border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"

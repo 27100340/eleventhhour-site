@@ -21,6 +21,8 @@ type CheckoutPayload = {
   bookingId: string
   items: CheckoutItem[]
   total: number
+  subtotal?: number
+  discount?: number
   customerEmail?: string
   customerName?: string
 }
@@ -38,7 +40,12 @@ export async function POST(req: NextRequest) {
     }
 
     const payload: CheckoutPayload = await req.json()
-    console.log('📦 Payload received:', { bookingId: payload.bookingId, itemCount: payload.items?.length })
+    console.log('📦 Payload received:', {
+      bookingId: payload.bookingId,
+      itemCount: payload.items?.length,
+      total: payload.total,
+      discount: payload.discount
+    })
 
     if (!payload.items || payload.items.length === 0) {
       console.error('❌ No items in payload')
@@ -48,26 +55,55 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Calculate subtotal from items
+    const calculatedSubtotal = payload.items.reduce(
+      (sum, item) => sum + (item.unit_price * item.qty),
+      0
+    )
+    const subtotal = payload.subtotal || calculatedSubtotal
+    const discount = payload.discount || 0
+    const total = payload.total || (subtotal - discount)
+
     // Create line items for Stripe
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = payload.items.map((item) => ({
-      price_data: {
-        currency: 'gbp',
-        product_data: {
-          name: item.name,
-          description: `${item.time_minutes} minutes`,
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+
+    // Add service items
+    payload.items.forEach((item) => {
+      lineItems.push({
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name: item.name,
+            description: `${item.time_minutes} minutes`,
+          },
+          unit_amount: Math.round(item.unit_price * 100), // Convert to pence
         },
-        unit_amount: Math.round(item.unit_price * 100), // Convert to pence
-      },
-      quantity: item.qty,
-    }))
+        quantity: item.qty,
+      })
+    })
 
     // Get the origin from the request headers
     const origin = req.headers.get('origin') || 'http://localhost:3000'
 
+    // Create a coupon for the discount if applicable
+    let couponId: string | undefined
+    if (discount > 0) {
+      console.log('🎟️ Creating discount coupon for:', discount, 'GBP')
+      const coupon = await stripe.coupons.create({
+        amount_off: Math.round(discount * 100), // Convert to pence
+        currency: 'gbp',
+        duration: 'once',
+        name: `Discount - ${discount.toFixed(2)} GBP`,
+      })
+      couponId = coupon.id
+      console.log('✅ Coupon created:', couponId)
+    }
+
     // Create Stripe Checkout Session
     console.log('🔄 Creating Stripe session with origin:', origin)
+    console.log('💰 Subtotal:', subtotal, 'GBP | Discount:', discount, 'GBP | Total:', total, 'GBP')
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
@@ -76,10 +112,21 @@ export async function POST(req: NextRequest) {
       customer_email: payload.customerEmail,
       metadata: {
         bookingId: payload.bookingId,
+        discount: discount.toString(),
+        subtotal: subtotal.toString(),
+        total: total.toString(),
       },
-    })
+    }
+
+    // Add discount coupon if applicable
+    if (couponId) {
+      sessionParams.discounts = [{ coupon: couponId }]
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams)
 
     console.log('✅ Stripe session created:', session.id)
+    console.log('💳 Checkout URL:', session.url)
     return NextResponse.json({ sessionId: session.id, url: session.url })
   } catch (error: any) {
     console.error('❌ Stripe checkout session creation failed:', error)

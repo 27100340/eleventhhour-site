@@ -55,6 +55,10 @@ export default function BookPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [done, setDone] = useState<{ id: string; total: number } | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [discountCode, setDiscountCode] = useState('')
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
+  const [discountError, setDiscountError] = useState('')
+  const [validatingDiscount, setValidatingDiscount] = useState(false)
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -134,6 +138,56 @@ export default function BookPage() {
   // Totals
   const subtotal = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
   const totalTime = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
+  const discountAmount = appliedDiscount?.discount_amount || 0
+  const total = Math.max(0, subtotal - discountAmount)
+
+  // Validate discount code
+  async function validateDiscountCode() {
+    if (!discountCode.trim()) {
+      setDiscountError('Please enter a discount code')
+      return
+    }
+
+    if (subtotal === 0) {
+      setDiscountError('Please select services first')
+      return
+    }
+
+    setValidatingDiscount(true)
+    setDiscountError('')
+
+    try {
+      const res = await fetch('/api/public/validate-discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: discountCode,
+          orderAmount: subtotal,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (data.valid) {
+        setAppliedDiscount(data)
+        setDiscountError('')
+      } else {
+        setAppliedDiscount(null)
+        setDiscountError(data.error || 'Invalid discount code')
+      }
+    } catch (error) {
+      setDiscountError('Failed to validate discount code')
+      setAppliedDiscount(null)
+    } finally {
+      setValidatingDiscount(false)
+    }
+  }
+
+  function removeDiscount() {
+    setDiscountCode('')
+    setAppliedDiscount(null)
+    setDiscountError('')
+  }
 
   function setQty(id: string, qty: number) {
     const safe = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0
@@ -238,7 +292,8 @@ export default function BookPage() {
       const payload = {
         ...v,
         subtotal,
-        total: subtotal,
+        discount: discountAmount,
+        total,
         total_time_minutes: totalTime,
         items: chosen.map((r) => ({
           service_id: r.id,
@@ -272,7 +327,10 @@ export default function BookPage() {
           if (v.email) fd.append('Email', v.email)
           if (v.phone) fd.append('Phone', v.phone)
           fd.append('Location', joinCompact(v.postcode, v.city))
-          fd.append('Total', `£${subtotal.toFixed(2)}`)
+          fd.append('Total', `£${total.toFixed(2)}`)
+          if (discountAmount > 0) {
+            fd.append('Discount', `£${discountAmount.toFixed(2)} (${appliedDiscount.code})`)
+          }
           await fetch(CONTACT_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
         } catch {}
       }
@@ -290,7 +348,9 @@ export default function BookPage() {
             unit_price: r.price,
             time_minutes: r.time_minutes,
           })),
-          total: subtotal,
+          subtotal,
+          discount: discountAmount,
+          total,
           customerEmail: v.email,
           customerName: `${v.firstName || ''} ${v.lastName || ''}`.trim(),
         }),
@@ -811,6 +871,80 @@ export default function BookPage() {
               </div>
             </div>
 
+            {/* Discount Code Section */}
+            <div className="rounded-2xl border p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+              <p className="font-medium mb-3 text-gray-900">Have a discount code?</p>
+
+              {!appliedDiscount ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="input flex-1 uppercase"
+                    placeholder="Enter code (e.g., SAVE20)"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                    disabled={validatingDiscount}
+                  />
+                  <button
+                    type="button"
+                    onClick={validateDiscountCode}
+                    disabled={validatingDiscount || !discountCode.trim()}
+                    className="rounded-full bg-green-600 text-white px-6 py-2 font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {validatingDiscount ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Checking...
+                      </span>
+                    ) : (
+                      'Apply'
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-green-500">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-bold text-green-700">{appliedDiscount.code} Applied!</p>
+                      {appliedDiscount.description && (
+                        <p className="text-sm text-gray-600">{appliedDiscount.description}</p>
+                      )}
+                      <p className="text-sm font-semibold text-green-600">
+                        You save £{discountAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeDiscount}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Remove discount"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+
+              {discountError && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                  <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm text-red-700">{discountError}</p>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3">
               <button type="button" onClick={() => setStep(1)} className="rounded-full border px-6 py-3" disabled={isProcessingPayment}>Back</button>
               <button className="btn-primary" disabled={isProcessingPayment}>
@@ -881,13 +1015,34 @@ export default function BookPage() {
               <>
                 <div className="border-t border-gray-200 pt-4 space-y-3">
                   <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium text-gray-900">£{subtotal.toFixed(2)}</span>
+                  </div>
+
+                  {discountAmount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-green-600 font-medium">Discount ({appliedDiscount.code})</span>
+                      <span className="font-semibold text-green-600">-£{discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Estimated Time</span>
                     <span className="font-medium text-gray-900">{Math.ceil(totalTime / 60)}h {totalTime % 60}m</span>
                   </div>
-                  <div className="flex items-center justify-between">
+
+                  <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-blue-600">£{subtotal.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-blue-600">£{total.toFixed(2)}</span>
                   </div>
+
+                  {discountAmount > 0 && (
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <p className="text-xs text-green-800 font-medium text-center">
+                        You're saving £{discountAmount.toFixed(2)}!
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6 p-4 bg-blue-50 rounded-xl">
