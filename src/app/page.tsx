@@ -379,7 +379,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-3xl blur-2xl" />
               <img
-                src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop&crop=center"
+                src="https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/london.jpg"
                 alt="London cityscape showing our service coverage area"
                 className="relative rounded-2xl shadow-xl w-full h-80 object-cover"
               />
