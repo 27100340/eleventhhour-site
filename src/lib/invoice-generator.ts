@@ -101,7 +101,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.text('Eleventh Hour Cleaning Ltd', margin, yPos)
   doc.text('London, UK', margin, yPos + 5)
   doc.text('hello@eleventhhourkleaning.co.uk', margin, yPos + 10)
-  doc.text('020 8000 0000', margin, yPos + 15)
+  doc.text('2033551526', margin, yPos + 15)
 
   // Invoice details (right side)
   doc.setFont('helvetica', 'bold')
@@ -285,7 +285,7 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
 
   yPos += 5
   doc.setFontSize(8)
-  doc.text('www.eleventhhourkleaning.co.uk  |  hello@eleventhhourkleaning.co.uk  |  020 8000 0000', pageWidth / 2, yPos, { align: 'center' })
+  doc.text('www.eleventhhourkleaning.co.uk  |  hello@eleventhhourkleaning.co.uk  |  2033551526', pageWidth / 2, yPos, { align: 'center' })
 
   yPos += 5
   doc.setFontSize(7)

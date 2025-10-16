@@ -265,8 +265,8 @@ function BookingSuccessContent() {
                 hello@eleventhhour.co.uk
               </a>{' '}
               or call{' '}
-              <a href="tel:02080000000" className="text-blue-600 font-medium hover:underline">
-                020 8000 0000
+              <a href="tel:2033551526" className="text-blue-600 font-medium hover:underline">
+                2033551526
               </a>
             </p>
           </div>

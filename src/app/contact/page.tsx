@@ -36,7 +36,7 @@ export default function ContactPage() {
         We'd love to hear from you!
       </p>
       <p className="mt-2 text-gray-600">
-        <strong>Phone:</strong> [Insert number] · <strong>Email:</strong> [Insert email] · <strong>Location:</strong> London & Greater London
+        <strong>Phone:</strong> <a href="tel:2033551526" className="text-blue-600 hover:underline">2033551526</a> · <strong>WhatsApp:</strong> <a href="https://wa.me/447400760630" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">7400760630</a> · <strong>Email:</strong> <a href="mailto:hello@eleventhhour.co.uk" className="text-blue-600 hover:underline">hello@eleventhhour.co.uk</a> · <strong>Location:</strong> London & Greater London
       </p>
       <p className="mt-4 text-gray-600">
         Or simply click Book Now to schedule your next clean in under 60 seconds.
