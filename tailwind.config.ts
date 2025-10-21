@@ -24,6 +24,11 @@ export default {
           cream: '#FAF9F5',
           stone: '#E0E0E0',
           sage: '#D7E1C5',
+          // Commercial brown shades
+          'brown-light': '#F5E6D3',
+          brown: '#C4A57B',
+          'brown-dark': '#8B6F47',
+          'brown-cream': '#FBF5EE',
         },
         // Keep existing colors for compatibility
         gray: {

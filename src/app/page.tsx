@@ -73,16 +73,32 @@ export default function HomePage() {
   const tiles = isHousehold ? householdTiles : commercialTiles
   const testimonials = isHousehold ? householdTestimonials : commercialTestimonials
 
+  // Dynamic hero images based on service mode
+  const heroImages = {
+    household: {
+      main: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg',
+      secondary1: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg',
+      secondary2: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
+    },
+    commercial: {
+      main: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center',
+      secondary1: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center',
+      secondary2: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/warehouse.jpg'
+    }
+  }
+
+  const currentImages = isHousehold ? heroImages.household : heroImages.commercial
+
   return (
     <>
       <TopSelectorBar />
       {/* Hero */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
+      <section className={`relative overflow-hidden transition-colors duration-500 ${isHousehold ? 'bg-white' : 'bg-brand-brown-cream'}`}>
+        <div className={`absolute inset-0 transition-all duration-500 ${isHousehold ? 'bg-gradient-to-br from-brand-cream via-white to-brand-sage/20' : 'bg-gradient-to-br from-brand-brown-cream via-brand-brown-light/30 to-brand-brown/10'}`} />
         <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-sage/30 text-brand-charcoal text-sm font-medium rounded-full mb-6">
+              <div className={`inline-flex items-center gap-2 px-3 py-1 text-brand-charcoal text-sm font-medium rounded-full mb-6 transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/30' : 'bg-brand-brown/30'}`}>
                 <Star className="h-4 w-4" fill="currentColor" />
                 Trusted by 10,000+ customers
               </div>
@@ -107,14 +123,14 @@ export default function HomePage() {
 
               <div className="mt-10 grid sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-3 text-gray-700">
-                  <div className="flex-shrink-0 w-8 h-8 bg-brand-sage/40 rounded-full flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-brand-amber" />
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/40' : 'bg-brand-brown/30'}`}>
+                    <CheckCircle className={`h-4 w-4 transition-colors duration-500 ${isHousehold ? 'text-brand-amber' : 'text-brand-brown-dark'}`} />
                   </div>
                   <span>Fully insured & DBS-checked</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-700">
-                  <div className="flex-shrink-0 w-8 h-8 bg-brand-sage/40 rounded-full flex items-center justify-center">
-                    <Clock className="h-4 w-4 text-brand-amber" />
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/40' : 'bg-brand-brown/30'}`}>
+                    <Clock className={`h-4 w-4 transition-colors duration-500 ${isHousehold ? 'text-brand-amber' : 'text-brand-brown-dark'}`} />
                   </div>
                   <span>Same/next-day availability</span>
                 </div>
@@ -135,31 +151,22 @@ export default function HomePage() {
 
             <div className="animate-slide-up">
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-r from-brand-amber/15 to-brand-sage/15 rounded-3xl blur-2xl" />
+                <div className={`absolute -inset-4 rounded-3xl blur-2xl transition-all duration-500 ${isHousehold ? 'bg-gradient-to-r from-brand-amber/15 to-brand-sage/15' : 'bg-gradient-to-r from-brand-brown/20 to-brand-brown-dark/15'}`} />
                 <div className="relative bg-white rounded-2xl p-6 shadow-soft-lg border border-gray-200/50">
                   <img
-                    className="rounded-xl w-full h-72 object-cover"
-                    src={isHousehold
-                      ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg'
-                      : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg'
-                    }
+                    className="rounded-xl w-full h-72 object-cover transition-opacity duration-300"
+                    src={currentImages.main}
                     alt={isHousehold ? 'Professional home cleaning' : 'Commercial office cleaning'}
                   />
                   <div className="mt-4 grid grid-cols-2 gap-4">
                     <img
-                      className="rounded-lg w-full h-32 object-cover"
-                      src={isHousehold
-                        ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg'
-                        : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg'
-                      }
+                      className="rounded-lg w-full h-32 object-cover transition-opacity duration-300"
+                      src={currentImages.secondary1}
                       alt="Service example 1"
                     />
                     <img
-                      className="rounded-lg w-full h-32 object-cover"
-                      src={isHousehold
-                        ? 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
-                        : 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
-                      }
+                      className="rounded-lg w-full h-32 object-cover transition-opacity duration-300"
+                      src={currentImages.secondary2}
                       alt="Service example 2"
                     />
                   </div>
@@ -171,7 +178,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured services */}
-      <section className="py-20 bg-gray-50">
+      <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -272,7 +279,7 @@ export default function HomePage() {
       </section>
 
       {/* Why choose us */}
-      <section className="py-20 bg-gray-50">
+      <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Why choose EleventhHour</h2>
@@ -389,7 +396,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gray-50">
+      <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
         <div className="mx-auto max-w-7xl px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
