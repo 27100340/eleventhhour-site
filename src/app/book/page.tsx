@@ -135,11 +135,20 @@ export default function BookPage() {
     [services, allowedIds, items],
   )
 
-  // Totals
-  const subtotal = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
-  const totalTime = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
-  const discountAmount = appliedDiscount?.discount_amount || 0
-  const total = Math.max(0, subtotal - discountAmount)
+  // Memoized Totals - only recalculate when rows or discount changes
+  const { subtotal, totalTime, discountAmount, total } = useMemo(() => {
+    const sub = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
+    const time = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
+    const discount = appliedDiscount?.discount_amount || 0
+    const tot = Math.max(0, sub - discount)
+
+    return {
+      subtotal: sub,
+      totalTime: time,
+      discountAmount: discount,
+      total: tot
+    }
+  }, [rows, appliedDiscount])
 
   // Validate discount code
   async function validateDiscountCode() {

@@ -19,7 +19,7 @@ export default function TopSelectorBar() {
   )
 
   return (
-    <div className="w-full bg-gradient-to-r from-brand-cream to-brand-sage/20 border-b border-brand-stone/50">
+    <div className="w-full bg-gradient-to-r from-brand-cream to-brand-sage/20 border-b border-brand-stone/50 relative z-10">
       <div className="mx-auto max-w-7xl flex items-center justify-center gap-4 py-3 px-6">
         <span className="text-xs font-semibold text-brand-charcoal/70 uppercase tracking-wider">
           Services for:

@@ -41,7 +41,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-cream/90 backdrop-blur-xl border-b border-brand-stone/50 shadow-sm supports-[backdrop-filter]:bg-brand-cream/80">
+    <header className="sticky top-0 z-50 bg-brand-cream/95 backdrop-blur-sm border-b border-brand-stone/50 shadow-sm supports-[backdrop-filter]:bg-brand-cream/90 overflow-visible" style={{ willChange: 'transform' }}>
       <div className="mx-auto max-w-7xl flex items-center justify-between py-4 px-6">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative">
@@ -57,12 +57,12 @@ export default function Navbar() {
         <nav className="hidden lg:flex items-center gap-1">
           <div
             ref={dropdownRef}
-            className="relative"
+            className="relative z-[100]"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <button
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200 ${
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200 ${
                 dropdownOpen ? 'bg-white/50 text-brand-amber' : ''
               }`}
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -72,7 +72,7 @@ export default function Navbar() {
             </button>
 
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-[620px] bg-white border border-gray-200/80 rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden">
+              <div className="absolute top-full left-0 mt-2 w-[620px] bg-white border border-gray-200/80 rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden z-[100]">
                 <div className="p-6">
                   <div className="grid grid-cols-2 gap-3">
                     {navServices.map(({ slug, label, Icon, desc }) => (
@@ -106,14 +106,14 @@ export default function Navbar() {
 
           <Link
             href="/about"
-            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200"
+            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
           >
             About
           </Link>
 
           <Link
             href="/contact"
-            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-all duration-200"
+            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
           >
             Contact
           </Link>
@@ -131,7 +131,7 @@ export default function Navbar() {
         <div className="hidden lg:block">
           <Link
             href="/book"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg hover:shadow-xl transition-colors duration-200 transition-transform hover:-translate-y-0.5"
           >
             Book Now
           </Link>
@@ -179,7 +179,7 @@ export default function Navbar() {
             <div className="pt-3">
               <Link
                 href="/book"
-                className="flex items-center justify-center w-full px-6 py-3 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg transition-all"
+                className="flex items-center justify-center w-full px-6 py-3 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Book Now
