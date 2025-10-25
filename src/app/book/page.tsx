@@ -373,8 +373,8 @@ export default function BookPage() {
       }
 
       // Redirect to Stripe Checkout using the new method
-      console.log('✅ Checkout session created successfully')
-      console.log('🔄 Redirecting to Stripe checkout...')
+      // console.log('✅ Checkout session created successfully')
+      // console.log('🔄 Redirecting to Stripe checkout...')
 
       // Use the direct URL from the session instead of redirectToCheckout
       if (checkoutData.url) {
