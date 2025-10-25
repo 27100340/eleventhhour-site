@@ -117,6 +117,13 @@ export default function Navbar() {
           >
             Contact
           </Link>
+
+          <Link
+            href="/careers"
+            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
+          >
+            Careers
+          </Link>
         </nav>
 
         {/* Mobile menu button */}
@@ -173,6 +180,13 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
+              </Link>
+              <Link
+                href="/careers"
+                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Careers
               </Link>
             </div>
 

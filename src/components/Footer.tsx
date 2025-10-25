@@ -61,6 +61,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/about" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">Contact</Link></li>
+              <li><Link href="/careers" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">Careers</Link></li>
               <li><Link href="/book" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">Book Now</Link></li>
               <li><Link href="/privacy" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="font-montserrat text-sm text-brand-cream/80 hover:text-brand-amber transition-colors">Terms of Service</Link></li>
