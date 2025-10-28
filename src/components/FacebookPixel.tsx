@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 declare global {
@@ -32,8 +32,8 @@ export const trackCustom = (name: string, options: Record<string, any> = {}) => 
   }
 }
 
-// Facebook Pixel Script Component
-export function FacebookPixel() {
+// Page View Tracker Component (needs Suspense for useSearchParams)
+function PageViewTracker() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -42,6 +42,11 @@ export function FacebookPixel() {
     pageview()
   }, [pathname, searchParams])
 
+  return null
+}
+
+// Facebook Pixel Script Component
+export function FacebookPixel() {
   return (
     <>
       {/* Facebook Pixel Base Code */}
@@ -72,6 +77,10 @@ export function FacebookPixel() {
           alt=""
         />
       </noscript>
+      {/* Page View Tracker wrapped in Suspense */}
+      <Suspense fallback={null}>
+        <PageViewTracker />
+      </Suspense>
     </>
   )
 }
