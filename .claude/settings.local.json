@@ -4,7 +4,9 @@
       "WebSearch",
       "Bash(dir:*)",
       "Bash(node:*)",
-      "Read(//c/Users/Baqir/Documents/EleventhHour Cleaning Website/corrections/**)"
+      "Read(//c/Users/Baqir/Documents/EleventhHour Cleaning Website/corrections/**)",
+      "Read(//c/Users/Baqir/Documents/**)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

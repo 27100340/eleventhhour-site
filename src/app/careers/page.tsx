@@ -15,34 +15,75 @@ type FormValues = {
   resume: File | null
 }
 
-const FORM_ID = process.env.NEXT_PUBLIC_FORMSPREE_CAREERS_ID!
-
 export default function CareersPage() {
-  const { register, handleSubmit, formState: { isSubmitting, isSubmitSuccessful, errors } } = useForm<FormValues>()
+  const { register, handleSubmit, reset, formState: { isSubmitting, isSubmitSuccessful, errors } } = useForm<FormValues>()
   const [fileName, setFileName] = useState<string>('')
+  const [submitError, setSubmitError] = useState<string>('')
 
   const onSubmit = async (data: FormValues) => {
-    const fd = new FormData()
-    fd.append('FirstName', data.firstName)
-    fd.append('LastName', data.lastName)
-    fd.append('Email', data.email)
-    fd.append('Phone', data.phone)
-    fd.append('Position', data.position)
-    fd.append('Experience', data.experience)
-    fd.append('Availability', data.availability)
-    fd.append('CoverLetter', data.coverLetter)
+    try {
+      setSubmitError('')
+      const FORM_ID = process.env.NEXT_PUBLIC_FORMSPARK_CAREERS_ID || 'J4MBLqxwy'
 
-    // Handle file upload
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    if (fileInput?.files?.[0]) {
-      fd.append('Resume', fileInput.files[0])
+      console.log('Submitting to Formspark with ID:', FORM_ID)
+
+      // Prepare submission data as JSON (Formspark expects JSON, not FormData)
+      const submissionData: Record<string, string> = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        position: data.position,
+        experience: data.experience,
+        availability: data.availability,
+        coverLetter: data.coverLetter,
+      }
+
+      // Check if file was uploaded
+      const fileInput = document.querySelector('input[name="resume"]') as HTMLInputElement
+      if (fileInput?.files?.[0]) {
+        console.log('File selected:', fileInput.files[0].name)
+        submissionData.resumeFileName = fileInput.files[0].name
+        submissionData.note = 'Resume attached - please contact applicant for file'
+      }
+
+      console.log('Submission data:', submissionData)
+
+      const response = await fetch(`https://submit-form.com/${FORM_ID}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
+      })
+
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
+      if (!response.ok) {
+        let errorMessage = 'Form submission failed'
+        try {
+          const responseData = await response.json()
+          console.log('Error response:', responseData)
+          errorMessage = responseData.error || responseData.message || errorMessage
+        } catch (e) {
+          const text = await response.text()
+          console.log('Error response text:', text)
+        }
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      console.log('Success response:', result)
+
+      // Reset form on success
+      reset()
+      setFileName('')
+    } catch (error) {
+      console.error('Form submission error:', error)
+      setSubmitError(error instanceof Error ? error.message : 'There was an error submitting your application. Please try again.')
     }
-
-    await fetch(`https://formspree.io/f/${FORM_ID}`, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: fd,
-    })
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -334,6 +375,7 @@ export default function CareersPage() {
                       </p>
                       <input
                         type="file"
+                        name="resume"
                         accept=".pdf,.doc,.docx"
                         onChange={handleFileChange}
                         className="hidden"
@@ -345,11 +387,16 @@ export default function CareersPage() {
 
               {/* Submit Button */}
               <button
+                type="submit"
                 disabled={isSubmitting}
                 className="btn-primary w-full text-lg py-4"
               >
                 {isSubmitting ? 'Submitting Application...' : 'Submit Application'}
               </button>
+
+              {submitError && (
+                <p className="text-red-600 text-center font-medium">{submitError}</p>
+              )}
 
               <p className="text-sm text-gray-500 text-center">
                 By submitting this form, you agree to our <a href="/privacy" className="text-amber hover:underline">Privacy Policy</a> and <a href="/terms" className="text-amber hover:underline">Terms of Service</a>.
