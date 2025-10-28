@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { ModeProvider } from '@/components/ModeContext'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import { FacebookPixel } from '@/components/FacebookPixel'
 
 export const metadata: Metadata = {
   title: 'Premium Residential & Commercial Cleaning | Eleventh Hour Cleaning UK',
@@ -25,7 +24,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <FacebookPixel />
       </head>
       <body className="min-h-screen flex flex-col bg-gray-50 text-gray-900 antialiased">
         <ModeProvider>
