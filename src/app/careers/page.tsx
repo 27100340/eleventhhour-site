@@ -6,13 +6,49 @@ import { useState } from 'react'
 type FormValues = {
   firstName: string
   lastName: string
+  address: string
+  city: string
+  postcode: string
   email: string
   phone: string
+  referredBy: string
+  // Work Eligibility
+  workEligible: string
+  driverLicense: string
+  publicLiability: string
+  dbs: string
+  // Work Preferences
+  hoursPerWeek: string
+  preferredDays: string
+  preferredTime: string
+  cleaningAreas: string
+  // Work History
+  employer1Name: string
+  employer1Phone: string
+  employer1Position: string
+  employer1Duties: string
+  employer2Name: string
+  employer2Phone: string
+  employer2Position: string
+  employer2Duties: string
+  employer3Name: string
+  employer3Phone: string
+  employer3Position: string
+  employer3Duties: string
+  // Skills & References
+  cleaningExperience: string
+  reference1Name: string
+  reference1Phone: string
+  reference2Name: string
+  reference2Phone: string
+  // Position Details
   position: string
   experience: string
   availability: string
   coverLetter: string
   resume: File | null
+  // Declaration
+  declaration: boolean
 }
 
 export default function CareersPage() {
@@ -28,11 +64,46 @@ export default function CareersPage() {
       console.log('Submitting to Formspark with ID:', FORM_ID)
 
       // Prepare submission data as JSON (Formspark expects JSON, not FormData)
-      const submissionData: Record<string, string> = {
+      const submissionData: Record<string, any> = {
+        // Personal Information
         firstName: data.firstName,
         lastName: data.lastName,
+        address: data.address,
+        city: data.city,
+        postcode: data.postcode,
         email: data.email,
         phone: data.phone,
+        referredBy: data.referredBy,
+        // Work Eligibility
+        workEligible: data.workEligible,
+        driverLicense: data.driverLicense,
+        publicLiability: data.publicLiability,
+        dbs: data.dbs,
+        // Work Preferences
+        hoursPerWeek: data.hoursPerWeek,
+        preferredDays: data.preferredDays,
+        preferredTime: data.preferredTime,
+        cleaningAreas: data.cleaningAreas,
+        // Work History
+        employer1Name: data.employer1Name,
+        employer1Phone: data.employer1Phone,
+        employer1Position: data.employer1Position,
+        employer1Duties: data.employer1Duties,
+        employer2Name: data.employer2Name,
+        employer2Phone: data.employer2Phone,
+        employer2Position: data.employer2Position,
+        employer2Duties: data.employer2Duties,
+        employer3Name: data.employer3Name,
+        employer3Phone: data.employer3Phone,
+        employer3Position: data.employer3Position,
+        employer3Duties: data.employer3Duties,
+        // Skills & References
+        cleaningExperience: data.cleaningExperience,
+        reference1Name: data.reference1Name,
+        reference1Phone: data.reference1Phone,
+        reference2Name: data.reference2Name,
+        reference2Phone: data.reference2Phone,
+        // Position Details
         position: data.position,
         experience: data.experience,
         availability: data.availability,
@@ -335,6 +406,277 @@ export default function CareersPage() {
                     {errors.availability && (
                       <p className="text-red-600 text-sm mt-1">{errors.availability.message}</p>
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Information */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">Address Information</h3>
+                <div className="grid gap-4">
+                  <input
+                    {...register('address')}
+                    placeholder="Address"
+                    className="input w-full"
+                  />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <input
+                      {...register('city')}
+                      placeholder="City"
+                      className="input w-full"
+                    />
+                    <input
+                      {...register('postcode')}
+                      placeholder="Postcode"
+                      className="input w-full"
+                    />
+                  </div>
+                  <input
+                    {...register('referredBy')}
+                    placeholder="Referred By (Optional)"
+                    className="input w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Work Eligibility */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">Work Eligibility</h3>
+                <div className="grid gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Are you legally eligible to work in the U.K.?</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('workEligible')} value="Yes" className="w-4 h-4" />
+                        <span>Yes</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('workEligible')} value="No" className="w-4 h-4" />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Do you have a valid driver&apos;s license?</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('driverLicense')} value="Yes" className="w-4 h-4" />
+                        <span>Yes</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('driverLicense')} value="No" className="w-4 h-4" />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Do you have public liability insurance?</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('publicLiability')} value="Yes" className="w-4 h-4" />
+                        <span>Yes</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('publicLiability')} value="No" className="w-4 h-4" />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Do you have a valid DBS (Disclosure and Barring Service) check?</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('dbs')} value="Yes" className="w-4 h-4" />
+                        <span>Yes</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="radio" {...register('dbs')} value="No" className="w-4 h-4" />
+                        <span>No</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Work Preferences */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">Work Preferences</h3>
+                <div className="grid gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Hours per week desired</label>
+                    <div className="flex flex-wrap gap-3">
+                      {['0-10', '10-20', '20-30', '30-40', '40+'].map((range) => (
+                        <label key={range} className="flex items-center gap-2">
+                          <input type="checkbox" {...register('hoursPerWeek')} value={range} className="w-4 h-4" />
+                          <span>{range}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Preferred days</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input type="checkbox" {...register('preferredDays')} value="Weekdays" className="w-4 h-4" />
+                        <span>Weekdays</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input type="checkbox" {...register('preferredDays')} value="Weekends" className="w-4 h-4" />
+                        <span>Weekends</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Preferred time</label>
+                    <div className="flex flex-wrap gap-4">
+                      {['Morning', 'Afternoon', 'Evening'].map((time) => (
+                        <label key={time} className="flex items-center gap-2">
+                          <input type="checkbox" {...register('preferredTime')} value={time} className="w-4 h-4" />
+                          <span>{time}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    {...register('cleaningAreas')}
+                    placeholder="Areas of preference for cleaning jobs (optional)"
+                    className="input min-h-[100px] w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Work History */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">Work History / Experience</h3>
+                <p className="text-sm text-gray-600 mb-4">Please list your 3 most recent employers below.</p>
+                {/* Employer 1 */}
+                <div className="mb-6 pb-6 border-b">
+                  <h4 className="font-semibold text-gray-800 mb-3">Employer 1</h4>
+                  <div className="grid gap-3">
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <input
+                        {...register('employer1Name')}
+                        placeholder="Employer's Name"
+                        className="input w-full"
+                      />
+                      <input
+                        {...register('employer1Phone')}
+                        placeholder="Phone"
+                        className="input w-full"
+                      />
+                    </div>
+                    <input
+                      {...register('employer1Position')}
+                      placeholder="Position Held"
+                      className="input w-full"
+                    />
+                    <textarea
+                      {...register('employer1Duties')}
+                      placeholder="Duties"
+                      className="input min-h-[80px] w-full"
+                    />
+                  </div>
+                </div>
+                {/* Employer 2 */}
+                <div className="mb-6 pb-6 border-b">
+                  <h4 className="font-semibold text-gray-800 mb-3">Employer 2</h4>
+                  <div className="grid gap-3">
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <input
+                        {...register('employer2Name')}
+                        placeholder="Employer's Name"
+                        className="input w-full"
+                      />
+                      <input
+                        {...register('employer2Phone')}
+                        placeholder="Phone"
+                        className="input w-full"
+                      />
+                    </div>
+                    <input
+                      {...register('employer2Position')}
+                      placeholder="Position Held"
+                      className="input w-full"
+                    />
+                    <textarea
+                      {...register('employer2Duties')}
+                      placeholder="Duties"
+                      className="input min-h-[80px] w-full"
+                    />
+                  </div>
+                </div>
+                {/* Employer 3 */}
+                <div className="mb-6 pb-6">
+                  <h4 className="font-semibold text-gray-800 mb-3">Employer 3</h4>
+                  <div className="grid gap-3">
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <input
+                        {...register('employer3Name')}
+                        placeholder="Employer's Name"
+                        className="input w-full"
+                      />
+                      <input
+                        {...register('employer3Phone')}
+                        placeholder="Phone"
+                        className="input w-full"
+                      />
+                    </div>
+                    <input
+                      {...register('employer3Position')}
+                      placeholder="Position Held"
+                      className="input w-full"
+                    />
+                    <textarea
+                      {...register('employer3Duties')}
+                      placeholder="Duties"
+                      className="input min-h-[80px] w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Cleaning Knowledge & Skills */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">Cleaning Knowledge &amp; Skills</h3>
+                <textarea
+                  {...register('cleaningExperience')}
+                  placeholder="Describe your cleaning experience and what makes you a true professional cleaner"
+                  className="input min-h-[150px] w-full"
+                />
+              </div>
+
+              {/* References */}
+              <div>
+                <h3 className="font-bold text-lg mb-4">References</h3>
+                <p className="text-sm text-gray-600 mb-4">Please provide two professional references (no family members).</p>
+                {/* Reference 1 */}
+                <div className="mb-4 pb-4 border-b">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <input
+                      {...register('reference1Name')}
+                      placeholder="Reference 1 Name"
+                      className="input w-full"
+                    />
+                    <input
+                      {...register('reference1Phone')}
+                      placeholder="Reference 1 Phone"
+                      className="input w-full"
+                    />
+                  </div>
+                </div>
+                {/* Reference 2 */}
+                <div className="mb-4 pb-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <input
+                      {...register('reference2Name')}
+                      placeholder="Reference 2 Name"
+                      className="input w-full"
+                    />
+                    <input
+                      {...register('reference2Phone')}
+                      placeholder="Reference 2 Phone"
+                      className="input w-full"
+                    />
                   </div>
                 </div>
               </div>
