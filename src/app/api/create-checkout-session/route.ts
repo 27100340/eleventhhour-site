@@ -25,6 +25,7 @@ type CheckoutPayload = {
   discount?: number
   customerEmail?: string
   customerName?: string
+  adminTotalOverride?: number | null
 }
 
 export async function POST(req: NextRequest) {
@@ -62,13 +63,25 @@ export async function POST(req: NextRequest) {
     )
     const subtotal = payload.subtotal || calculatedSubtotal
     const discount = payload.discount || 0
-    const total = payload.total || (subtotal - discount)
+    const calculatedTotal = subtotal - discount
+    const total = payload.total || calculatedTotal
+
+    // Determine if we need to apply proportional price adjustment for admin override
+    const hasAdminOverride = typeof payload.adminTotalOverride === 'number'
+    const priceMultiplier = hasAdminOverride && calculatedTotal > 0
+      ? payload.adminTotalOverride! / calculatedTotal
+      : 1
+
+    if (hasAdminOverride) {
+      console.log('🔧 Admin override detected. Calculated total:', calculatedTotal, 'Override:', payload.adminTotalOverride, 'Multiplier:', priceMultiplier)
+    }
 
     // Create line items for Stripe
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
 
-    // Add service items
+    // Add service items with proportional pricing if override exists
     payload.items.forEach((item) => {
+      const adjustedPrice = item.unit_price * priceMultiplier
       lineItems.push({
         price_data: {
           currency: 'gbp',
@@ -76,7 +89,7 @@ export async function POST(req: NextRequest) {
             name: item.name,
             description: `${item.time_minutes} minutes`,
           },
-          unit_amount: Math.round(item.unit_price * 100), // Convert to pence
+          unit_amount: Math.round(adjustedPrice * 100), // Convert to pence
         },
         quantity: item.qty,
       })

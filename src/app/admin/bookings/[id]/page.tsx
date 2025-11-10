@@ -42,6 +42,7 @@ export default function BookingEditor() {
   const [err, setErr] = useState<string | null>(null)
   const [invoicing, setInvoicing] = useState(false)
   const [invoices, setInvoices] = useState<Array<{ id: string; invoice_number: string | null; status: string; created_at: string }>>([])
+  const [processingPayment, setProcessingPayment] = useState(false)
 
   useEffect(() => {
     if (!bookingId) return
@@ -172,6 +173,55 @@ export default function BookingEditor() {
       alert(e?.message || 'Failed to create invoice')
     } finally {
       setInvoicing(false)
+    }
+  }
+
+  async function onProcessStripePayment() {
+    if (!booking) return
+    if (!booking.email) {
+      alert('Please add a customer email before processing payment')
+      return
+    }
+
+    try {
+      setProcessingPayment(true)
+
+      // Create checkout session with booking items
+      const payload = {
+        bookingId: booking.id,
+        items: items.map(i => ({
+          service_id: i.service_id,
+          name: i.name || services.find(s => s.id === i.service_id)?.name || 'Service',
+          qty: i.qty,
+          unit_price: i.unit_price,
+          time_minutes: i.time_minutes,
+        })),
+        total: computed.finalTotal,
+        subtotal: computed.subtotal,
+        discount: booking.discount || 0,
+        customerEmail: booking.email,
+        customerName: `${booking.first_name || ''} ${booking.last_name || ''}`.trim(),
+        adminTotalOverride: booking.admin_total_override,
+      }
+
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to create payment session')
+
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No payment URL received')
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to process payment')
+      setProcessingPayment(false)
     }
   }
 
@@ -447,6 +497,15 @@ export default function BookingEditor() {
           >
             {invoicing ? 'Creating Invoice…' : 'Create Invoice'}
           </button>
+          {booking?.payment_status === 'pending' && (
+            <button
+              onClick={onProcessStripePayment}
+              disabled={processingPayment || loading}
+              className="rounded-full bg-green-600 text-white px-5 py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {processingPayment ? 'Processing…' : 'Process Stripe Payment'}
+            </button>
+          )}
         </div>
         <Link href="/admin/bookings" className="text-sm text-slate-600 hover:underline">Back to list</Link>
       </div>
