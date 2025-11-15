@@ -33,7 +33,7 @@ export default function ServicesTab() {
   const [services, setServices] = useState<Service[]>([])
   const [editing, setEditing] = useState<Service | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [draggedService, setDraggedService] = useState<Service | null>(null)
   const [newOptionLabel, setNewOptionLabel] = useState('')
   const [newOptionValue, setNewOptionValue] = useState('')
 
@@ -47,6 +47,15 @@ export default function ServicesTab() {
       setServices(data as Service[])
       setForm((f) => ({ ...f, order_index: (data as Service[]).length }))
     }
+  }
+
+  // Build hierarchical structure for display
+  function buildHierarchy(): Array<{ service: Service; children: Service[] }> {
+    const parents = services.filter((s) => !s.parent_id)
+    return parents.map((parent) => ({
+      service: parent,
+      children: services.filter((s) => s.parent_id === parent.id).sort((a, b) => a.order_index - b.order_index),
+    }))
   }
 
   useEffect(() => {
@@ -118,34 +127,69 @@ export default function ServicesTab() {
     await load()
   }
 
-  // Drag and drop handlers
-  function handleDragStart(index: number) {
-    setDraggedIndex(index)
+  // Drag and drop handlers for hierarchical services
+  function handleDragStart(service: Service) {
+    setDraggedService(service)
   }
 
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
   }
 
-  async function handleDrop(e: React.DragEvent<HTMLDivElement>, dropIndex: number) {
+  async function handleDropParent(e: React.DragEvent<HTMLDivElement>, targetService: Service) {
     e.preventDefault()
-    if (draggedIndex === null || draggedIndex === dropIndex) return
+    e.stopPropagation()
 
-    const reordered = [...services]
-    const [draggedItem] = reordered.splice(draggedIndex, 1)
-    reordered.splice(dropIndex, 0, draggedItem)
+    if (!draggedService || draggedService.id === targetService.id) return
 
-    const updates = reordered.map((service, idx) => ({
-      id: service.id,
-      order_index: idx,
-    }))
+    // Only allow reordering parents with parents
+    if (draggedService.parent_id || targetService.parent_id) return
 
-    setServices(reordered)
-    setDraggedIndex(null)
+    const parents = services.filter((s) => !s.parent_id)
+    const draggedIdx = parents.findIndex((s) => s.id === draggedService.id)
+    const targetIdx = parents.findIndex((s) => s.id === targetService.id)
 
-    for (const update of updates) {
-      await supabase.from('services').update({ order_index: update.order_index }).eq('id', update.id)
+    if (draggedIdx === -1 || targetIdx === -1) return
+
+    const reordered = [...parents]
+    const [draggedItem] = reordered.splice(draggedIdx, 1)
+    reordered.splice(targetIdx, 0, draggedItem)
+
+    // Update order_index for all parents
+    for (let i = 0; i < reordered.length; i++) {
+      await supabase.from('services').update({ order_index: i }).eq('id', reordered[i].id)
     }
+
+    setDraggedService(null)
+    await load()
+  }
+
+  async function handleDropChild(e: React.DragEvent<HTMLDivElement>, targetService: Service, parentId: string) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!draggedService || draggedService.id === targetService.id) return
+
+    // Only allow reordering children within the same parent
+    if (draggedService.parent_id !== parentId || targetService.parent_id !== parentId) return
+
+    const children = services.filter((s) => s.parent_id === parentId)
+    const draggedIdx = children.findIndex((s) => s.id === draggedService.id)
+    const targetIdx = children.findIndex((s) => s.id === targetService.id)
+
+    if (draggedIdx === -1 || targetIdx === -1) return
+
+    const reordered = [...children]
+    const [draggedItem] = reordered.splice(draggedIdx, 1)
+    reordered.splice(targetIdx, 0, draggedItem)
+
+    // Update order_index for all children of this parent
+    for (let i = 0; i < reordered.length; i++) {
+      await supabase.from('services').update({ order_index: i }).eq('id', reordered[i].id)
+    }
+
+    setDraggedService(null)
+    await load()
   }
 
   function addDropdownOption() {
@@ -165,67 +209,111 @@ export default function ServicesTab() {
     }))
   }
 
+  const hierarchy = buildHierarchy()
+
   return (
     <div className="grid md:grid-cols-[2fr_1fr] gap-6">
-      {/* Left: list of services */}
+      {/* Left: hierarchical list of services */}
       <div className="rounded-2xl border bg-white p-4">
         <h2 className="font-semibold mb-3">All Services (Drag to Reorder)</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Drag and drop services to change their order in the booking form
+          Drag parents to reorder main categories. Drag children to reorder within their parent.
         </p>
-        <div className="divide-y">
-          {services.map((s, index) => {
-            const parent = s.parent_id ? services.find((p) => p.id === s.parent_id) : null
-
-            return (
+        <div className="space-y-2">
+          {hierarchy.map(({ service: parent, children }) => (
+            <div key={parent.id} className="border rounded-lg">
+              {/* Parent Service */}
               <div
-                key={s.id}
                 draggable
-                onDragStart={() => handleDragStart(index)}
+                onDragStart={() => handleDragStart(parent)}
                 onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, index)}
-                className={`py-3 flex items-center justify-between cursor-move hover:bg-gray-50 transition-colors ${
-                  draggedIndex === index ? 'opacity-50' : ''
+                onDrop={(e) => handleDropParent(e, parent)}
+                className={`p-3 flex items-center justify-between cursor-move hover:bg-gray-50 transition-colors bg-blue-50 ${
+                  draggedService?.id === parent.id ? 'opacity-50' : ''
                 }`}
               >
-                <div
-                  className="flex items-center gap-3"
-                  style={{ marginLeft: ((s.nesting_level as number | undefined) || 0) * 12 }}
-                >
+                <div className="flex items-center gap-3">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                   </svg>
                   <div>
-                    <p className="font-medium">{s.name}</p>
+                    <p className="font-bold">{parent.name}</p>
                     <p className="text-sm text-slate-600">
-                      £{Number(s.price).toFixed(2)} • {s.time_minutes} min • {s.question_type} •{' '}
-                      {s.active ? 'Active' : 'Hidden'}
+                      £{Number(parent.price).toFixed(2)} • {parent.time_minutes} min • {parent.question_type} •{' '}
+                      {parent.active ? 'Active' : 'Hidden'}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {s.is_category ? 'Category' : 'Service'}
-                      {s.category_type && ` • ${String(s.category_type).replace('_', ' ')}`}
-                      {parent && ` • Child of ${parent.name}`}
-                      {s.per_unit_type && s.per_unit_type !== 'item' && ` • per ${s.per_unit_type}`}
+                      {parent.is_category ? 'Category' : 'Service'}
+                      {parent.category_type && ` • ${String(parent.category_type).replace('_', ' ')}`}
+                      {parent.per_unit_type && parent.per_unit_type !== 'item' && ` • per ${parent.per_unit_type}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => startEdit(s)}
+                    onClick={() => startEdit(parent)}
                     className="rounded-full border px-3 py-1 text-sm hover:bg-gray-100"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => remove(s.id)}
+                    onClick={() => remove(parent.id)}
                     className="rounded-full border px-3 py-1 text-sm text-red-700 hover:bg-red-50"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-            )
-          })}
+
+              {/* Children Services */}
+              {children.length > 0 && (
+                <div className="bg-gray-50 border-t">
+                  {children.map((child) => (
+                    <div
+                      key={child.id}
+                      draggable
+                      onDragStart={() => handleDragStart(child)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDropChild(e, child, parent.id)}
+                      className={`py-3 px-3 ml-8 flex items-center justify-between cursor-move hover:bg-gray-100 transition-colors border-b last:border-b-0 ${
+                        draggedService?.id === child.id ? 'opacity-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                        </svg>
+                        <div>
+                          <p className="font-medium text-sm">{child.name}</p>
+                          <p className="text-xs text-slate-600">
+                            £{Number(child.price).toFixed(2)} • {child.time_minutes} min • {child.question_type} •{' '}
+                            {child.active ? 'Active' : 'Hidden'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {child.per_unit_type && child.per_unit_type !== 'item' && `per ${child.per_unit_type}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => startEdit(child)}
+                          className="rounded-full border px-2 py-1 text-xs hover:bg-gray-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => remove(child.id)}
+                          className="rounded-full border px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
           {services.length === 0 && <p className="text-sm text-slate-600">No services yet.</p>}
         </div>
       </div>

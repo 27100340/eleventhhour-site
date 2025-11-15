@@ -924,8 +924,8 @@ export default function BookPage() {
                   })()
                 )}
 
-                {/* Other service categories (e.g. windows, gardening) */}
-                {otherCategories.map((category) => {
+                {/* Other service categories (e.g. windows, gardening) - only show when cleaning type is selected */}
+                {selectedCleaningType && otherCategories.map((category) => {
                   const childServices = category.children || []
                   if (childServices.length === 0 && category.is_category) return null
 
