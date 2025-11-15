@@ -220,9 +220,9 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          {/* Items table - conditional based on showBreakdown */}
-          {showBreakdown && (
-            <div className="mb-12">
+          {/* Items section - always show, but format depends on showBreakdown */}
+          <div className="mb-12">
+            {showBreakdown ? (
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-brand-amber">
@@ -245,8 +245,25 @@ export default function InvoiceDetailPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            ) : (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 border-b-2 border-brand-amber pb-2">Services</h3>
+                <ul className="space-y-2">
+                  {items.map((item) => (
+                    <li key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-100">
+                      <span className="w-2 h-2 bg-brand-amber rounded-full"></span>
+                      <span className="text-brand-charcoal flex-1">
+                        {item.services?.name || 'Service'}
+                      </span>
+                      <span className="text-gray-600 text-sm">
+                        Qty: {item.qty}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           {/* Totals */}
           <div className="flex justify-end mb-12">

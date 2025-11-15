@@ -7,9 +7,10 @@ type Props = {
   service: Service
   items: Record<string, number | string>
   onItemChange: (serviceId: string, value: number | string) => void
+  showPrices?: boolean
 }
 
-export function NestedServiceSelector({ service, items, onItemChange }: Props) {
+export function NestedServiceSelector({ service, items, onItemChange, showPrices = false }: Props) {
   const [expanded, setExpanded] = useState(true)
 
   // Get current value
@@ -54,6 +55,7 @@ export function NestedServiceSelector({ service, items, onItemChange }: Props) {
                 service={child}
                 items={items}
                 onItemChange={onItemChange}
+                showPrices={showPrices}
               />
             ))}
           </div>
@@ -74,14 +76,14 @@ export function NestedServiceSelector({ service, items, onItemChange }: Props) {
         />
         <div className="flex-1">
           <p className="font-medium text-brand-charcoal">{service.name}</p>
-          {service.price > 0 && (
+          {showPrices && service.price > 0 && (
             <p className="text-sm text-gray-600">
               £{service.price.toFixed(2)}
               {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
             </p>
           )}
         </div>
-        {service.price > 0 && currentQty > 0 && (
+        {showPrices && service.price > 0 && currentQty > 0 && (
           <span className="text-brand-amber font-semibold">
             £{(service.price * currentQty).toFixed(2)}
           </span>
@@ -94,6 +96,12 @@ export function NestedServiceSelector({ service, items, onItemChange }: Props) {
     return (
       <div className="p-3 rounded-lg border">
         <p className="font-medium mb-2 text-brand-charcoal">{service.name}</p>
+        {showPrices && service.price > 0 && (
+          <p className="text-sm text-gray-600 mb-2">
+            £{service.price.toFixed(2)}
+            {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
+          </p>
+        )}
         <select
           className="input w-full"
           value={currentValue || ''}
@@ -138,7 +146,7 @@ export function NestedServiceSelector({ service, items, onItemChange }: Props) {
       </div>
       <div className="flex-1">
         <p className="font-medium text-brand-charcoal">{service.name}</p>
-        {service.price > 0 && (
+        {showPrices && service.price > 0 && (
           <p className="text-sm text-gray-600">
             £{service.price.toFixed(2)}
             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
@@ -146,7 +154,7 @@ export function NestedServiceSelector({ service, items, onItemChange }: Props) {
           </p>
         )}
       </div>
-      {service.price > 0 && currentQty > 0 && (
+      {showPrices && service.price > 0 && currentQty > 0 && (
         <span className="text-brand-amber font-bold text-lg">
           £{(service.price * currentQty).toFixed(2)}
         </span>

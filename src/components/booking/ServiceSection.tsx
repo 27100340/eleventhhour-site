@@ -11,6 +11,7 @@ type Props = {
   onItemChange: (serviceId: string, value: number | string) => void
   showExtrasLabel?: boolean
   extrasStartIndex?: number
+  showPrices?: boolean
 }
 
 export function ServiceSection({
@@ -21,6 +22,7 @@ export function ServiceSection({
   onItemChange,
   showExtrasLabel = false,
   extrasStartIndex = 0,
+  showPrices = false,
 }: Props) {
   const [expanded, setExpanded] = useState(true)
 
@@ -85,7 +87,7 @@ export function ServiceSection({
                 {service.question_type === 'dropdown' && service.dropdown_options?.length && !isExtra ? (
                   <div className="p-3 rounded-lg border bg-white">
                     <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
-                    {service.price > 0 && (
+                    {showPrices && service.price > 0 && (
                       <p className="text-xs text-gray-600 mb-2">
                         £{service.price.toFixed(2)}
                         {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
@@ -116,14 +118,14 @@ export function ServiceSection({
                     />
                     <div className="flex-1">
                       <p className="font-medium text-brand-charcoal">{service.name}</p>
-                      {service.price > 0 && (
+                      {showPrices && service.price > 0 && (
                         <p className="text-sm text-gray-600">
                           £{service.price.toFixed(2)}
                           {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
                         </p>
                       )}
                     </div>
-                    {service.price > 0 && currentQty > 0 && (
+                    {showPrices && service.price > 0 && currentQty > 0 && (
                       <span className="text-brand-amber font-bold">
                         £{(service.price * currentQty).toFixed(2)}
                       </span>
@@ -157,14 +159,14 @@ export function ServiceSection({
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-brand-charcoal">{service.name}</p>
-                      {service.price > 0 && (
+                      {showPrices && service.price > 0 && (
                         <p className="text-sm text-gray-600">
                           £{service.price.toFixed(2)}
                           {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
                         </p>
                       )}
                     </div>
-                    {service.price > 0 && currentQty > 0 && (
+                    {showPrices && service.price > 0 && currentQty > 0 && (
                       <span className="text-brand-amber font-bold text-lg">
                         £{(service.price * currentQty).toFixed(2)}
                       </span>

@@ -10,15 +10,18 @@ type Props = {
   onItemChange: (serviceId: string, value: number | string) => void
   isSelected: boolean
   onSelect: () => void
+  showPrices?: boolean
 }
 
-export function CategoryCard({ category, items, onItemChange, isSelected, onSelect }: Props) {
+export function CategoryCard({ category, items, onItemChange, isSelected, onSelect, showPrices = false }: Props) {
   const getCategoryIcon = (categoryType: string | null | undefined) => {
     switch (categoryType) {
       case 'regular_cleaning':
         return '🏠'
       case 'deep_cleaning':
         return '✨'
+      case 'end_of_tenancy':
+        return '🔑'
       case 'windows':
         return '🪟'
       case 'gardening':
@@ -33,7 +36,9 @@ export function CategoryCard({ category, items, onItemChange, isSelected, onSele
       case 'regular_cleaning':
         return 'Routine maintenance cleaning for your home'
       case 'deep_cleaning':
-        return 'Thorough cleaning for move-ins, move-outs, or deep refresh'
+        return 'Thorough deep cleaning for comprehensive refresh'
+      case 'end_of_tenancy':
+        return 'Complete move-out cleaning for landlords and tenants'
       case 'windows':
         return 'Professional exterior window cleaning'
       case 'gardening':
@@ -102,6 +107,7 @@ export function CategoryCard({ category, items, onItemChange, isSelected, onSele
                   service={service}
                   items={items}
                   onItemChange={onItemChange}
+                  showPrices={showPrices}
                 />
               ))
             ) : (
@@ -110,6 +116,7 @@ export function CategoryCard({ category, items, onItemChange, isSelected, onSele
                 service={category}
                 items={items}
                 onItemChange={onItemChange}
+                showPrices={showPrices}
               />
             )}
           </div>

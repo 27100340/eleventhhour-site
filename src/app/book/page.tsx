@@ -18,7 +18,7 @@ type Service = {
   dropdown_options: { label: string; value: string | number }[]
   parent_id?: string | null
   is_category?: boolean
-  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'windows' | 'gardening' | null
+  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | null
   nesting_level?: number
   per_unit_type?: 'item' | 'sqft' | 'hour'
   children?: Service[]
@@ -67,7 +67,7 @@ export default function BookPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState('')
   const [validatingDiscount, setValidatingDiscount] = useState(false)
-  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning'>('regular_cleaning')
+  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | null>(null)
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -177,13 +177,41 @@ export default function BookPage() {
   // Split top-level service categories for the UI
   const { mainCategories, otherCategories } = useMemo(() => {
     const main = services.filter(
-      (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning',
+      (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning' || s.category_type === 'end_of_tenancy',
     )
     const other = services.filter(
-      (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning',
+      (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning' && s.category_type !== 'end_of_tenancy',
     )
     return { mainCategories: main, otherCategories: other }
   }, [services])
+
+  // Handle cleaning type selection - clear items from other categories
+  const handleCleaningTypeChange = (newType: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy') => {
+    // If selecting the same type, do nothing
+    if (selectedCleaningType === newType) return
+
+    // Get all service IDs from other main categories
+    const otherCategories = mainCategories.filter((cat) => cat.category_type !== newType)
+    const otherServiceIds = new Set<string>()
+
+    otherCategories.forEach((cat) => {
+      otherServiceIds.add(cat.id)
+      if (cat.children) {
+        cat.children.forEach((child) => {
+          otherServiceIds.add(child.id)
+        })
+      }
+    })
+
+    // Clear items from other categories
+    const updatedItems = { ...items }
+    otherServiceIds.forEach((id) => {
+      delete updatedItems[id]
+    })
+
+    setValue('items', updatedItems, { shouldDirty: true })
+    setSelectedCleaningType(newType)
+  }
 
   // Validate discount code
   async function validateDiscountCode() {
@@ -807,12 +835,12 @@ export default function BookPage() {
               {/* Cleaning type selector */}
               {mainCategories.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-sm font-semibold text-brand-charcoal mb-2">Main cleaning type</p>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <p className="text-sm font-semibold text-brand-charcoal mb-2">Main cleaning type (select one)</p>
+                  <div className="grid gap-3 md:grid-cols-3">
                     {mainCategories.some((c) => c.category_type === 'regular_cleaning') && (
                       <button
                         type="button"
-                        onClick={() => setSelectedCleaningType('regular_cleaning')}
+                        onClick={() => handleCleaningTypeChange('regular_cleaning')}
                         className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
                           selectedCleaningType === 'regular_cleaning'
                             ? 'border-brand-charcoal bg-brand-charcoal text-white'
@@ -828,16 +856,32 @@ export default function BookPage() {
                     {mainCategories.some((c) => c.category_type === 'deep_cleaning') && (
                       <button
                         type="button"
-                        onClick={() => setSelectedCleaningType('deep_cleaning')}
+                        onClick={() => handleCleaningTypeChange('deep_cleaning')}
                         className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
                           selectedCleaningType === 'deep_cleaning'
                             ? 'border-brand-charcoal bg-brand-charcoal text-white'
                             : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
                         }`}
                       >
-                        <p className="font-semibold">Deep / End of Tenancy Cleaning</p>
+                        <p className="font-semibold">Deep Cleaning</p>
                         <p className="text-xs mt-1 opacity-80">
                           Intensive clean of rooms with optional extras.
+                        </p>
+                      </button>
+                    )}
+                    {mainCategories.some((c) => c.category_type === 'end_of_tenancy') && (
+                      <button
+                        type="button"
+                        onClick={() => handleCleaningTypeChange('end_of_tenancy')}
+                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
+                          selectedCleaningType === 'end_of_tenancy'
+                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
+                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
+                        }`}
+                      >
+                        <p className="font-semibold">End of Tenancy Cleaning</p>
+                        <p className="text-xs mt-1 opacity-80">
+                          Complete move-out clean for landlords and tenants.
                         </p>
                       </button>
                     )}
@@ -847,7 +891,7 @@ export default function BookPage() {
 
               <div className="space-y-4">
                 {/* Selected main cleaning category */}
-                {mainCategories.length > 0 && (
+                {mainCategories.length > 0 && selectedCleaningType && (
                   (() => {
                     const selectedMain = mainCategories.find(
                       (c) => c.category_type === selectedCleaningType,
@@ -855,8 +899,8 @@ export default function BookPage() {
                     if (!selectedMain) return null
 
                     const childServices = selectedMain.children || []
-                    const isDeepCleaning = selectedMain.category_type === 'deep_cleaning'
-                    const extrasStartIndex = isDeepCleaning ? 8 : 0
+                    const showExtras = selectedMain.category_type === 'deep_cleaning' || selectedMain.category_type === 'end_of_tenancy'
+                    const extrasStartIndex = showExtras ? 8 : 0
 
                     return (
                       <ServiceSection
@@ -865,15 +909,16 @@ export default function BookPage() {
                         description={
                           selectedMain.category_type === 'regular_cleaning'
                             ? 'Select number of hours and cleaners needed'
-                            : 'Select rooms to be deep cleaned and any extras'
+                            : 'Select rooms to be cleaned and any extras'
                         }
                         services={childServices.length > 0 ? childServices : [selectedMain]}
                         items={items || {}}
                         onItemChange={(serviceId, value) => {
                           setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
                         }}
-                        showExtrasLabel={isDeepCleaning}
+                        showExtrasLabel={showExtras}
                         extrasStartIndex={extrasStartIndex}
+                        showPrices={false}
                       />
                     )
                   })()
@@ -900,6 +945,7 @@ export default function BookPage() {
                       onItemChange={(serviceId, value) => {
                         setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
                       }}
+                      showPrices={false}
                     />
                   )
                 })}
