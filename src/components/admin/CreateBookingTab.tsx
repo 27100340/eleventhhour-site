@@ -1,9 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase/browser'
 import type { Service } from '@/lib/types'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
+import { ServiceSection } from '@/components/booking/ServiceSection'
 
 export default function CreateBookingTab() {
   const [services, setServices] = useState<Service[]>([])
@@ -25,46 +27,63 @@ export default function CreateBookingTab() {
     processStripePayment: false,
     generateInvoice: true,
   })
+  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning'>(
+    'regular_cleaning',
+  )
 
   useEffect(() => {
-    loadServices()
+    ;(async () => {
+      const bust = Date.now()
+      const res = await fetch(`/api/public/services?hierarchical=true&v=${bust}`, {
+        cache: 'no-store' as RequestCache,
+      })
+      const json = await res.json()
+      const data = (json?.data || []) as Service[]
+      setServices(data)
+    })()
   }, [])
 
-  async function loadServices() {
-    const { data } = await supabase
-      .from('services')
-      .select('*')
-      .eq('active', true)
-      .order('order_index', { ascending: true })
-    if (data) setServices(data as Service[])
+  function updateItem(id: string, value: number | string) {
+    setForm((f) => ({
+      ...f,
+      items: {
+        ...f.items,
+        [id]: value,
+      },
+    }))
   }
 
-  function setQty(id: string, qty: number) {
-    const safe = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0
-    setForm((f) => ({ ...f, items: { ...f.items, [id]: safe } }))
+  const flattenServices = (nodes: Service[]): Service[] => {
+    const result: Service[] = []
+
+    const visit = (s: Service) => {
+      result.push(s)
+      if (Array.isArray(s.children)) {
+        s.children.forEach(visit)
+      }
+    }
+
+    nodes.forEach(visit)
+    return result
   }
 
-  function toggleCheckbox(id: string) {
-    setForm((f) => ({ ...f, items: { ...f.items, [id]: f.items[id] ? 0 : 1 } }))
-  }
+  const allServicesFlat = useMemo(() => flattenServices(services), [services])
 
-  function setDropdownValue(id: string, value: string | number) {
-    setForm((f) => ({ ...f, items: { ...f.items, [id]: value } }))
-  }
-
-  // Calculate totals
-  const selectedServices = services
+  // Calculate totals (similar to public booking page)
+  const selectedServices = allServicesFlat
     .map((s) => {
       const value = form.items[s.id] ?? 0
       let qty = 0
       if (s.question_type === 'checkbox') {
         qty = value ? 1 : 0
+      } else if (s.question_type === 'dropdown') {
+        qty = typeof value === 'number' ? value : Number(value) || 0
       } else {
         qty = typeof value === 'number' ? value : Number(value) || 0
       }
       return { ...s, qty }
     })
-    .filter((s) => s.qty > 0)
+    .filter((s) => s.qty > 0 && !s.is_category)
 
   const subtotal = selectedServices.reduce((sum, s) => sum + s.qty * Number(s.price), 0)
   const totalTime = selectedServices.reduce((sum, s) => sum + s.qty * s.time_minutes, 0)
@@ -128,8 +147,9 @@ export default function CreateBookingTab() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               bookingId: booking.id,
-              amount: total,
-              currency: 'GBP',
+              subtotal,
+              discount: form.discount || 0,
+              total,
             }),
           })
 
@@ -144,7 +164,6 @@ export default function CreateBookingTab() {
 
       // If Stripe payment is requested, redirect to checkout
       if (form.processStripePayment) {
-        // Create Stripe checkout session
         const checkoutItems = selectedServices.map((s) => ({
           service_id: s.id,
           name: s.name,
@@ -170,7 +189,6 @@ export default function CreateBookingTab() {
         const checkoutData = await checkoutRes.json()
 
         if (checkoutRes.ok && checkoutData.url) {
-          // Redirect to Stripe checkout
           window.location.href = checkoutData.url
           return
         } else {
@@ -199,7 +217,6 @@ export default function CreateBookingTab() {
         generateInvoice: true,
       })
 
-      // Redirect to booking detail page
       window.location.href = `/admin/bookings/${booking.id}`
     } catch (error: any) {
       console.error('Error creating booking:', error)
@@ -336,79 +353,105 @@ export default function CreateBookingTab() {
           {/* Services Selection */}
           <div className="rounded-lg border p-4">
             <h3 className="font-semibold mb-3">Select Services *</h3>
-            <div className="grid gap-3">
-              {services.map((s) => {
-                const value = form.items[s.id] ?? 0
-                const qty = typeof value === 'number' ? value : Number(value) || 0
+            <div className="space-y-4">
+              {/* Cleaning type selector */}
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Main cleaning type</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCleaningType('regular_cleaning')}
+                    className={`text-left rounded-2xl border px-4 py-3 text-sm transition-colors ${
+                      selectedCleaningType === 'regular_cleaning'
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-200 bg-white hover:border-blue-400'
+                    }`}
+                  >
+                    <p className="font-semibold">Regular Cleaning</p>
+                    <p className="text-xs mt-1 opacity-80">
+                      Standard clean with flexible hours and cleaners.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCleaningType('deep_cleaning')}
+                    className={`text-left rounded-2xl border px-4 py-3 text-sm transition-colors ${
+                      selectedCleaningType === 'deep_cleaning'
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-200 bg-white hover:border-blue-400'
+                    }`}
+                  >
+                    <p className="font-semibold">Deep / End of Tenancy</p>
+                    <p className="text-xs mt-1 opacity-80">
+                      Intensive clean of rooms with optional extras.
+                    </p>
+                  </button>
+                </div>
+              </div>
 
-                if (s.question_type === 'checkbox') {
-                  return (
-                    <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        checked={!!value}
-                        onChange={() => toggleCheckbox(s.id)}
-                        className="w-5 h-5"
+              {/* Category groups similar to public booking form */}
+              {(() => {
+                const mainCategories = services.filter(
+                  (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning',
+                )
+                const otherCategories = services.filter(
+                  (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning',
+                )
+
+                const selectedMain = mainCategories.find((c) => c.category_type === selectedCleaningType)
+
+                return (
+                  <div className="space-y-4">
+                    {/* Selected main category */}
+                    {selectedMain && (
+                      <ServiceSection
+                        key={selectedMain.id}
+                        title={selectedMain.name}
+                        description={
+                          selectedMain.category_type === 'regular_cleaning'
+                            ? 'Select number of hours and cleaners needed'
+                            : 'Select rooms to be deep cleaned and any extras'
+                        }
+                        services={
+                          selectedMain.children && selectedMain.children.length > 0
+                            ? selectedMain.children
+                            : [selectedMain]
+                        }
+                        items={form.items}
+                        onItemChange={updateItem}
+                        showExtrasLabel={selectedMain.category_type === 'deep_cleaning'}
+                        extrasStartIndex={selectedMain.category_type === 'deep_cleaning' ? 8 : 0}
                       />
-                      <div className="flex-1">
-                        <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-gray-500">£{Number(s.price).toFixed(2)} • {s.time_minutes} min</p>
+                    )}
+
+                    {/* Other categories (windows, gardening, etc.) */}
+                    {otherCategories.map((category) => (
+                      <ServiceSection
+                        key={category.id}
+                        title={category.name}
+                        description={
+                          category.category_type === 'windows'
+                            ? 'Exterior window cleaning per square foot'
+                            : category.category_type === 'gardening'
+                            ? 'Select gardening services needed'
+                            : ''
+                        }
+                        services={
+                          category.children && category.children.length > 0 ? category.children : [category]
+                        }
+                        items={form.items}
+                        onItemChange={updateItem}
+                      />
+                    ))}
+
+                    {services.length === 0 && (
+                      <div className="text-sm text-slate-600 p-4 text-center border rounded-xl">
+                        No services found. Check your services configuration.
                       </div>
-                    </div>
-                  )
-                } else if (s.question_type === 'dropdown') {
-                  return (
-                    <div key={s.id} className="p-3 rounded-lg border">
-                      <p className="font-medium mb-2">{s.name}</p>
-                      <p className="text-xs text-gray-500 mb-2">£{Number(s.price).toFixed(2)} • {s.time_minutes} min</p>
-                      <select
-                        className="input w-full"
-                        value={value || ''}
-                        onChange={(e) => setDropdownValue(s.id, e.target.value)}
-                      >
-                        <option value="">Select an option</option>
-                        {s.dropdown_options?.map((opt, idx) => (
-                          <option key={idx} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                } else {
-                  return (
-                    <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="rounded-full border w-8 h-8 hover:bg-gray-100"
-                          onClick={() => setQty(s.id, qty - 1)}
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          min={0}
-                          className="input w-16 text-center"
-                          value={qty}
-                          onChange={(e) => setQty(s.id, Number(e.target.value))}
-                        />
-                        <button
-                          type="button"
-                          className="rounded-full border w-8 h-8 hover:bg-gray-100"
-                          onClick={() => setQty(s.id, qty + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-gray-500">£{Number(s.price).toFixed(2)} • {s.time_minutes} min</p>
-                      </div>
-                    </div>
-                  )
-                }
-              })}
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </div>
 
@@ -460,7 +503,11 @@ export default function CreateBookingTab() {
               {form.processStripePayment && !form.email && (
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <p className="text-xs text-amber-800">
                     <strong>Note:</strong> Email address is recommended for Stripe payment receipts
@@ -470,16 +517,24 @@ export default function CreateBookingTab() {
             </div>
           </div>
 
-          <button
-            onClick={createDraftBooking}
-            disabled={loading}
-            className="btn-primary text-lg py-4"
-          >
+          <button onClick={createDraftBooking} disabled={loading} className="btn-primary text-lg py-4">
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 Creating Booking...
               </span>
@@ -523,7 +578,9 @@ export default function CreateBookingTab() {
               )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Estimated Time</span>
-                <span className="font-medium">{Math.floor(totalTime / 60)}h {totalTime % 60}m</span>
+                <span className="font-medium">
+                  {Math.floor(totalTime / 60)}h {totalTime % 60}m
+                </span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
                 <span>Total</span>
@@ -539,7 +596,11 @@ export default function CreateBookingTab() {
                 {form.generateInvoice && (
                   <li className="flex items-center gap-1">
                     <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Invoice will be generated
                   </li>
@@ -547,14 +608,22 @@ export default function CreateBookingTab() {
                 {form.processStripePayment ? (
                   <li className="flex items-center gap-1">
                     <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Will redirect to Stripe payment
                   </li>
                 ) : (
                   <li className="flex items-center gap-1">
                     <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Payment status: Pending
                   </li>

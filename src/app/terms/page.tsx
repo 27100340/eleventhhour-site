@@ -106,8 +106,9 @@ export default function TermsPage() {
                 For questions about these terms or our services, please contact us:
               </p>
               <ul className="list-none space-y-2 text-gray-700">
-                <li><strong>Email:</strong> hello@eleventhhour.co.uk</li>
-                <li><strong>Phone:</strong> 2033551526</li>
+                <li><strong>Email:</strong> hello@eleventhhourcleaning.co.uk</li>
+                <li><strong>Landline:</strong> 020 3355 1526</li>
+                <li><strong>WhatsApp:</strong> 07400 760630</li>
                 <li><strong>Address:</strong> Greater London & Surrounding Areas</li>
               </ul>
             </section>

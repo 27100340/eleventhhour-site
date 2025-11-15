@@ -100,8 +100,8 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setTextColor(107, 114, 128) // Gray-500
   doc.text('Eleventh Hour Cleaning Ltd', margin, yPos)
   doc.text('London, UK', margin, yPos + 5)
-  doc.text('hello@eleventhhourkleaning.co.uk', margin, yPos + 10)
-  doc.text('2033551526', margin, yPos + 15)
+  doc.text('hello@eleventhhourcleaning.co.uk', margin, yPos + 10)
+  doc.text('Landline: 020 3355 1526 | WhatsApp: 07400 760630', margin, yPos + 15)
 
   // Invoice details (right side)
   doc.setFont('helvetica', 'bold')
@@ -259,9 +259,9 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(113, 63, 18) // Yellow-800
 
-  doc.text('Bank Transfer:', margin + 5, yPos)
+  doc.text('Stripe Payment & Bank Transfer:', margin + 5, yPos)
   yPos += 5
-  doc.text('Account Name: Eleventh Hour Cleaning Ltd', margin + 5, yPos)
+  doc.text('Account Title: Eleventh Hour Cleaning and Maintenance Services Ltd.', margin + 5, yPos)
   yPos += 4
   doc.text('Sort Code: XX-XX-XX  |  Account Number: XXXXXXXX', margin + 5, yPos)
   yPos += 5
@@ -285,12 +285,10 @@ export function generateInvoicePDF(data: InvoiceData): jsPDF {
 
   yPos += 5
   doc.setFontSize(8)
-  doc.text('www.eleventhhourkleaning.co.uk  |  hello@eleventhhourkleaning.co.uk  |  2033551526', pageWidth / 2, yPos, { align: 'center' })
+  doc.text('www.eleventhhourkleaning.co.uk  |  hello@eleventhhourcleaning.co.uk', pageWidth / 2, yPos, { align: 'center' })
 
-  yPos += 5
-  doc.setFontSize(7)
-  doc.setTextColor(156, 163, 175)
-  doc.text('Payment due within 14 days of invoice date unless otherwise agreed.', pageWidth / 2, yPos, { align: 'center' })
+  yPos += 4
+  doc.text('Landline: 020 3355 1526  |  WhatsApp: 07400 760630', pageWidth / 2, yPos, { align: 'center' })
 
   return doc
 }

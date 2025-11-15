@@ -50,6 +50,7 @@ export default function InvoiceDetailPage() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+  const [showBreakdown, setShowBreakdown] = useState(true)
 
   useEffect(() => {
     if (!invoiceId) return
@@ -117,6 +118,18 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showBreakdown}
+                onChange={(e) => setShowBreakdown(e.target.checked)}
+                className="w-4 h-4 text-brand-amber focus:ring-brand-amber rounded"
+              />
+              Show Item Breakdown
+            </label>
+
+            <span className="text-gray-300">|</span>
+
             <select
               value={invoice.status}
               onChange={(e) => handleStatusChange(e.target.value as Invoice['status'])}
@@ -150,8 +163,9 @@ export default function InvoiceDetailPage() {
               </h1>
               <p className="text-gray-600">Premium Cleaning Services</p>
               <p className="text-sm text-gray-500 mt-2">London, UK</p>
-              <p className="text-sm text-gray-500">info@eleventhhourkleaning.co.uk</p>
-              <p className="text-sm text-gray-500">+44 20 XXXX XXXX</p>
+              <p className="text-sm text-gray-500">hello@eleventhhourcleaning.co.uk</p>
+              <p className="text-sm text-gray-500">Landline: 020 3355 1526</p>
+              <p className="text-sm text-gray-500">WhatsApp: 07400 760630</p>
             </div>
 
             <div className="text-right">
@@ -206,31 +220,33 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          {/* Items table */}
-          <div className="mb-12">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-brand-amber">
-                  <th className="text-left py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Service</th>
-                  <th className="text-center py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Qty</th>
-                  <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Unit Price</th>
-                  <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-200">
-                    <td className="py-4 px-2 text-brand-charcoal">
-                      {item.services?.name || 'Service'}
-                    </td>
-                    <td className="text-center py-4 px-2 text-gray-700">{item.qty}</td>
-                    <td className="text-right py-4 px-2 text-gray-700">£{Number(item.unit_price).toFixed(2)}</td>
-                    <td className="text-right py-4 px-2 font-medium text-brand-charcoal">£{(item.qty * Number(item.unit_price)).toFixed(2)}</td>
+          {/* Items table - conditional based on showBreakdown */}
+          {showBreakdown && (
+            <div className="mb-12">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-brand-amber">
+                    <th className="text-left py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Service</th>
+                    <th className="text-center py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Qty</th>
+                    <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Unit Price</th>
+                    <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-200">
+                      <td className="py-4 px-2 text-brand-charcoal">
+                        {item.services?.name || 'Service'}
+                      </td>
+                      <td className="text-center py-4 px-2 text-gray-700">{item.qty}</td>
+                      <td className="text-right py-4 px-2 text-gray-700">£{Number(item.unit_price).toFixed(2)}</td>
+                      <td className="text-right py-4 px-2 font-medium text-brand-charcoal">£{(item.qty * Number(item.unit_price)).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Totals */}
           <div className="flex justify-end mb-12">
@@ -267,14 +283,13 @@ export default function InvoiceDetailPage() {
             <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Payment Information</h3>
             <div className="grid md:grid-cols-2 gap-6 text-sm text-gray-600">
               <div>
-                <p className="font-medium text-brand-charcoal mb-1">Bank Transfer:</p>
-                <p>Account Name: Eleventh Hour Cleaning Ltd</p>
+                <p className="font-medium text-brand-charcoal mb-1">Stripe Payment & Bank Transfer:</p>
+                <p>Account Title: Eleventh Hour Cleaning and Maintenance Services Ltd.</p>
                 <p>Sort Code: XX-XX-XX</p>
                 <p>Account Number: XXXXXXXX</p>
               </div>
               <div>
                 <p className="font-medium text-brand-charcoal mb-1">Terms:</p>
-                <p>Payment due within 14 days of invoice date unless otherwise agreed.</p>
                 <p className="mt-2">Reference: {invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}</p>
               </div>
             </div>

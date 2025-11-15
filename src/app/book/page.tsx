@@ -5,15 +5,23 @@ import { useForm } from 'react-hook-form'
 import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import jsPDF from 'jspdf'
+import { ServiceSection } from '@/components/booking/ServiceSection'
 
 type Service = {
   id: string
   name: string
   price: number
   time_minutes: number
+  active: boolean
   order_index: number
   question_type: 'plus_minus' | 'checkbox' | 'dropdown'
   dropdown_options: { label: string; value: string | number }[]
+  parent_id?: string | null
+  is_category?: boolean
+  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'windows' | 'gardening' | null
+  nesting_level?: number
+  per_unit_type?: 'item' | 'sqft' | 'hour'
+  children?: Service[]
 }
 type Allowed = { service_id?: string; serviceId?: string; default_qty?: number }
 type FormConfig = {
@@ -59,6 +67,7 @@ export default function BookPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState('')
   const [validatingDiscount, setValidatingDiscount] = useState(false)
+  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning'>('regular_cleaning')
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -73,7 +82,7 @@ export default function BookPage() {
     ;(async () => {
       const bust = Date.now()
       const [sRes, cRes] = await Promise.all([
-        fetch(`/api/public/services?v=${bust}`, { cache: 'no-store' as RequestCache }).then((r) => r.json()),
+        fetch(`/api/public/services?hierarchical=true&v=${bust}`, { cache: 'no-store' as RequestCache }).then((r) => r.json()),
         fetch(`/api/public/form?v=${bust}`, { cache: 'no-store' as RequestCache }).then((r) => r.json()),
       ])
 
@@ -115,13 +124,27 @@ export default function BookPage() {
   const items = watch('items')
   const acceptTerms = watch('acceptTerms')
 
+  // Flatten hierarchical services for calculations
+  const flattenServices = (services: Service[]): Service[] => {
+    const result: Service[] = []
+    const flatten = (svc: Service) => {
+      result.push(svc)
+      if (svc.children) {
+        svc.children.forEach(flatten)
+      }
+    }
+    services.forEach(flatten)
+    return result
+  }
+
+  // Get all services (flattened) with their quantities
   const rows = useMemo(
-    () =>
-      services
-        .filter((s) => !allowedIds || allowedIds.has(s.id)) // fallback: all services when admin list is empty
+    () => {
+      const allServices = flattenServices(services)
+      return allServices
+        .filter((s) => !allowedIds || allowedIds.has(s.id))
         .map((s) => {
           const value = items?.[s.id] ?? 0
-          // Convert to number for calculations (checkbox: 1 or 0, dropdown: numeric value, plus_minus: qty)
           let qty = 0
           if (s.question_type === 'checkbox') {
             qty = value ? 1 : 0
@@ -131,7 +154,8 @@ export default function BookPage() {
             qty = typeof value === 'number' ? value : Number(value) || 0
           }
           return { ...s, qty, rawValue: value }
-        }),
+        })
+    },
     [services, allowedIds, items],
   )
 
@@ -142,13 +166,24 @@ export default function BookPage() {
     const discount = appliedDiscount?.discount_amount || 0
     const tot = Math.max(0, sub - discount)
 
-    return {
-      subtotal: sub,
-      totalTime: time,
-      discountAmount: discount,
-      total: tot
-    }
+      return {
+        subtotal: sub,
+        totalTime: time,
+        discountAmount: discount,
+        total: tot
+      }
   }, [rows, appliedDiscount])
+
+  // Split top-level service categories for the UI
+  const { mainCategories, otherCategories } = useMemo(() => {
+    const main = services.filter(
+      (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning',
+    )
+    const other = services.filter(
+      (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning',
+    )
+    return { mainCategories: main, otherCategories: other }
+  }, [services])
 
   // Validate discount code
   async function validateDiscountCode() {
@@ -196,25 +231,6 @@ export default function BookPage() {
     setDiscountCode('')
     setAppliedDiscount(null)
     setDiscountError('')
-  }
-
-  function setQty(id: string, qty: number) {
-    const safe = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0
-    const current = getValues('items') || {}
-    const next = { ...current, [id]: safe }
-    setValue('items', next, { shouldDirty: true, shouldValidate: true })
-  }
-
-  function toggleCheckbox(id: string) {
-    const current = getValues('items') || {}
-    const next = { ...current, [id]: current[id] ? 0 : 1 }
-    setValue('items', next, { shouldDirty: true, shouldValidate: true })
-  }
-
-  function setDropdownValue(id: string, value: string | number) {
-    const current = getValues('items') || {}
-    const next = { ...current, [id]: value }
-    setValue('items', next, { shouldDirty: true, shouldValidate: true })
   }
 
   // ---------- SILENT CAPTURE ON STEP ADVANCE (email optional) ----------
@@ -652,22 +668,16 @@ export default function BookPage() {
     // Summary section
     const summaryBoxY = currentY
     doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-    doc.roundedRect(pageWidth - 120, currentY, 100, 35, 4, 4, 'F')
-
-    doc.setTextColor(colors.gray700)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Estimated Time:', pageWidth - 115, currentY + 10)
-    doc.text(`${Math.floor(totalTime / 60)}h ${totalTime % 60}m`, pageWidth - 25, currentY + 10, { align: 'right' })
+    doc.roundedRect(pageWidth - 120, currentY, 100, 25, 4, 4, 'F')
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(12)
     doc.setTextColor(colors.primary)
-    doc.text('Total Estimate:', pageWidth - 115, currentY + 25)
+    doc.text('Total Estimate:', pageWidth - 115, currentY + 15)
     doc.setFontSize(14)
-    doc.text(`£${subtotal.toFixed(2)}`, pageWidth - 25, currentY + 25, { align: 'right' })
+    doc.text(`£${subtotal.toFixed(2)}`, pageWidth - 25, currentY + 15, { align: 'right' })
 
-    currentY += 50
+    currentY += 40
 
     // Important notes section
     doc.setTextColor(colors.gray700)
@@ -787,95 +797,117 @@ export default function BookPage() {
               </select>
             </div>
 
-            {/* Terms & Services Checkbox - BEFORE services */}
-            <div className="rounded-2xl border p-4 bg-blue-50 border-blue-200">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms || false}
-                  onChange={(e) => setValue('acceptTerms', e.target.checked, { shouldValidate: true })}
-                  className="mt-1"
-                  required
-                />
-                <span className="text-sm">
-                  I accept the{' '}
-                  <a href="/terms" target="_blank" className="text-blue-600 hover:underline font-medium">
-                    Terms and Services
-                  </a>
-                  <span className="text-red-600 ml-1">*</span>
-                </span>
-              </label>
-            </div>
+            {/* Service Sections */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-brand-charcoal mb-4">Select Your Services</h3>
+              <p className="text-gray-600 mb-6">
+                Choose your main cleaning type, then adjust quantities using the + and - buttons.
+              </p>
 
-            <div className="rounded-2xl border p-4">
-              <p className="font-medium mb-3">Services</p>
-              <div className="grid gap-4">
-                {rows.map((r) => {
-                  // Render based on question type
-                  if (r.question_type === 'checkbox') {
-                    return (
-                      <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={!!r.rawValue}
-                          onChange={() => toggleCheckbox(r.id)}
-                          className="w-5 h-5"
-                        />
-                        <p className="font-medium flex-1">{r.name}</p>
-                      </div>
+              {/* Cleaning type selector */}
+              {mainCategories.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-brand-charcoal mb-2">Main cleaning type</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {mainCategories.some((c) => c.category_type === 'regular_cleaning') && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCleaningType('regular_cleaning')}
+                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
+                          selectedCleaningType === 'regular_cleaning'
+                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
+                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
+                        }`}
+                      >
+                        <p className="font-semibold">Regular Cleaning</p>
+                        <p className="text-xs mt-1 opacity-80">
+                          Standard home clean with flexible hours and cleaners.
+                        </p>
+                      </button>
+                    )}
+                    {mainCategories.some((c) => c.category_type === 'deep_cleaning') && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCleaningType('deep_cleaning')}
+                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
+                          selectedCleaningType === 'deep_cleaning'
+                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
+                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
+                        }`}
+                      >
+                        <p className="font-semibold">Deep / End of Tenancy Cleaning</p>
+                        <p className="text-xs mt-1 opacity-80">
+                          Intensive clean of rooms with optional extras.
+                        </p>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Selected main cleaning category */}
+                {mainCategories.length > 0 && (
+                  (() => {
+                    const selectedMain = mainCategories.find(
+                      (c) => c.category_type === selectedCleaningType,
                     )
-                  } else if (r.question_type === 'dropdown') {
+                    if (!selectedMain) return null
+
+                    const childServices = selectedMain.children || []
+                    const isDeepCleaning = selectedMain.category_type === 'deep_cleaning'
+                    const extrasStartIndex = isDeepCleaning ? 8 : 0
+
                     return (
-                      <div key={r.id} className="p-3 rounded-lg border">
-                        <p className="font-medium mb-2">{r.name}</p>
-                        <select
-                          className="input w-full"
-                          value={r.rawValue || ''}
-                          onChange={(e) => setDropdownValue(r.id, e.target.value)}
-                        >
-                          <option value="">Select an option</option>
-                          {r.dropdown_options?.map((opt, idx) => (
-                            <option key={idx} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <ServiceSection
+                        key={selectedMain.id}
+                        title={selectedMain.name}
+                        description={
+                          selectedMain.category_type === 'regular_cleaning'
+                            ? 'Select number of hours and cleaners needed'
+                            : 'Select rooms to be deep cleaned and any extras'
+                        }
+                        services={childServices.length > 0 ? childServices : [selectedMain]}
+                        items={items || {}}
+                        onItemChange={(serviceId, value) => {
+                          setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
+                        }}
+                        showExtrasLabel={isDeepCleaning}
+                        extrasStartIndex={extrasStartIndex}
+                      />
                     )
-                  } else {
-                    // plus_minus (default)
-                    return (
-                      <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            className="rounded-full border w-8 h-8 hover:bg-gray-100"
-                            onClick={() => setQty(r.id, r.qty - 1)}
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min={0}
-                            className="input w-16 text-center"
-                            value={r.qty}
-                            onChange={(e) => setQty(r.id, Number(e.target.value))}
-                          />
-                          <button
-                            type="button"
-                            className="rounded-full border w-8 h-8 hover:bg-gray-100"
-                            onClick={() => setQty(r.id, r.qty + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <p className="font-medium flex-1">{r.name}</p>
-                      </div>
-                    )
-                  }
+                  })()
+                )}
+
+                {/* Other service categories (e.g. windows, gardening) */}
+                {otherCategories.map((category) => {
+                  const childServices = category.children || []
+                  if (childServices.length === 0 && category.is_category) return null
+
+                  return (
+                    <ServiceSection
+                      key={category.id}
+                      title={category.name}
+                      description={
+                        category.category_type === 'windows'
+                          ? 'Exterior window cleaning per square foot'
+                          : category.category_type === 'gardening'
+                          ? 'Select gardening services needed'
+                          : ''
+                      }
+                      services={childServices.length > 0 ? childServices : [category]}
+                      items={items || {}}
+                      onItemChange={(serviceId, value) => {
+                        setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
+                      }}
+                    />
+                  )
                 })}
-                {rows.length === 0 && (
-                  <div className="text-sm text-slate-600">No services available.</div>
+
+                {services.length === 0 && (
+                  <div className="text-sm text-slate-600 p-6 text-center border rounded-2xl">
+                    No services available. Please contact us for assistance.
+                  </div>
                 )}
               </div>
             </div>
@@ -954,6 +986,26 @@ export default function BookPage() {
               )}
             </div>
 
+            {/* Terms & Services Checkbox - AT BOTTOM */}
+            <div className="rounded-2xl border p-4 bg-blue-50 border-blue-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms || false}
+                  onChange={(e) => setValue('acceptTerms', e.target.checked, { shouldValidate: true })}
+                  className="mt-1"
+                  required
+                />
+                <span className="text-sm">
+                  I accept the{' '}
+                  <a href="/terms" target="_blank" className="text-blue-600 hover:underline font-medium">
+                    Terms and Services
+                  </a>
+                  <span className="text-red-600 ml-1">*</span>
+                </span>
+              </label>
+            </div>
+
             <div className="flex gap-3">
               <button type="button" onClick={() => setStep(1)} className="rounded-full border px-6 py-3" disabled={isProcessingPayment}>Back</button>
               <button className="btn-primary" disabled={isProcessingPayment}>
@@ -1004,7 +1056,7 @@ export default function BookPage() {
                         {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
                       </p>
                     </div>
-                    <span className="text-sm text-gray-600">{r.qty * r.time_minutes} min</span>
+                    <span className="text-sm font-semibold text-gray-700">£{(r.qty * r.price).toFixed(2)}</span>
                   </div>
                 ))}
 
@@ -1034,11 +1086,6 @@ export default function BookPage() {
                       <span className="font-semibold text-green-600">-£{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Estimated Time</span>
-                    <span className="font-medium text-gray-900">{Math.ceil(totalTime / 60)}h {totalTime % 60}m</span>
-                  </div>
 
                   <div className="flex items-center justify-between border-t pt-3">
                     <span className="text-lg font-semibold text-gray-900">Total</span>

@@ -7,6 +7,12 @@ export type Service = {
   order_index: number
   question_type: 'plus_minus' | 'checkbox' | 'dropdown'
   dropdown_options: { label: string; value: string | number }[]
+  parent_id?: string | null
+  is_category?: boolean
+  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'windows' | 'gardening' | null
+  nesting_level?: number
+  per_unit_type?: 'item' | 'sqft' | 'hour'
+  children?: Service[]
 }
 
 export type FormConfig = {
