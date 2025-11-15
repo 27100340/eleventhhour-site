@@ -26,6 +26,12 @@ export function CategoryCard({ category, items, onItemChange, isSelected, onSele
         return '🪟'
       case 'gardening':
         return '🌿'
+      case 'landscaping':
+        return '🌳'
+      case 'handyman':
+        return '🔧'
+      case 'waste_removal':
+        return '🗑️'
       default:
         return '📋'
     }
@@ -43,6 +49,12 @@ export function CategoryCard({ category, items, onItemChange, isSelected, onSele
         return 'Professional exterior window cleaning'
       case 'gardening':
         return 'Garden maintenance and outdoor services'
+      case 'landscaping':
+        return 'Professional landscaping and garden design'
+      case 'handyman':
+        return 'Handyman services for your property'
+      case 'waste_removal':
+        return 'Waste and junk removal services'
       default:
         return 'Select services from this category'
     }

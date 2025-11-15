@@ -9,7 +9,7 @@ export type Service = {
   dropdown_options: { label: string; value: string | number }[]
   parent_id?: string | null
   is_category?: boolean
-  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | null
+  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null
   nesting_level?: number
   per_unit_type?: 'item' | 'sqft' | 'hour'
   children?: Service[]

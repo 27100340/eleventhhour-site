@@ -42,17 +42,36 @@ export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }>
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
 
-    // Get booking items
+    // Get booking items with parent service info
     const { data: items, error: itemsError } = await supabase
       .from('booking_items')
-      .select('*, services(name)')
+      .select('*, services(name, parent_id, category_type)')
       .eq('booking_id', invoice.booking_id)
 
     if (itemsError) {
       return NextResponse.json({ error: itemsError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ invoice, items: items || [] })
+    // Fetch parent services for items that have parents
+    const parentIds = items?.map(i => i.services?.parent_id).filter(Boolean) || []
+    let parentServices = []
+    if (parentIds.length > 0) {
+      const { data: parents } = await supabase
+        .from('services')
+        .select('id, name, category_type')
+        .in('id', parentIds)
+      parentServices = parents || []
+    }
+
+    // Enrich items with parent names
+    const enrichedItems = items?.map(item => ({
+      ...item,
+      parent_service_name: item.services?.parent_id
+        ? parentServices.find(p => p.id === item.services.parent_id)?.name || null
+        : null
+    })) || []
+
+    return NextResponse.json({ invoice, items: enrichedItems })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 })
   }

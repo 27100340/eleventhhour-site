@@ -38,7 +38,8 @@ type Item = {
   qty: number
   unit_price: number
   time_minutes: number
-  services: { name: string }
+  services: { name: string; parent_id?: string; category_type?: string }
+  parent_service_name?: string | null
 }
 
 export default function InvoiceDetailPage() {
@@ -233,33 +234,47 @@ export default function InvoiceDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-200">
-                      <td className="py-4 px-2 text-brand-charcoal">
-                        {item.services?.name || 'Service'}
-                      </td>
-                      <td className="text-center py-4 px-2 text-gray-700">{item.qty}</td>
-                      <td className="text-right py-4 px-2 text-gray-700">£{Number(item.unit_price).toFixed(2)}</td>
-                      <td className="text-right py-4 px-2 font-medium text-brand-charcoal">£{(item.qty * Number(item.unit_price)).toFixed(2)}</td>
-                    </tr>
-                  ))}
+                  {items.map((item) => {
+                    const serviceName = item.services?.name || 'Service'
+                    const displayName = item.parent_service_name
+                      ? `${item.parent_service_name} - ${serviceName}`
+                      : serviceName
+
+                    return (
+                      <tr key={item.id} className="border-b border-gray-200">
+                        <td className="py-4 px-2 text-brand-charcoal">
+                          {displayName}
+                        </td>
+                        <td className="text-center py-4 px-2 text-gray-700">{item.qty}</td>
+                        <td className="text-right py-4 px-2 text-gray-700">£{Number(item.unit_price).toFixed(2)}</td>
+                        <td className="text-right py-4 px-2 font-medium text-brand-charcoal">£{(item.qty * Number(item.unit_price)).toFixed(2)}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             ) : (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 border-b-2 border-brand-amber pb-2">Services</h3>
                 <ul className="space-y-2">
-                  {items.map((item) => (
-                    <li key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-100">
-                      <span className="w-2 h-2 bg-brand-amber rounded-full"></span>
-                      <span className="text-brand-charcoal flex-1">
-                        {item.services?.name || 'Service'}
-                      </span>
-                      <span className="text-gray-600 text-sm">
-                        Qty: {item.qty}
-                      </span>
-                    </li>
-                  ))}
+                  {items.map((item) => {
+                    const serviceName = item.services?.name || 'Service'
+                    const displayName = item.parent_service_name
+                      ? `${item.parent_service_name} - ${serviceName}`
+                      : serviceName
+
+                    return (
+                      <li key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-100">
+                        <span className="w-2 h-2 bg-brand-amber rounded-full"></span>
+                        <span className="text-brand-charcoal flex-1">
+                          {displayName}
+                        </span>
+                        <span className="text-gray-600 text-sm">
+                          Qty: {item.qty}
+                        </span>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )}

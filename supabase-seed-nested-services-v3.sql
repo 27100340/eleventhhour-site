@@ -162,7 +162,7 @@ ON CONFLICT DO NOTHING;
 -- Windows (Outside) - Main Category with per sqft pricing
 INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level, per_unit_type)
 VALUES
-  (gen_random_uuid(), 'Windows (Outside)', 2.5, 5, true, 4, 'plus_minus', false, 'windows', 0, 'sqft')
+  (gen_random_uuid(), 'Windows (Outside)', 2.5, 5, true, 4, 'plus_minus', true, 'windows', 0, 'sqft')
 ON CONFLICT DO NOTHING;
 
 -- Gardening - Main Category
@@ -193,6 +193,99 @@ FROM (VALUES
   ('Grass Cutting / Trimming', 50, 75, 2),
   ('Garden Cleaning', 45, 60, 3),
   ('Pressure Washing', 60, 90, 4)
+) AS t(name, price, time_minutes, order_index)
+ON CONFLICT DO NOTHING;
+
+-- Landscaping - Main Category
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level)
+VALUES
+  (gen_random_uuid(), 'Landscaping', 0, 0, true, 6, 'plus_minus', true, 'landscaping', 0)
+ON CONFLICT DO NOTHING;
+
+-- Landscaping Sub-services
+WITH landscaping_cat AS (
+  SELECT id FROM services WHERE name = 'Landscaping' AND is_category = true LIMIT 1
+)
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level, parent_id)
+SELECT
+  gen_random_uuid(),
+  name,
+  price,
+  time_minutes,
+  true,
+  order_index,
+  'plus_minus',
+  false,
+  'landscaping',
+  1,
+  (SELECT id FROM landscaping_cat)
+FROM (VALUES
+  ('Tree Trimming', 80, 120, 1),
+  ('Hedge Cutting', 60, 90, 2),
+  ('Lawn Treatment', 70, 90, 3),
+  ('Garden Design', 100, 120, 4)
+) AS t(name, price, time_minutes, order_index)
+ON CONFLICT DO NOTHING;
+
+-- Handyman - Main Category
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level)
+VALUES
+  (gen_random_uuid(), 'Handyman', 0, 0, true, 7, 'plus_minus', true, 'handyman', 0)
+ON CONFLICT DO NOTHING;
+
+-- Handyman Sub-services
+WITH handyman_cat AS (
+  SELECT id FROM services WHERE name = 'Handyman' AND is_category = true LIMIT 1
+)
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level, parent_id)
+SELECT
+  gen_random_uuid(),
+  name,
+  price,
+  time_minutes,
+  true,
+  order_index,
+  'plus_minus',
+  false,
+  'handyman',
+  1,
+  (SELECT id FROM handyman_cat)
+FROM (VALUES
+  ('Furniture Assembly', 40, 60, 1),
+  ('Picture Hanging', 25, 30, 2),
+  ('Minor Repairs', 50, 60, 3),
+  ('Painting', 60, 90, 4)
+) AS t(name, price, time_minutes, order_index)
+ON CONFLICT DO NOTHING;
+
+-- Waste Removal - Main Category
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level)
+VALUES
+  (gen_random_uuid(), 'Waste Removal', 0, 0, true, 8, 'plus_minus', true, 'waste_removal', 0)
+ON CONFLICT DO NOTHING;
+
+-- Waste Removal Sub-services
+WITH waste_cat AS (
+  SELECT id FROM services WHERE name = 'Waste Removal' AND is_category = true LIMIT 1
+)
+INSERT INTO services (id, name, price, time_minutes, active, order_index, question_type, is_category, category_type, nesting_level, parent_id)
+SELECT
+  gen_random_uuid(),
+  name,
+  price,
+  time_minutes,
+  true,
+  order_index,
+  'plus_minus',
+  false,
+  'waste_removal',
+  1,
+  (SELECT id FROM waste_cat)
+FROM (VALUES
+  ('General Waste', 50, 60, 1),
+  ('Garden Waste', 60, 75, 2),
+  ('Furniture Removal', 80, 90, 3),
+  ('Appliance Removal', 70, 75, 4)
 ) AS t(name, price, time_minutes, order_index)
 ON CONFLICT DO NOTHING;
 

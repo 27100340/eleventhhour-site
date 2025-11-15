@@ -18,7 +18,7 @@ type Service = {
   dropdown_options: { label: string; value: string | number }[]
   parent_id?: string | null
   is_category?: boolean
-  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | null
+  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null
   nesting_level?: number
   per_unit_type?: 'item' | 'sqft' | 'hour'
   children?: Service[]
@@ -67,7 +67,7 @@ export default function BookPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState('')
   const [validatingDiscount, setValidatingDiscount] = useState(false)
-  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | null>(null)
+  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null>(null)
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -161,7 +161,27 @@ export default function BookPage() {
 
   // Memoized Totals - only recalculate when rows or discount changes
   const { subtotal, totalTime, discountAmount, total } = useMemo(() => {
-    const sub = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
+    // Check if Regular Cleaning is selected
+    const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
+    const isRegularCleaning = regularCategory && selectedCleaningType === 'regular_cleaning'
+
+    let sub = 0
+
+    if (isRegularCleaning && regularCategory?.children) {
+      // Special pricing for Regular Cleaning: hours × cleaners
+      const hoursService = regularCategory.children.find((s) => s.name === 'Number of Hours')
+      const cleanersService = regularCategory.children.find((s) => s.name === 'Number of Cleaners')
+
+      if (hoursService && cleanersService) {
+        const hours = Number(items[hoursService.id] || 0)
+        const cleaners = Number(items[cleanersService.id] || 0)
+        sub = hours * hoursService.price * cleaners
+      }
+    } else {
+      // Standard pricing for all other services
+      sub = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
+    }
+
     const time = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
     const discount = appliedDiscount?.discount_amount || 0
     const tot = Math.max(0, sub - discount)
@@ -172,32 +192,26 @@ export default function BookPage() {
         discountAmount: discount,
         total: tot
       }
-  }, [rows, appliedDiscount])
+  }, [rows, appliedDiscount, services, selectedCleaningType, items])
 
-  // Split top-level service categories for the UI
-  const { mainCategories, otherCategories } = useMemo(() => {
-    const main = services.filter(
-      (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning' || s.category_type === 'end_of_tenancy',
-    )
-    const other = services.filter(
-      (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning' && s.category_type !== 'end_of_tenancy',
-    )
-    return { mainCategories: main, otherCategories: other }
+  // All top-level categories are now mutually exclusive
+  const allCategories = useMemo(() => {
+    return services.filter((s) => !s.parent_id)
   }, [services])
 
   // Handle cleaning type selection - clear items from other categories
-  const handleCleaningTypeChange = (newType: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy') => {
+  const handleCleaningTypeChange = (newType: typeof selectedCleaningType) => {
     // If selecting the same type, do nothing
-    if (selectedCleaningType === newType) return
+    if (selectedCleaningType === newType || !newType) return
 
-    // Get all service IDs from other main categories
-    const otherCategories = mainCategories.filter((cat) => cat.category_type !== newType)
+    // Get all service IDs from other categories
+    const otherCategories = allCategories.filter((cat: Service) => cat.category_type !== newType)
     const otherServiceIds = new Set<string>()
 
-    otherCategories.forEach((cat) => {
+    otherCategories.forEach((cat: Service) => {
       otherServiceIds.add(cat.id)
       if (cat.children) {
-        cat.children.forEach((child) => {
+        cat.children.forEach((child: Service) => {
           otherServiceIds.add(child.id)
         })
       }
@@ -827,91 +841,97 @@ export default function BookPage() {
 
             {/* Service Sections */}
             <div className="space-y-4">
-              <h3 className="text-xl font-bold text-brand-charcoal mb-4">Select Your Services</h3>
+              <h3 className="text-xl font-bold text-brand-charcoal mb-4">Select Your Service</h3>
               <p className="text-gray-600 mb-6">
-                Choose your main cleaning type, then adjust quantities using the + and - buttons.
+                Choose one service category below, then customize your selections.
               </p>
 
-              {/* Cleaning type selector */}
-              {mainCategories.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-brand-charcoal mb-2">Main cleaning type (select one)</p>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {mainCategories.some((c) => c.category_type === 'regular_cleaning') && (
-                      <button
-                        type="button"
-                        onClick={() => handleCleaningTypeChange('regular_cleaning')}
-                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
-                          selectedCleaningType === 'regular_cleaning'
-                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
-                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
-                        }`}
-                      >
-                        <p className="font-semibold">Regular Cleaning</p>
-                        <p className="text-xs mt-1 opacity-80">
-                          Standard home clean with flexible hours and cleaners.
-                        </p>
-                      </button>
-                    )}
-                    {mainCategories.some((c) => c.category_type === 'deep_cleaning') && (
-                      <button
-                        type="button"
-                        onClick={() => handleCleaningTypeChange('deep_cleaning')}
-                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
-                          selectedCleaningType === 'deep_cleaning'
-                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
-                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
-                        }`}
-                      >
-                        <p className="font-semibold">Deep Cleaning</p>
-                        <p className="text-xs mt-1 opacity-80">
-                          Intensive clean of rooms with optional extras.
-                        </p>
-                      </button>
-                    )}
-                    {mainCategories.some((c) => c.category_type === 'end_of_tenancy') && (
-                      <button
-                        type="button"
-                        onClick={() => handleCleaningTypeChange('end_of_tenancy')}
-                        className={`text-left rounded-2xl border px-4 py-3 transition-colors ${
-                          selectedCleaningType === 'end_of_tenancy'
-                            ? 'border-brand-charcoal bg-brand-charcoal text-white'
-                            : 'border-slate-200 bg-white hover:border-brand-charcoal/60'
-                        }`}
-                      >
-                        <p className="font-semibold">End of Tenancy Cleaning</p>
-                        <p className="text-xs mt-1 opacity-80">
-                          Complete move-out clean for landlords and tenants.
-                        </p>
-                      </button>
-                    )}
+              {/* All service categories selector - mutually exclusive */}
+              {allCategories.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-semibold text-brand-charcoal mb-3">Service Categories (select one)</p>
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    {allCategories.map((category) => {
+                      const isSelected = selectedCleaningType === category.category_type
+                      const categoryIcons: Record<string, string> = {
+                        regular_cleaning: '🏠',
+                        deep_cleaning: '✨',
+                        end_of_tenancy: '🔑',
+                        windows: '🪟',
+                        gardening: '🌿',
+                        landscaping: '🌳',
+                        handyman: '🔧',
+                        waste_removal: '🗑️',
+                      }
+                      const icon = categoryIcons[category.category_type || ''] || '📋'
+
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => category.category_type && handleCleaningTypeChange(category.category_type)}
+                          className={`text-left rounded-2xl border-2 px-4 py-3 transition-all ${
+                            isSelected
+                              ? 'border-brand-amber bg-brand-amber/10 ring-2 ring-brand-amber/50'
+                              : 'border-slate-200 bg-white hover:border-brand-amber/60 hover:bg-brand-amber/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-2xl">{icon}</span>
+                            <p className="font-semibold text-sm">{category.name}</p>
+                          </div>
+                          {isSelected && (
+                            <p className="text-xs text-brand-amber font-medium">Selected</p>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
+              {/* Selected category details */}
               <div className="space-y-4">
-                {/* Selected main cleaning category */}
-                {mainCategories.length > 0 && selectedCleaningType && (
+                {selectedCleaningType && allCategories.length > 0 && (
                   (() => {
-                    const selectedMain = mainCategories.find(
+                    const selectedCategory = allCategories.find(
                       (c) => c.category_type === selectedCleaningType,
                     )
-                    if (!selectedMain) return null
+                    if (!selectedCategory) return null
 
-                    const childServices = selectedMain.children || []
-                    const showExtras = selectedMain.category_type === 'deep_cleaning' || selectedMain.category_type === 'end_of_tenancy'
+                    const childServices = selectedCategory.children || []
+                    const showExtras = selectedCategory.category_type === 'deep_cleaning' || selectedCategory.category_type === 'end_of_tenancy'
                     const extrasStartIndex = showExtras ? 8 : 0
+
+                    // Category-specific descriptions
+                    const getDescription = () => {
+                      switch (selectedCategory.category_type) {
+                        case 'regular_cleaning':
+                          return 'Select number of hours and cleaners needed'
+                        case 'deep_cleaning':
+                        case 'end_of_tenancy':
+                          return 'Select rooms to be cleaned and any extras'
+                        case 'windows':
+                          return 'Exterior window cleaning - enter square footage'
+                        case 'gardening':
+                          return 'Select gardening services needed'
+                        case 'landscaping':
+                          return 'Professional landscaping services'
+                        case 'handyman':
+                          return 'Handyman services for your property'
+                        case 'waste_removal':
+                          return 'Waste and junk removal services'
+                        default:
+                          return ''
+                      }
+                    }
 
                     return (
                       <ServiceSection
-                        key={selectedMain.id}
-                        title={selectedMain.name}
-                        description={
-                          selectedMain.category_type === 'regular_cleaning'
-                            ? 'Select number of hours and cleaners needed'
-                            : 'Select rooms to be cleaned and any extras'
-                        }
-                        services={childServices.length > 0 ? childServices : [selectedMain]}
+                        key={selectedCategory.id}
+                        title={selectedCategory.name}
+                        description={getDescription()}
+                        services={childServices.length > 0 ? childServices : [selectedCategory]}
                         items={items || {}}
                         onItemChange={(serviceId, value) => {
                           setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
@@ -923,32 +943,6 @@ export default function BookPage() {
                     )
                   })()
                 )}
-
-                {/* Other service categories (e.g. windows, gardening) - only show when cleaning type is selected */}
-                {selectedCleaningType && otherCategories.map((category) => {
-                  const childServices = category.children || []
-                  if (childServices.length === 0 && category.is_category) return null
-
-                  return (
-                    <ServiceSection
-                      key={category.id}
-                      title={category.name}
-                      description={
-                        category.category_type === 'windows'
-                          ? 'Exterior window cleaning per square foot'
-                          : category.category_type === 'gardening'
-                          ? 'Select gardening services needed'
-                          : ''
-                      }
-                      services={childServices.length > 0 ? childServices : [category]}
-                      items={items || {}}
-                      onItemChange={(serviceId, value) => {
-                        setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
-                      }}
-                      showPrices={false}
-                    />
-                  )
-                })}
 
                 {services.length === 0 && (
                   <div className="text-sm text-slate-600 p-6 text-center border rounded-2xl">
