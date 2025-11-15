@@ -1102,7 +1102,6 @@ export default function BookPage() {
                         {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-gray-700">£{(r.qty * r.price).toFixed(2)}</span>
                   </div>
                 ))}
 
