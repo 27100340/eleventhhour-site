@@ -85,13 +85,63 @@ export default function CreateBookingTab() {
     })
     .filter((s) => s.qty > 0 && !s.is_category)
 
-  const subtotal = selectedServices.reduce((sum, s) => sum + s.qty * Number(s.price), 0)
-  const totalTime = selectedServices.reduce((sum, s) => sum + s.qty * s.time_minutes, 0)
+  // Calculate subtotal with special handling for Regular Cleaning
+  let subtotal = 0
+  let totalTime = 0
+
+  // Check if regular cleaning is selected and calculate special pricing
+  const regularCategory = services.find((s) => s.category_type === 'regular_cleaning')
+  let isRegularCleaningSelected = false
+
+  if (regularCategory && selectedCleaningType === 'regular_cleaning') {
+    const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
+    const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+
+    if (hoursService && cleanersService) {
+      const hours = Number(form.items[hoursService.id] || 0)
+      const cleaners = Number(form.items[cleanersService.id] || 0)
+
+      if (hours > 0 && cleaners > 0) {
+        // For regular cleaning: hours × price_per_hour × cleaners
+        subtotal = hours * Number(hoursService.price) * cleaners
+        isRegularCleaningSelected = true
+        // Time is based on hours only
+        totalTime = hours * hoursService.time_minutes
+      }
+    }
+  }
+
+  // For non-regular cleaning or if regular cleaning doesn't have special calc, use normal calculation
+  if (!isRegularCleaningSelected) {
+    selectedServices.forEach((s) => {
+      subtotal += s.qty * Number(s.price)
+      totalTime += s.qty * s.time_minutes
+    })
+  }
+
   const total = Math.max(0, subtotal - (form.discount || 0))
 
   async function createDraftBooking() {
-    if (!form.firstName || !form.lastName || !form.phone || !selectedServices.length) {
-      alert('Please fill in customer name, phone, and select at least one service')
+    // Validate required fields
+    if (!form.firstName || !form.lastName || !form.phone) {
+      alert('Please fill in customer name and phone')
+      return
+    }
+
+    // For regular cleaning, check that both hours and cleaners are selected
+    if (selectedCleaningType === 'regular_cleaning' && regularCategory) {
+      const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
+      const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+
+      const hours = Number(form.items[hoursService?.id || ''] || 0)
+      const cleaners = Number(form.items[cleanersService?.id || ''] || 0)
+
+      if (hours === 0 || cleaners === 0) {
+        alert('Please select number of hours and cleaners for regular cleaning')
+        return
+      }
+    } else if (!selectedServices.length) {
+      alert('Please select at least one service')
       return
     }
 
@@ -127,13 +177,44 @@ export default function CreateBookingTab() {
       if (bookingError) throw bookingError
 
       // Create booking items
-      const items = selectedServices.map((s) => ({
-        booking_id: booking.id,
-        service_id: s.id,
-        qty: s.qty,
-        unit_price: s.price,
-        time_minutes: s.time_minutes,
-      }))
+      let items: Array<any> = []
+
+      // For regular cleaning, include hours and cleaners items
+      if (isRegularCleaningSelected && regularCategory) {
+        const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
+        const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+
+        if (hoursService && cleanersService) {
+          const hours = Number(form.items[hoursService.id] || 0)
+          const cleaners = Number(form.items[cleanersService.id] || 0)
+
+          items.push(
+            {
+              booking_id: booking.id,
+              service_id: hoursService.id,
+              qty: hours,
+              unit_price: hoursService.price,
+              time_minutes: hoursService.time_minutes,
+            },
+            {
+              booking_id: booking.id,
+              service_id: cleanersService.id,
+              qty: cleaners,
+              unit_price: cleanersService.price,
+              time_minutes: cleanersService.time_minutes,
+            },
+          )
+        }
+      } else {
+        // For other services, use selectedServices
+        items = selectedServices.map((s) => ({
+          booking_id: booking.id,
+          service_id: s.id,
+          qty: s.qty,
+          unit_price: s.price,
+          time_minutes: s.time_minutes,
+        }))
+      }
 
       const { error: itemsError } = await supabase.from('booking_items').insert(items)
 
@@ -164,13 +245,44 @@ export default function CreateBookingTab() {
 
       // If Stripe payment is requested, redirect to checkout
       if (form.processStripePayment) {
-        const checkoutItems = selectedServices.map((s) => ({
-          service_id: s.id,
-          name: s.name,
-          qty: s.qty,
-          unit_price: s.price,
-          time_minutes: s.time_minutes,
-        }))
+        let checkoutItems: Array<any> = []
+
+        // For regular cleaning, include hours and cleaners items
+        if (isRegularCleaningSelected && regularCategory) {
+          const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
+          const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+
+          if (hoursService && cleanersService) {
+            const hours = Number(form.items[hoursService.id] || 0)
+            const cleaners = Number(form.items[cleanersService.id] || 0)
+
+            checkoutItems.push(
+              {
+                service_id: hoursService.id,
+                name: hoursService.name,
+                qty: hours,
+                unit_price: hoursService.price,
+                time_minutes: hoursService.time_minutes,
+              },
+              {
+                service_id: cleanersService.id,
+                name: cleanersService.name,
+                qty: cleaners,
+                unit_price: cleanersService.price,
+                time_minutes: cleanersService.time_minutes,
+              },
+            )
+          }
+        } else {
+          // For other services, use selectedServices
+          checkoutItems = selectedServices.map((s) => ({
+            service_id: s.id,
+            name: s.name,
+            qty: s.qty,
+            unit_price: s.price,
+            time_minutes: s.time_minutes,
+          }))
+        }
 
         const checkoutRes = await fetch('/api/create-checkout-session', {
           method: 'POST',
@@ -228,13 +340,16 @@ export default function CreateBookingTab() {
 
   return (
     <div className="grid lg:grid-cols-[2fr_1fr] gap-6">
-      <div className="rounded-2xl border bg-white p-6">
-        <h2 className="text-2xl font-semibold mb-6">Create Manual Booking</h2>
+      <div className="rounded-2xl border-2 border-brand-stone bg-white p-6">
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold text-brand-charcoal mb-1">Create Booking</h2>
+          <p className="text-sm text-gray-600">Fill in the details below to create a new booking</p>
+        </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {/* Customer Information */}
-          <div className="rounded-lg border p-4 bg-gray-50">
-            <h3 className="font-semibold mb-3">Customer Information</h3>
+          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
+            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Customer Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <input
                 className="input"
@@ -271,8 +386,8 @@ export default function CreateBookingTab() {
           </div>
 
           {/* Service Location */}
-          <div className="rounded-lg border p-4 bg-gray-50">
-            <h3 className="font-semibold mb-3">Service Location</h3>
+          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
+            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Service Location</h3>
             <div className="grid gap-4">
               <input
                 className="input"
@@ -298,8 +413,8 @@ export default function CreateBookingTab() {
           </div>
 
           {/* Service Details */}
-          <div className="rounded-lg border p-4 bg-gray-50">
-            <h3 className="font-semibold mb-3">Service Details</h3>
+          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
+            <h3 className="font-bold text-lg text-brand-charcoal mb-4">When & Where</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-gray-600 mb-1 block">Service Date</label>
@@ -351,8 +466,8 @@ export default function CreateBookingTab() {
           </div>
 
           {/* Services Selection */}
-          <div className="rounded-lg border p-4">
-            <h3 className="font-semibold mb-3">Select Services *</h3>
+          <div className="rounded-2xl border-2 border-brand-stone bg-white p-5">
+            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Select Services *</h3>
             <div className="space-y-4">
               {/* Cleaning type selector */}
               <div className="mb-4">
@@ -456,8 +571,8 @@ export default function CreateBookingTab() {
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="text-sm text-gray-600 mb-1 block">Notes</label>
+          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
+            <label className="text-sm font-semibold text-brand-charcoal mb-2 block">Special Instructions</label>
             <textarea
               className="input min-h-[100px]"
               placeholder="Add any notes or special instructions..."
@@ -467,8 +582,8 @@ export default function CreateBookingTab() {
           </div>
 
           {/* Payment & Invoice Options */}
-          <div className="rounded-lg border p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <h3 className="font-semibold mb-3 text-gray-900">Payment & Invoice Options</h3>
+          <div className="rounded-2xl border-2 border-brand-stone bg-gradient-to-r from-brand-amber/10 to-brand-amber/5 p-5">
+            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Payment & Invoice Options</h3>
             <div className="space-y-3">
               <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border hover:border-blue-400 transition-colors">
                 <input
@@ -517,7 +632,7 @@ export default function CreateBookingTab() {
             </div>
           </div>
 
-          <button onClick={createDraftBooking} disabled={loading} className="btn-primary text-lg py-4">
+          <button onClick={createDraftBooking} disabled={loading} className="w-full rounded-full bg-brand-amber text-white px-6 py-3 text-lg font-semibold hover:bg-brand-amber-dark disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -548,8 +663,8 @@ export default function CreateBookingTab() {
       </div>
 
       {/* Summary Sidebar */}
-      <aside className="bg-white rounded-2xl p-6 shadow-lg h-max sticky top-24">
-        <h3 className="text-lg font-semibold mb-4">Booking Summary</h3>
+      <aside className="bg-white rounded-2xl border-2 border-brand-stone p-6 shadow-lg h-max sticky top-24">
+        <h3 className="text-lg font-bold text-brand-charcoal mb-4">Booking Summary</h3>
 
         {selectedServices.length > 0 ? (
           <>
@@ -633,7 +748,7 @@ export default function CreateBookingTab() {
           </>
         ) : (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-500">Select services to see summary</p>
+            <p className="text-sm text-gray-600 font-medium">Select services to see summary</p>
           </div>
         )}
       </aside>

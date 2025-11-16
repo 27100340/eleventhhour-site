@@ -13,6 +13,7 @@ type FormState = {
   order_index: number
   question_type: 'plus_minus' | 'checkbox' | 'dropdown'
   dropdown_options: { label: string; value: string | number }[]
+  description: string | null
   is_category: boolean
   parent_id: string | null
 }
@@ -25,6 +26,7 @@ const emptyForm: FormState = {
   order_index: 0,
   question_type: 'plus_minus',
   dropdown_options: [],
+  description: null,
   is_category: false,
   parent_id: null,
 }
@@ -72,6 +74,7 @@ export default function ServicesTab() {
       order_index: typeof s.order_index === 'number' ? s.order_index : 0,
       question_type: s.question_type,
       dropdown_options: s.dropdown_options || [],
+      description: s.description || null,
       is_category: !!s.is_category,
       parent_id: (s.parent_id as string | null) || null,
     })
@@ -104,6 +107,7 @@ export default function ServicesTab() {
       order_index: form.order_index,
       question_type: form.question_type,
       dropdown_options: form.dropdown_options,
+      description: form.description,
       is_category: form.is_category,
       parent_id: form.parent_id,
       category_type,
@@ -342,6 +346,13 @@ export default function ServicesTab() {
             type="number"
             value={form.time_minutes}
             onChange={(e) => setForm((f) => ({ ...f, time_minutes: Number(e.target.value) }))}
+          />
+          <textarea
+            className="input"
+            placeholder="Description (shown to customers in booking form)"
+            rows={2}
+            value={form.description || ''}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value || null }))}
           />
 
           {/* Question Type Selector */}

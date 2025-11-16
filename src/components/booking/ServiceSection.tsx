@@ -87,6 +87,9 @@ export function ServiceSection({
                 {service.question_type === 'dropdown' && service.dropdown_options?.length && !isExtra ? (
                   <div className="p-3 rounded-lg border bg-white">
                     <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
+                    {service.description && (
+                      <p className="text-xs text-gray-600 mb-2">{service.description}</p>
+                    )}
                     {showPrices && service.price > 0 && (
                       <p className="text-xs text-gray-600 mb-2">
                         £{service.price.toFixed(2)}
@@ -118,6 +121,9 @@ export function ServiceSection({
                     />
                     <div className="flex-1">
                       <p className="font-medium text-brand-charcoal">{service.name}</p>
+                      {service.description && (
+                        <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                      )}
                       {showPrices && service.price > 0 && (
                         <p className="text-sm text-gray-600">
                           £{service.price.toFixed(2)}
@@ -159,6 +165,9 @@ export function ServiceSection({
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-brand-charcoal">{service.name}</p>
+                      {service.description && (
+                        <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                      )}
                       {showPrices && service.price > 0 && (
                         <p className="text-sm text-gray-600">
                           £{service.price.toFixed(2)}

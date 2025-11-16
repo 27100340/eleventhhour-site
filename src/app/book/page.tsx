@@ -168,14 +168,44 @@ export default function BookPage() {
     let sub = 0
 
     if (isRegularCleaning && regularCategory?.children) {
-      // Special pricing for Regular Cleaning: hours × cleaners
-      const hoursService = regularCategory.children.find((s) => s.name === 'Number of Hours')
-      const cleanersService = regularCategory.children.find((s) => s.name === 'Number of Cleaners')
+      // Special pricing for Regular Cleaning: hours × price_per_hour × cleaners
+      // Try to find services by name (case-insensitive and flexible)
+      const hoursService = regularCategory.children.find((s) =>
+        s.name.toLowerCase().includes('hour')
+      )
+      const cleanersService = regularCategory.children.find((s) =>
+        s.name.toLowerCase().includes('cleaner')
+      )
 
       if (hoursService && cleanersService) {
         const hours = Number(items[hoursService.id] || 0)
         const cleaners = Number(items[cleanersService.id] || 0)
-        sub = hours * hoursService.price * cleaners
+
+        // Only calculate if both hours and cleaners are > 0
+        if (hours > 0 && cleaners > 0) {
+          const pricePerHour = Number(hoursService.price || 0)
+          sub = hours * pricePerHour * cleaners
+
+          // Debug logging
+          console.log('Regular Cleaning Calculation:', {
+            hours,
+            cleaners,
+            pricePerHour,
+            subtotal: sub,
+            hoursServiceName: hoursService.name,
+            cleanersServiceName: cleanersService.name
+          })
+        }
+      } else {
+        console.log('Services not found:', {
+          hoursService: regularCategory.children.find((s) =>
+            s.name.toLowerCase().includes('hour')
+          )?.name,
+          cleanersService: regularCategory.children.find((s) =>
+            s.name.toLowerCase().includes('cleaner')
+          )?.name,
+          allChildren: regularCategory.children.map(s => s.name)
+        })
       }
     } else {
       // Standard pricing for all other services
@@ -222,6 +252,17 @@ export default function BookPage() {
     otherServiceIds.forEach((id) => {
       delete updatedItems[id]
     })
+
+    // For Regular Cleaning, set cleaners to 1 by default
+    if (newType === 'regular_cleaning') {
+      const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
+      if (regularCategory?.children) {
+        const cleanersService = regularCategory.children.find((s) => s.name === 'Number of Cleaners')
+        if (cleanersService && !updatedItems[cleanersService.id]) {
+          updatedItems[cleanersService.id] = 1
+        }
+      }
+    }
 
     setValue('items', updatedItems, { shouldDirty: true })
     setSelectedCleaningType(newType)
