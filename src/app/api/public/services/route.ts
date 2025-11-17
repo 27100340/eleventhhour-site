@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabase
       .from('services')
-      .select('id, name, price, time_minutes, active, order_index, question_type, dropdown_options, parent_id, is_category, category_type, nesting_level, per_unit_type')
+      .select('id, name, price, time_minutes, active, order_index, question_type, dropdown_options, description, parent_id, is_category, category_type, nesting_level, per_unit_type')
       .eq('active', true)
       .order('order_index', { ascending: true })
 

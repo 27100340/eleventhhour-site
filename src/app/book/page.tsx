@@ -16,6 +16,7 @@ type Service = {
   order_index: number
   question_type: 'plus_minus' | 'checkbox' | 'dropdown'
   dropdown_options: { label: string; value: string | number }[]
+  description?: string | null
   parent_id?: string | null
   is_category?: boolean
   category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null

@@ -14,137 +14,78 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
   // Start collapsed by default; user can expand to see child services.
   const [expanded, setExpanded] = useState(false)
 
-  // Get current value
-  const currentValue = items[service.id] || 0
-  const currentQty = typeof currentValue === 'number' ? currentValue : 0
+  // Current raw value from form state
+  const rawValue = items[service.id] ?? 0
 
-  // Determine if this service has children (parent service)
-  const hasChildren = service.children && service.children.length > 0
+  // Derive numeric quantity for controls
+  let currentQty = 0
+  if (service.question_type === 'checkbox') {
+    currentQty = rawValue ? 1 : 0
+  } else if (service.question_type === 'dropdown') {
+    currentQty = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0
+  } else {
+    currentQty = typeof rawValue === 'number' ? rawValue : Number(rawValue) || 0
+  }
 
-  // Handle quantity change - ensure it always calls onItemChange
+  const hasChildren = Array.isArray(service.children) && service.children.length > 0
+
   const setQty = (qty: number) => {
     const newQty = Math.max(0, qty)
-    // Always call onItemChange, even if value is same (important for re-selection)
     onItemChange(service.id, newQty)
   }
 
-  // Handle checkbox toggle - ensure it always calls onItemChange
   const toggleCheckbox = () => {
     const newValue = currentQty > 0 ? 0 : 1
     onItemChange(service.id, newValue)
   }
 
-  // Handle expand/collapse for category with better event handling
-  const handleExpandToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setExpanded(!expanded)
+  const handleExpandToggle = () => {
+    setExpanded((prev) => !prev)
   }
 
-  // If this service has children (parent service with children), show as expandable section AND allow parent selection
+  const PriceTime = () =>
+    (service.price > 0 || service.time_minutes > 0) && (
+      <p className="text-xs text-gray-600">
+        {service.price > 0 && `A�${service.price.toFixed(2)}`}
+        {service.price > 0 && service.time_minutes > 0 && ' �?� '}
+        {service.time_minutes > 0 && `${service.time_minutes} min`}
+      </p>
+    )
+
+  // PARENT WITH CHILDREN: act as a header only (no +/- or checkbox), click to expand children
   if (hasChildren) {
     return (
       <div className="mb-4 space-y-2">
-        {/* PARENT SERVICE SELECTION ROW */}
-        <div className="flex items-center gap-2">
-          {/* Expand/Collapse Button */}
-          <button
-            type="button"
-            onClick={handleExpandToggle}
-            className="flex-shrink-0 p-1.5 hover:bg-brand-amber/20 rounded transition-colors border border-brand-amber/30 cursor-pointer pointer-events-auto"
-            aria-expanded={expanded}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${service.name}`}
-          >
+        <button
+          type="button"
+          onClick={handleExpandToggle}
+          className="w-full flex items-start gap-3 p-3 rounded-lg border hover:border-brand-amber/60 hover:bg-brand-amber/5 transition-colors text-left pointer-events-auto"
+        >
+          <div className="mt-0.5 flex-shrink-0">
             <svg
-              className={`w-5 h-5 transform transition-transform ${expanded ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transform transition-transform text-brand-amber ${
+                expanded ? 'rotate-180' : ''
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
-          </button>
-
-          {/* Parent Service Selection - ALWAYS clickable */}
-          <div className="flex-1 flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors bg-brand-amber/5 pointer-events-auto">
-            {service.question_type === 'checkbox' ? (
-              <>
-                <input
-                  type="checkbox"
-                  checked={currentQty > 0}
-                  onChange={toggleCheckbox}
-                  className="w-5 h-5 text-brand-amber focus:ring-brand-amber rounded cursor-pointer flex-shrink-0 pointer-events-auto"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-brand-charcoal">{service.name}</p>
-                  {(service.price > 0 || service.time_minutes > 0) && (
-                    <p className="text-xs text-gray-600">
-                      {service.price > 0 && `£${service.price.toFixed(2)}`}
-                      {service.price > 0 && service.time_minutes > 0 && ' • '}
-                      {service.time_minutes > 0 && `${service.time_minutes} min`}
-                    </p>
-                  )}
-                </div>
-                {service.price > 0 && currentQty > 0 && (
-                  <span className="text-brand-amber font-semibold text-sm flex-shrink-0">
-                    £{(service.price * currentQty).toFixed(2)}
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    type="button"
-                    className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setQty(currentQty - 1)
-                    }}
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    min={0}
-                    className="input w-12 text-center text-sm pointer-events-auto"
-                    value={currentQty}
-                    onChange={(e) => setQty(Number(e.target.value))}
-                  />
-                  <button
-                    type="button"
-                    className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setQty(currentQty + 1)
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-brand-charcoal">{service.name}</p>
-                  {(service.price > 0 || service.time_minutes > 0) && (
-                    <p className="text-xs text-gray-600">
-                      {service.price > 0 && `£${service.price.toFixed(2)}`}
-                      {service.price > 0 && service.time_minutes > 0 && ' • '}
-                      {service.time_minutes > 0 && `${service.time_minutes} min`}
-                    </p>
-                  )}
-                </div>
-                {service.price > 0 && currentQty > 0 && (
-                  <span className="text-brand-amber font-bold text-sm flex-shrink-0">
-                    £{(service.price * currentQty).toFixed(2)}
-                  </span>
-                )}
-              </>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-brand-charcoal">{service.name}</p>
+              <span className="text-xs text-brand-amber font-semibold hidden sm:inline">
+                {expanded ? 'Hide details' : 'View details'}
+              </span>
+            </div>
+            {service.description && (
+              <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
             )}
           </div>
-        </div>
+        </button>
 
-        {/* CHILDREN SERVICES - shown when expanded */}
         {expanded && service.children && service.children.length > 0 && (
           <div className="ml-6 space-y-2 border-l-2 border-brand-amber/20 pl-4">
             {service.children.map((child) => (
@@ -162,9 +103,8 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
     )
   }
 
-  // If this service is marked as category but has NO children, treat it as a regular selectable service
+  // CATEGORY WITH NO CHILDREN (still selectable)
   if (service.is_category && !hasChildren) {
-    // Render as a regular service with quantity controls - ALWAYS selectable
     return (
       <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors bg-brand-amber/5 pointer-events-auto">
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -192,24 +132,21 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-brand-charcoal text-sm">{service.name}</p>
-          {(service.price > 0 || service.time_minutes > 0) && (
-            <p className="text-xs text-gray-600">
-              {service.price > 0 && `£${service.price.toFixed(2)}`}
-              {service.price > 0 && service.time_minutes > 0 && ' • '}
-              {service.time_minutes > 0 && `${service.time_minutes} min`}
-            </p>
+          {service.description && (
+            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
           )}
+          <PriceTime />
         </div>
         {service.price > 0 && currentQty > 0 && (
           <span className="text-brand-amber font-bold text-sm flex-shrink-0">
-            £{(service.price * currentQty).toFixed(2)}
+            A�{(service.price * currentQty).toFixed(2)}
           </span>
         )}
       </div>
     )
   }
 
-  // Render based on question type
+  // LEAF SERVICES
   if (service.question_type === 'checkbox') {
     return (
       <div className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors">
@@ -221,16 +158,19 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
         />
         <div className="flex-1">
           <p className="font-medium text-brand-charcoal">{service.name}</p>
+          {service.description && (
+            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+          )}
           {showPrices && service.price > 0 && (
             <p className="text-sm text-gray-600">
-              £{service.price.toFixed(2)}
+              A�{service.price.toFixed(2)}
               {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
             </p>
           )}
         </div>
         {showPrices && service.price > 0 && currentQty > 0 && (
           <span className="text-brand-amber font-semibold">
-            £{(service.price * currentQty).toFixed(2)}
+            A�{(service.price * currentQty).toFixed(2)}
           </span>
         )}
       </div>
@@ -240,16 +180,19 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
   if (service.question_type === 'dropdown' && service.dropdown_options?.length) {
     return (
       <div className="p-3 rounded-lg border">
-        <p className="font-medium mb-2 text-brand-charcoal">{service.name}</p>
+        <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
+        {service.description && (
+          <p className="text-xs text-gray-600 mb-1">{service.description}</p>
+        )}
         {showPrices && service.price > 0 && (
           <p className="text-sm text-gray-600 mb-2">
-            £{service.price.toFixed(2)}
+            A�{service.price.toFixed(2)}
             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
           </p>
         )}
         <select
           className="input w-full"
-          value={currentValue || ''}
+          value={rawValue || ''}
           onChange={(e) => onItemChange(service.id, e.target.value)}
         >
           <option value="">Select an option</option>
@@ -291,17 +234,20 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
       </div>
       <div className="flex-1">
         <p className="font-medium text-brand-charcoal">{service.name}</p>
+        {service.description && (
+          <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+        )}
         {showPrices && service.price > 0 && (
           <p className="text-sm text-gray-600">
-            £{service.price.toFixed(2)}
+            A�{service.price.toFixed(2)}
             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
-            {service.time_minutes > 0 && ` • ${service.time_minutes} min`}
+            {service.time_minutes > 0 && ` �?� ${service.time_minutes} min`}
           </p>
         )}
       </div>
       {showPrices && service.price > 0 && currentQty > 0 && (
         <span className="text-brand-amber font-bold text-lg">
-          £{(service.price * currentQty).toFixed(2)}
+          A�{(service.price * currentQty).toFixed(2)}
         </span>
       )}
     </div>
