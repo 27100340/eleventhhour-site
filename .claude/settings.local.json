@@ -6,7 +6,8 @@
       "Bash(node:*)",
       "Read(//c/Users/Baqir/Documents/EleventhHour Cleaning Website/corrections/**)",
       "Read(//c/Users/Baqir/Documents/**)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

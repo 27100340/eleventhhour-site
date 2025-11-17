@@ -9,19 +9,25 @@ export const revalidate = 0
 function buildServiceHierarchy(services: any[]) {
   const serviceMap = new Map()
   const roots: any[] = []
+  const parentIds = new Set()
 
-  // First pass: create map of all services
+  // First pass: create map of all services and identify parent IDs
   services.forEach(service => {
     serviceMap.set(service.id, { ...service, children: [] })
+    if (service.parent_id) {
+      parentIds.add(service.parent_id)
+    }
   })
 
-  // Second pass: build hierarchy
+  // Second pass: build hierarchy and determine roots
   services.forEach(service => {
     const node = serviceMap.get(service.id)
     if (service.parent_id && serviceMap.has(service.parent_id)) {
+      // This service has a parent - add it as a child to parent
       const parent = serviceMap.get(service.parent_id)
       parent.children.push(node)
     } else {
+      // This service has no parent, so it's a root
       roots.push(node)
     }
   })

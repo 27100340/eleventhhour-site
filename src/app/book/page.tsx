@@ -67,7 +67,7 @@ export default function BookPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState('')
   const [validatingDiscount, setValidatingDiscount] = useState(false)
-  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null>(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   const { handleSubmit, setValue, watch, getValues, register } = useForm<Values>({
     mode: 'onChange',
@@ -118,8 +118,38 @@ export default function BookPage() {
     const ids = arr
       .map((a) => (a.service_id || (a as any).serviceId) as string | undefined)
       .filter(Boolean) as string[]
-    return ids.length ? new Set(ids) : null
-  }, [cfg])
+
+    if (!ids.length) return null
+
+    const idSet = new Set(ids)
+
+    if (services.length) {
+      const parentMap = new Map<string, string | null>()
+
+      const buildParentMap = (nodes: Service[], parentId: string | null) => {
+        nodes.forEach((node) => {
+          parentMap.set(node.id, parentId)
+          if (node.children && node.children.length > 0) {
+            buildParentMap(node.children, node.id)
+          }
+        })
+      }
+
+      buildParentMap(services, null)
+
+      ids.forEach((id) => {
+        let parentId = parentMap.get(id) || null
+        while (parentId) {
+          if (!idSet.has(parentId)) {
+            idSet.add(parentId)
+          }
+          parentId = parentMap.get(parentId) || null
+        }
+      })
+    }
+
+    return idSet
+  }, [cfg, services])
 
   const items = watch('items')
   const acceptTerms = watch('acceptTerms')
@@ -145,8 +175,15 @@ export default function BookPage() {
         .filter((s) => !allowedIds || allowedIds.has(s.id))
         .map((s) => {
           const value = items?.[s.id] ?? 0
+          const isSelectedTopLevelCategory = selectedCategoryId === s.id && s.is_category && !s.parent_id
+
           let qty = 0
-          if (s.question_type === 'checkbox') {
+
+          if (isSelectedTopLevelCategory) {
+            // Parent category: always count as 1 unit when selected,
+            // even if it has no explicit price or time set.
+            qty = 1
+          } else if (s.question_type === 'checkbox') {
             qty = value ? 1 : 0
           } else if (s.question_type === 'dropdown') {
             qty = typeof value === 'number' ? value : Number(value) || 0
@@ -156,14 +193,14 @@ export default function BookPage() {
           return { ...s, qty, rawValue: value }
         })
     },
-    [services, allowedIds, items],
+    [services, allowedIds, items, selectedCategoryId],
   )
 
   // Memoized Totals - only recalculate when rows or discount changes
   const { subtotal, totalTime, discountAmount, total } = useMemo(() => {
     // Check if Regular Cleaning is selected
     const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
-    const isRegularCleaning = regularCategory && selectedCleaningType === 'regular_cleaning'
+    const isRegularCleaning = regularCategory && selectedCategoryId === regularCategory.id
 
     let sub = 0
 
@@ -216,56 +253,56 @@ export default function BookPage() {
     const discount = appliedDiscount?.discount_amount || 0
     const tot = Math.max(0, sub - discount)
 
-      return {
-        subtotal: sub,
-        totalTime: time,
-        discountAmount: discount,
-        total: tot
-      }
-  }, [rows, appliedDiscount, services, selectedCleaningType, items])
+    return {
+      subtotal: sub,
+      totalTime: time,
+      discountAmount: discount,
+      total: tot,
+    }
+  }, [rows, appliedDiscount, services, selectedCategoryId, items])
 
-  // All top-level categories are now mutually exclusive
+  // All top-level categories are now mutually exclusive (only top-level categories)
   const allCategories = useMemo(() => {
-    return services.filter((s) => !s.parent_id)
+    return services.filter((s) => s.is_category && !s.parent_id)
   }, [services])
 
-  // Handle cleaning type selection - clear items from other categories
-  const handleCleaningTypeChange = (newType: typeof selectedCleaningType) => {
-    // If selecting the same type, do nothing
-    if (selectedCleaningType === newType || !newType) return
+  // Handle category selection - clear items from other categories
+  const handleCategoryChange = (categoryId: string) => {
+    // If selecting the same category, do nothing
+    if (selectedCategoryId === categoryId) return
 
-    // Get all service IDs from other categories
-    const otherCategories = allCategories.filter((cat: Service) => cat.category_type !== newType)
+    const selectedCategory = allCategories.find((cat) => cat.id === categoryId)
+    if (!selectedCategory) return
+
+    // Collect all service IDs (parent + nested children) for other categories
+    const otherCategories = allCategories.filter((cat) => cat.id !== categoryId)
     const otherServiceIds = new Set<string>()
 
-    otherCategories.forEach((cat: Service) => {
-      otherServiceIds.add(cat.id)
-      if (cat.children) {
-        cat.children.forEach((child: Service) => {
-          otherServiceIds.add(child.id)
-        })
+    const collectIds = (svc: Service) => {
+      otherServiceIds.add(svc.id)
+      if (svc.children && svc.children.length > 0) {
+        svc.children.forEach(collectIds)
       }
-    })
+    }
+
+    otherCategories.forEach(collectIds)
 
     // Clear items from other categories
-    const updatedItems = { ...items }
+    const updatedItems: Record<string, number | string> = { ...items }
     otherServiceIds.forEach((id) => {
       delete updatedItems[id]
     })
 
     // For Regular Cleaning, set cleaners to 1 by default
-    if (newType === 'regular_cleaning') {
-      const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
-      if (regularCategory?.children) {
-        const cleanersService = regularCategory.children.find((s) => s.name === 'Number of Cleaners')
-        if (cleanersService && !updatedItems[cleanersService.id]) {
-          updatedItems[cleanersService.id] = 1
-        }
+    if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
+      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaners')
+      if (cleanersService && !updatedItems[cleanersService.id]) {
+        updatedItems[cleanersService.id] = 1
       }
     }
 
     setValue('items', updatedItems, { shouldDirty: true })
-    setSelectedCleaningType(newType)
+    setSelectedCategoryId(categoryId)
   }
 
   // Validate discount code
@@ -893,7 +930,7 @@ export default function BookPage() {
                   <p className="text-sm font-semibold text-brand-charcoal mb-3">Service Categories (select one)</p>
                   <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                     {allCategories.map((category) => {
-                      const isSelected = selectedCleaningType === category.category_type
+                      const isSelected = selectedCategoryId === category.id
                       const categoryIcons: Record<string, string> = {
                         regular_cleaning: '🏠',
                         deep_cleaning: '✨',
@@ -910,7 +947,7 @@ export default function BookPage() {
                         <button
                           key={category.id}
                           type="button"
-                          onClick={() => category.category_type && handleCleaningTypeChange(category.category_type)}
+                          onClick={() => handleCategoryChange(category.id)}
                           className={`text-left rounded-2xl border-2 px-4 py-3 transition-all ${
                             isSelected
                               ? 'border-brand-amber bg-brand-amber/10 ring-2 ring-brand-amber/50'
@@ -933,10 +970,10 @@ export default function BookPage() {
 
               {/* Selected category details */}
               <div className="space-y-4">
-                {selectedCleaningType && allCategories.length > 0 && (
+                {selectedCategoryId && allCategories.length > 0 && (
                   (() => {
                     const selectedCategory = allCategories.find(
-                      (c) => c.category_type === selectedCleaningType,
+                      (c) => c.id === selectedCategoryId,
                     )
                     if (!selectedCategory) return null
 
@@ -967,18 +1004,36 @@ export default function BookPage() {
                       }
                     }
 
+                    // Build service array: include parent IF it has a price, then add children
+                    const servicesForSection = []
+
+                    // Add parent service if it has a price or time
+                    if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
+                      servicesForSection.push(selectedCategory)
+                    }
+
+                    // Add all children
+                    if (childServices.length > 0) {
+                      servicesForSection.push(...childServices)
+                    }
+
+                    // If no services at all, show parent anyway
+                    if (servicesForSection.length === 0) {
+                      servicesForSection.push(selectedCategory)
+                    }
+
                     return (
                       <ServiceSection
                         key={selectedCategory.id}
                         title={selectedCategory.name}
                         description={getDescription()}
-                        services={childServices.length > 0 ? childServices : [selectedCategory]}
+                        services={servicesForSection}
                         items={items || {}}
                         onItemChange={(serviceId, value) => {
                           setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
                         }}
                         showExtrasLabel={showExtras}
-                        extrasStartIndex={extrasStartIndex}
+                        extrasStartIndex={showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex}
                         showPrices={false}
                       />
                     )
@@ -1130,13 +1185,26 @@ export default function BookPage() {
               {rows
                 .filter((r) => r.qty > 0)
                 .map((r) => (
-                  <div key={r.id} className="flex items-center justify-between py-2">
+                  <div key={r.id} className="flex items-center justify-between py-2 border-b border-gray-100 pb-2">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{r.name}</p>
+                      <p className="font-medium text-gray-900 text-sm">{r.name}</p>
                       <p className="text-xs text-gray-500">
                         {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
                       </p>
+                      {(r.price > 0 || r.time_minutes > 0) && (
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          {r.price > 0 && `£${r.price.toFixed(2)}`}
+                          {r.price > 0 && r.per_unit_type && r.per_unit_type !== 'item' && ` per ${r.per_unit_type}`}
+                          {r.price > 0 && r.time_minutes > 0 && ' • '}
+                          {r.time_minutes > 0 && `${r.time_minutes} min`}
+                        </p>
+                      )}
                     </div>
+                    {r.price > 0 && (
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <p className="font-semibold text-gray-900 text-sm">£{(r.qty * r.price).toFixed(2)}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
 

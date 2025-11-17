@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Service } from '@/lib/types'
+import { NestedServiceSelector } from './NestedServiceSelector'
 
 type Props = {
   title: string
@@ -27,33 +28,46 @@ export function ServiceSection({
   const [expanded, setExpanded] = useState(true)
 
   const handleQtyChange = (serviceId: string, qty: number) => {
-    onItemChange(serviceId, Math.max(0, qty))
+    const newQty = Math.max(0, qty)
+    // Always call onItemChange to ensure parent gets re-selected properly
+    onItemChange(serviceId, newQty)
   }
 
   const handleCheckboxToggle = (serviceId: string) => {
     const currentValue = items[serviceId]
     const currentQty = typeof currentValue === 'number' ? currentValue : Number(currentValue as string | number) || 0
-    onItemChange(serviceId, currentQty > 0 ? 0 : 1)
+    const newValue = currentQty > 0 ? 0 : 1
+    // Always call onItemChange to ensure parent gets re-selected properly
+    onItemChange(serviceId, newValue)
   }
 
   const handleDropdownChange = (serviceId: string, value: string | number) => {
     onItemChange(serviceId, value)
   }
 
+  // Better event handling for expand/collapse with stopPropagation
+  const handleExpandToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setExpanded(!expanded)
+  }
+
   return (
-    <div className="rounded-2xl border-2 border-brand-stone bg-white overflow-hidden">
+    <div className="rounded-2xl border-2 border-brand-stone bg-white overflow-hidden pointer-events-auto">
       {/* Header */}
       <button
         type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-5 bg-brand-amber/5 hover:bg-brand-amber/10 transition-colors"
+        onClick={handleExpandToggle}
+        className="w-full flex items-center justify-between p-5 bg-brand-amber/5 hover:bg-brand-amber/10 transition-colors cursor-pointer pointer-events-auto"
+        aria-expanded={expanded}
+        aria-label={`${expanded ? 'Collapse' : 'Expand'} ${title}`}
       >
-        <div className="text-left">
+        <div className="text-left pointer-events-none">
           <h3 className="text-lg font-bold text-brand-charcoal">{title}</h3>
           {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
         </div>
         <svg
-          className={`w-5 h-5 transform transition-transform text-brand-charcoal ${expanded ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 transform transition-transform text-brand-charcoal flex-shrink-0 pointer-events-none ${expanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -72,6 +86,7 @@ export function ServiceSection({
 
             const isExtra = showExtrasLabel && index >= extrasStartIndex
             const showExtrasDivider = showExtrasLabel && index === extrasStartIndex
+            const hasChildren = service.children && service.children.length > 0
 
             return (
               <div key={service.id}>
@@ -83,104 +98,126 @@ export function ServiceSection({
                   </div>
                 )}
 
-                {/* Dropdown style for non-extra dropdown-type services */}
-                {service.question_type === 'dropdown' && service.dropdown_options?.length && !isExtra ? (
-                  <div className="p-3 rounded-lg border bg-white">
-                    <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
-                    {service.description && (
-                      <p className="text-xs text-gray-600 mb-2">{service.description}</p>
-                    )}
-                    {showPrices && service.price > 0 && (
-                      <p className="text-xs text-gray-600 mb-2">
-                        £{service.price.toFixed(2)}
-                        {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
-                        {service.time_minutes > 0 && ` · ${service.time_minutes} min`}
-                      </p>
-                    )}
-                    <select
-                      className="input w-full"
-                      value={currentValue ?? ''}
-                      onChange={(e) => handleDropdownChange(service.id, e.target.value)}
-                    >
-                      <option value="">Select an option</option>
-                      {service.dropdown_options.map((opt, idx) => (
-                        <option key={idx} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : service.question_type === 'checkbox' && !isExtra ? (
-                  // Checkbox style
-                  <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={currentQty > 0}
-                      onChange={() => handleCheckboxToggle(service.id)}
-                      className="w-5 h-5 text-brand-amber focus:ring-brand-amber rounded"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-brand-charcoal">{service.name}</p>
-                      {service.description && (
-                        <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
-                      )}
-                      {showPrices && service.price > 0 && (
-                        <p className="text-sm text-gray-600">
-                          £{service.price.toFixed(2)}
-                          {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
-                        </p>
-                      )}
-                    </div>
-                    {showPrices && service.price > 0 && currentQty > 0 && (
-                      <span className="text-brand-amber font-bold">
-                        £{(service.price * currentQty).toFixed(2)}
-                      </span>
-                    )}
-                  </div>
+                {/* Use NestedServiceSelector for services with children */}
+                {hasChildren ? (
+                  <NestedServiceSelector
+                    service={service}
+                    items={items}
+                    onItemChange={onItemChange}
+                    showPrices={showPrices}
+                  />
                 ) : (
-                  // Plus/minus style (default, including extras)
-                  <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center"
-                        onClick={() => handleQtyChange(service.id, currentQty - 1)}
-                      >
-                        -
-                      </button>
-                      <input
-                        type="number"
-                        min={0}
-                        className="input w-16 text-center"
-                        value={currentQty}
-                        onChange={(e) => handleQtyChange(service.id, Number(e.target.value))}
-                      />
-                      <button
-                        type="button"
-                        className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center"
-                        onClick={() => handleQtyChange(service.id, currentQty + 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-brand-charcoal">{service.name}</p>
-                      {service.description && (
-                        <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
-                      )}
-                      {showPrices && service.price > 0 && (
-                        <p className="text-sm text-gray-600">
-                          £{service.price.toFixed(2)}
-                          {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
-                        </p>
-                      )}
-                    </div>
-                    {showPrices && service.price > 0 && currentQty > 0 && (
-                      <span className="text-brand-amber font-bold text-lg">
-                        £{(service.price * currentQty).toFixed(2)}
-                      </span>
+                  <>
+                    {/* Original logic for services without children */}
+
+                    {/* Dropdown style for non-extra dropdown-type services */}
+                    {service.question_type === 'dropdown' && service.dropdown_options?.length && !isExtra ? (
+                      <div className="p-3 rounded-lg border bg-white">
+                        <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
+                        {service.description && (
+                          <p className="text-xs text-gray-600 mb-2">{service.description}</p>
+                        )}
+                        {showPrices && service.price > 0 && (
+                          <p className="text-xs text-gray-600 mb-2">
+                            £{service.price.toFixed(2)}
+                            {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
+                            {service.time_minutes > 0 && ` · ${service.time_minutes} min`}
+                          </p>
+                        )}
+                        <select
+                          className="input w-full"
+                          value={currentValue ?? ''}
+                          onChange={(e) => handleDropdownChange(service.id, e.target.value)}
+                        >
+                          <option value="">Select an option</option>
+                          {service.dropdown_options.map((opt, idx) => (
+                            <option key={idx} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : service.question_type === 'checkbox' && !isExtra ? (
+                      // Checkbox style
+                      <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors cursor-pointer pointer-events-auto">
+                        <input
+                          type="checkbox"
+                          checked={currentQty > 0}
+                          onChange={() => handleCheckboxToggle(service.id)}
+                          className="w-5 h-5 text-brand-amber focus:ring-brand-amber rounded cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-brand-charcoal">{service.name}</p>
+                          {service.description && (
+                            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                          )}
+                          {showPrices && service.price > 0 && (
+                            <p className="text-sm text-gray-600">
+                              £{service.price.toFixed(2)}
+                              {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
+                            </p>
+                          )}
+                        </div>
+                        {showPrices && service.price > 0 && currentQty > 0 && (
+                          <span className="text-brand-amber font-bold">
+                            £{(service.price * currentQty).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      // Plus/minus style (default, including extras)
+                      <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors pointer-events-auto">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleQtyChange(service.id, currentQty - 1)
+                            }}
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            className="input w-16 text-center pointer-events-auto"
+                            value={currentQty}
+                            onChange={(e) => handleQtyChange(service.id, Number(e.target.value))}
+                          />
+                          <button
+                            type="button"
+                            className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleQtyChange(service.id, currentQty + 1)
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-brand-charcoal">{service.name}</p>
+                          {service.description && (
+                            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                          )}
+                          {showPrices && service.price > 0 && (
+                            <p className="text-sm text-gray-600">
+                              £{service.price.toFixed(2)}
+                              {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
+                            </p>
+                          )}
+                        </div>
+                        {showPrices && service.price > 0 && currentQty > 0 && (
+                          <span className="text-brand-amber font-bold text-lg">
+                            £{(service.price * currentQty).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )
