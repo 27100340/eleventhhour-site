@@ -11,7 +11,8 @@ type Props = {
 }
 
 export function NestedServiceSelector({ service, items, onItemChange, showPrices = false }: Props) {
-  const [expanded, setExpanded] = useState(true)
+  // Start collapsed by default; user can expand to see child services.
+  const [expanded, setExpanded] = useState(false)
 
   // Get current value
   const currentValue = items[service.id] || 0

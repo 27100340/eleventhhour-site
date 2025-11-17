@@ -27,9 +27,7 @@ export default function CreateBookingTab() {
     processStripePayment: false,
     generateInvoice: true,
   })
-  const [selectedCleaningType, setSelectedCleaningType] = useState<'regular_cleaning' | 'deep_cleaning'>(
-    'regular_cleaning',
-  )
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -69,31 +67,49 @@ export default function CreateBookingTab() {
 
   const allServicesFlat = useMemo(() => flattenServices(services), [services])
 
-  // Calculate totals (similar to public booking page)
-  const selectedServices = allServicesFlat
-    .map((s) => {
-      const value = form.items[s.id] ?? 0
-      let qty = 0
-      if (s.question_type === 'checkbox') {
-        qty = value ? 1 : 0
-      } else if (s.question_type === 'dropdown') {
-        qty = typeof value === 'number' ? value : Number(value) || 0
-      } else {
-        qty = typeof value === 'number' ? value : Number(value) || 0
-      }
-      return { ...s, qty }
-    })
-    .filter((s) => s.qty > 0 && !s.is_category)
+  // All top-level categories for admin selection (matches public booking form)
+  const allCategories = useMemo(() => {
+    return services.filter((s) => s.is_category && !s.parent_id)
+  }, [services])
+
+  // Calculate rows with quantities, including parent category wrapper (qty 1)
+  const rows = useMemo(
+    () =>
+      allServicesFlat.map((s) => {
+        const value = form.items[s.id] ?? 0
+
+        const isSelectedTopLevelCategory =
+          selectedCategoryId === s.id && s.is_category && !s.parent_id
+
+        let qty = 0
+        if (isSelectedTopLevelCategory) {
+          // Parent category: always count as 1 unit when selected,
+          // even if it has no explicit price or time set.
+          qty = 1
+        } else if (s.question_type === 'checkbox') {
+          qty = value ? 1 : 0
+        } else if (s.question_type === 'dropdown') {
+          qty = typeof value === 'number' ? value : Number(value) || 0
+        } else {
+          qty = typeof value === 'number' ? value : Number(value) || 0
+        }
+
+        return { ...s, qty }
+      }),
+    [allServicesFlat, form.items, selectedCategoryId],
+  )
+
+  const selectedServices = rows.filter((s) => s.qty > 0)
 
   // Calculate subtotal with special handling for Regular Cleaning
   let subtotal = 0
   let totalTime = 0
 
-  // Check if regular cleaning is selected and calculate special pricing
-  const regularCategory = services.find((s) => s.category_type === 'regular_cleaning')
+  // Check if regular cleaning category is selected and calculate special pricing
+  const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
   let isRegularCleaningSelected = false
 
-  if (regularCategory && selectedCleaningType === 'regular_cleaning') {
+  if (regularCategory && selectedCategoryId === regularCategory.id) {
     const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
     const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
 
@@ -121,6 +137,47 @@ export default function CreateBookingTab() {
 
   const total = Math.max(0, subtotal - (form.discount || 0))
 
+  // Handle category selection - clear items from other categories and set defaults
+  const handleCategoryChange = (categoryId: string) => {
+    if (selectedCategoryId === categoryId) return
+
+    const selectedCategory = allCategories.find((cat) => cat.id === categoryId)
+    if (!selectedCategory) return
+
+    // Collect all service IDs (parent + nested children) for other categories
+    const otherCategories = allCategories.filter((cat) => cat.id !== categoryId)
+    const otherServiceIds = new Set<string>()
+
+    const collectIds = (svc: Service) => {
+      otherServiceIds.add(svc.id)
+      if (svc.children && svc.children.length > 0) {
+        svc.children.forEach(collectIds)
+      }
+    }
+
+    otherCategories.forEach(collectIds)
+
+    // Clear items from other categories
+    const updatedItems: Record<string, number | string> = { ...form.items }
+    otherServiceIds.forEach((id) => {
+      delete updatedItems[id]
+    })
+
+    // For Regular Cleaning, set cleaners to 1 by default
+    if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
+      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaners')
+      if (cleanersService && !updatedItems[cleanersService.id]) {
+        updatedItems[cleanersService.id] = 1
+      }
+    }
+
+    setForm((f) => ({
+      ...f,
+      items: updatedItems,
+    }))
+    setSelectedCategoryId(categoryId)
+  }
+
   async function createDraftBooking() {
     // Validate required fields
     if (!form.firstName || !form.lastName || !form.phone) {
@@ -129,7 +186,7 @@ export default function CreateBookingTab() {
     }
 
     // For regular cleaning, check that both hours and cleaners are selected
-    if (selectedCleaningType === 'regular_cleaning' && regularCategory) {
+    if (regularCategory && selectedCategoryId === regularCategory.id) {
       const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
       const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
 
@@ -179,7 +236,7 @@ export default function CreateBookingTab() {
       // Create booking items
       let items: Array<any> = []
 
-      // For regular cleaning, include hours and cleaners items
+      // For regular cleaning, include hours and cleaners items (plus parent wrapper line)
       if (isRegularCleaningSelected && regularCategory) {
         const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
         const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
@@ -202,6 +259,14 @@ export default function CreateBookingTab() {
               qty: cleaners,
               unit_price: cleanersService.price,
               time_minutes: cleanersService.time_minutes,
+            },
+            {
+              // Parent regular cleaning wrapper line (qty 1, zero-priced)
+              booking_id: booking.id,
+              service_id: regularCategory.id,
+              qty: 1,
+              unit_price: 0,
+              time_minutes: 0,
             },
           )
         }
@@ -469,104 +534,125 @@ export default function CreateBookingTab() {
           <div className="rounded-2xl border-2 border-brand-stone bg-white p-5">
             <h3 className="font-bold text-lg text-brand-charcoal mb-4">Select Services *</h3>
             <div className="space-y-4">
-              {/* Cleaning type selector */}
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Main cleaning type</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCleaningType('regular_cleaning')}
-                    className={`text-left rounded-2xl border px-4 py-3 text-sm transition-colors ${
-                      selectedCleaningType === 'regular_cleaning'
-                        ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-slate-200 bg-white hover:border-blue-400'
-                    }`}
-                  >
-                    <p className="font-semibold">Regular Cleaning</p>
-                    <p className="text-xs mt-1 opacity-80">
-                      Standard clean with flexible hours and cleaners.
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCleaningType('deep_cleaning')}
-                    className={`text-left rounded-2xl border px-4 py-3 text-sm transition-colors ${
-                      selectedCleaningType === 'deep_cleaning'
-                        ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-slate-200 bg-white hover:border-blue-400'
-                    }`}
-                  >
-                    <p className="font-semibold">Deep / End of Tenancy</p>
-                    <p className="text-xs mt-1 opacity-80">
-                      Intensive clean of rooms with optional extras.
-                    </p>
-                  </button>
-                </div>
-              </div>
+              <p className="text-sm text-gray-600">
+                Choose one service category below, then configure the services for this booking.
+              </p>
 
-              {/* Category groups similar to public booking form */}
-              {(() => {
-                const mainCategories = services.filter(
-                  (s) => s.category_type === 'regular_cleaning' || s.category_type === 'deep_cleaning',
-                )
-                const otherCategories = services.filter(
-                  (s) => s.category_type !== 'regular_cleaning' && s.category_type !== 'deep_cleaning',
-                )
+              {allCategories.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-brand-charcoal mb-2">Service Categories (select one)</p>
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    {allCategories.map((category) => {
+                      const isSelected = selectedCategoryId === category.id
+                      const categoryIcons: Record<string, string> = {
+                        regular_cleaning: '🧹',
+                        deep_cleaning: '🧼',
+                        end_of_tenancy: '📦',
+                        windows: '🪟',
+                        gardening: '🌿',
+                        landscaping: '🌳',
+                        handyman: '🛠️',
+                        waste_removal: '🗑️',
+                      }
+                      const icon = categoryIcons[category.category_type || ''] || '📋'
 
-                const selectedMain = mainCategories.find((c) => c.category_type === selectedCleaningType)
-
-                return (
-                  <div className="space-y-4">
-                    {/* Selected main category */}
-                    {selectedMain && (
-                      <ServiceSection
-                        key={selectedMain.id}
-                        title={selectedMain.name}
-                        description={
-                          selectedMain.category_type === 'regular_cleaning'
-                            ? 'Select number of hours and cleaners needed'
-                            : 'Select rooms to be deep cleaned and any extras'
-                        }
-                        services={
-                          selectedMain.children && selectedMain.children.length > 0
-                            ? selectedMain.children
-                            : [selectedMain]
-                        }
-                        items={form.items}
-                        onItemChange={updateItem}
-                        showExtrasLabel={selectedMain.category_type === 'deep_cleaning'}
-                        extrasStartIndex={selectedMain.category_type === 'deep_cleaning' ? 8 : 0}
-                      />
-                    )}
-
-                    {/* Other categories (windows, gardening, etc.) */}
-                    {otherCategories.map((category) => (
-                      <ServiceSection
-                        key={category.id}
-                        title={category.name}
-                        description={
-                          category.category_type === 'windows'
-                            ? 'Exterior window cleaning per square foot'
-                            : category.category_type === 'gardening'
-                            ? 'Select gardening services needed'
-                            : ''
-                        }
-                        services={
-                          category.children && category.children.length > 0 ? category.children : [category]
-                        }
-                        items={form.items}
-                        onItemChange={updateItem}
-                      />
-                    ))}
-
-                    {services.length === 0 && (
-                      <div className="text-sm text-slate-600 p-4 text-center border rounded-xl">
-                        No services found. Check your services configuration.
-                      </div>
-                    )}
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => handleCategoryChange(category.id)}
+                          className={`text-left rounded-2xl border-2 px-4 py-3 text-sm transition-all ${
+                            isSelected
+                              ? 'border-brand-amber bg-brand-amber/10 ring-2 ring-brand-amber/40'
+                              : 'border-slate-200 bg-white hover:border-brand-amber/60 hover:bg-brand-amber/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl">{icon}</span>
+                            <p className="font-semibold">{category.name}</p>
+                          </div>
+                          {isSelected && (
+                            <p className="text-xs text-brand-amber font-medium">Selected</p>
+                          )}
+                        </button>
+                      )
+                    })}
                   </div>
-                )
-              })()}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {selectedCategoryId && allCategories.length > 0 && (() => {
+                  const selectedCategory = allCategories.find(
+                    (c) => c.id === selectedCategoryId,
+                  )
+                  if (!selectedCategory) return null
+
+                  const childServices = selectedCategory.children || []
+                  const showExtras =
+                    selectedCategory.category_type === 'deep_cleaning' ||
+                    selectedCategory.category_type === 'end_of_tenancy'
+                  const extrasStartIndex = showExtras ? 8 : 0
+
+                  const getDescription = () => {
+                    switch (selectedCategory.category_type) {
+                      case 'regular_cleaning':
+                        return 'Select number of hours and cleaners needed'
+                      case 'deep_cleaning':
+                      case 'end_of_tenancy':
+                        return 'Select rooms to be cleaned and any extras'
+                      case 'windows':
+                        return 'Exterior window cleaning - enter square footage'
+                      case 'gardening':
+                        return 'Select gardening services needed'
+                      case 'landscaping':
+                        return 'Professional landscaping services'
+                      case 'handyman':
+                        return 'Handyman services for this booking'
+                      case 'waste_removal':
+                        return 'Waste and junk removal services'
+                      default:
+                        return 'Configure services for this category'
+                    }
+                  }
+
+                  const servicesForSection: Service[] = []
+
+                  if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
+                    servicesForSection.push(selectedCategory)
+                  }
+
+                  if (childServices.length > 0) {
+                    servicesForSection.push(...childServices)
+                  }
+
+                  if (servicesForSection.length === 0) {
+                    servicesForSection.push(selectedCategory)
+                  }
+
+                  return (
+                    <ServiceSection
+                      key={selectedCategory.id}
+                      title={selectedCategory.name}
+                      description={getDescription()}
+                      services={servicesForSection}
+                      items={form.items}
+                      onItemChange={updateItem}
+                      showExtrasLabel={showExtras}
+                      extrasStartIndex={
+                        showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex
+                      }
+                      showPrices={false}
+                    />
+                  )
+                })()}
+
+                {services.length === 0 && (
+                  <div className="text-sm text-slate-600 p-4 text-center border rounded-xl">
+                    No services found. Check your services configuration.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
