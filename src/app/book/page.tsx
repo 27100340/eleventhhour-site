@@ -1011,10 +1011,9 @@ export default function BookPage() {
                     // Add parent service if it has a price or time
                     if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
                       servicesForSection.push(selectedCategory)
-                    }
-
-                    // Add all children
-                    if (childServices.length > 0) {
+                      // Don't add children here - NestedServiceSelector will handle them when expanded
+                    } else if (childServices.length > 0) {
+                      // If parent has no price/time, add children directly
                       servicesForSection.push(...childServices)
                     }
 
@@ -1036,6 +1035,7 @@ export default function BookPage() {
                         showExtrasLabel={showExtras}
                         extrasStartIndex={showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex}
                         showPrices={false}
+                        defaultExpandedNested={true}
                       />
                     )
                   })()
@@ -1186,26 +1186,11 @@ export default function BookPage() {
               {rows
                 .filter((r) => r.qty > 0)
                 .map((r) => (
-                  <div key={r.id} className="flex items-center justify-between py-2 border-b border-gray-100 pb-2">
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 text-sm">{r.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
-                      </p>
-                      {(r.price > 0 || r.time_minutes > 0) && (
-                        <p className="text-xs text-gray-600 mt-0.5">
-                          {r.price > 0 && `£${r.price.toFixed(2)}`}
-                          {r.price > 0 && r.per_unit_type && r.per_unit_type !== 'item' && ` per ${r.per_unit_type}`}
-                          {r.price > 0 && r.time_minutes > 0 && ' • '}
-                          {r.time_minutes > 0 && `${r.time_minutes} min`}
-                        </p>
-                      )}
-                    </div>
-                    {r.price > 0 && (
-                      <div className="text-right flex-shrink-0 ml-2">
-                        <p className="font-semibold text-gray-900 text-sm">£{(r.qty * r.price).toFixed(2)}</p>
-                      </div>
-                    )}
+                  <div key={r.id} className="py-2 border-b border-gray-100 pb-2">
+                    <p className="font-medium text-gray-900 text-sm">{r.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
+                    </p>
                   </div>
                 ))}
 

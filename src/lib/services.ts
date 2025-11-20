@@ -59,6 +59,6 @@ export const SERVICES: Service[] = [
   },
   { slug: 'locksmith', name: 'Locksmith', blurb: '24/7 lockouts, lock replacement & security upgrades.', images: ['/svc-lock-1.jpg','/svc-lock-2.jpg'] },
   { slug: 'appliance-repair', name: 'Appliance Repair', blurb: 'Ovens, washers, fridges—diagnostics & fixes.', images: ['/svc-appliance-1.jpg','/svc-appliance-2.jpg'] },
-  { slug: 'landscaping', name: 'Landscaping', blurb: 'Hard & soft landscaping projects, design to build.', images: ['/svc-land-1.jpg','/svc-land-2.jpg'] },
+  { slug: 'landscaping', name: 'Landscaping', blurb: 'Hard & soft landscaping projects, design to build.', images: ['/landscaping.jpg'] },
 ]
 export const getService = (slug: string) => SERVICES.find(s => s.slug === slug)

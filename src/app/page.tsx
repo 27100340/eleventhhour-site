@@ -26,7 +26,7 @@ const householdTiles: Tile[] = [
 const commercialTiles: Tile[] = [
   { title: 'Office Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=250&fit=crop&crop=center', desc: 'Daily/weekly office contracts with audits & sign-off.' },
   { title: 'Retail & Showrooms', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center', desc: 'Front-of-house shine to match your brand.' },
-  { title: 'Landscaping', href: '/services/landscaping', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=250&fit=crop', desc: 'Hard & soft landscaping projects, design to build.' },
+  { title: 'Landscaping', href: '/services/landscaping', img: '/landscaping.jpg', desc: 'Hard & soft landscaping projects, design to build.' },
   { title: 'Plumbing & Heating', href: '/services/plumbing-heating', img: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&h=250&fit=crop', desc: 'Commercial pipe repairs, boiler servicing & installations.' },
   { title: 'Electrical', href: '/services/electrical', img: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&h=250&fit=crop', desc: 'Commercial lighting installations & electrical work.' },
   { title: 'Handyman', href: '/services/handyman', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=250&fit=crop', desc: 'Facility repairs, maintenance & commercial odd jobs.' },
@@ -57,7 +57,7 @@ function getServiceImage(title: string, isHousehold: boolean): string {
     commercial: {
       'Office Cleaning': '1497366216548-37526070297c',
       'Retail & Showrooms': '1497366811353-6870744d04b2',
-      'Landscaping': '1558618666-fcd25c85cd64',
+      'Landscaping': '/landscaping.jpg',
       'Plumbing & Heating': '1585704032915-c3400ca199e7',
       'Electrical': '1621905251918-48416bd8575a',
       'Handyman': '1581578731548-c64695cc6952',
@@ -194,7 +194,7 @@ const FeaturedServicesSection = memo(({ isHousehold, tiles }: { isHousehold: boo
             >
               <div className="relative overflow-hidden rounded-t-2xl" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
                 <img
-                  src={t.img ? (t.img.startsWith('http') ? t.img : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_BUCKET || 'website-images'}/${t.img}`) : `https://images.unsplash.com/photo-${getServiceImage(t.title, isHousehold)}?w=400&h=250&fit=crop&crop=center`}
+                  src={t.img ? (t.img.startsWith('http') || t.img.startsWith('/') ? t.img : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_BUCKET || 'website-images'}/${t.img}`) : `https://images.unsplash.com/photo-${getServiceImage(t.title, isHousehold)}?w=400&h=250&fit=crop&crop=center`}
                   alt={t.title}
                   className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"

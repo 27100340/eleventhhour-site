@@ -8,11 +8,12 @@ type Props = {
   items: Record<string, number | string>
   onItemChange: (serviceId: string, value: number | string) => void
   showPrices?: boolean
+  defaultExpanded?: boolean
 }
 
-export function NestedServiceSelector({ service, items, onItemChange, showPrices = false }: Props) {
+export function NestedServiceSelector({ service, items, onItemChange, showPrices = false, defaultExpanded = false }: Props) {
   // Start collapsed by default; user can expand to see child services.
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
 
   // Current raw value from form state
   const rawValue = items[service.id] ?? 0

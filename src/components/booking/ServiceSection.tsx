@@ -13,6 +13,7 @@ type Props = {
   showExtrasLabel?: boolean
   extrasStartIndex?: number
   showPrices?: boolean
+  defaultExpandedNested?: boolean
 }
 
 export function ServiceSection({
@@ -24,6 +25,7 @@ export function ServiceSection({
   showExtrasLabel = false,
   extrasStartIndex = 0,
   showPrices = false,
+  defaultExpandedNested = false,
 }: Props) {
   const [expanded, setExpanded] = useState(true)
 
@@ -105,6 +107,7 @@ export function ServiceSection({
                     items={items}
                     onItemChange={onItemChange}
                     showPrices={showPrices}
+                    defaultExpanded={defaultExpandedNested}
                   />
                 ) : (
                   <>

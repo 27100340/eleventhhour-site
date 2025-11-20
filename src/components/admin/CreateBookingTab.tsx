@@ -620,9 +620,9 @@ export default function CreateBookingTab() {
 
                   if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
                     servicesForSection.push(selectedCategory)
-                  }
-
-                  if (childServices.length > 0) {
+                    // Don't add children here - NestedServiceSelector will handle them when expanded
+                  } else if (childServices.length > 0) {
+                    // If parent has no price/time, add children directly
                     servicesForSection.push(...childServices)
                   }
 
