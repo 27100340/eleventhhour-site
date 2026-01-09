@@ -111,7 +111,7 @@ export default function CreateBookingTab() {
 
   if (regularCategory && selectedCategoryId === regularCategory.id) {
     const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-    const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+    const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
 
     if (hoursService && cleanersService) {
       const hours = Number(form.items[hoursService.id] || 0)
@@ -165,7 +165,7 @@ export default function CreateBookingTab() {
 
     // For Regular Cleaning, set cleaners to 1 by default
     if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
-      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaners')
+      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaner(s)')
       if (cleanersService && !updatedItems[cleanersService.id]) {
         updatedItems[cleanersService.id] = 1
       }
@@ -188,7 +188,7 @@ export default function CreateBookingTab() {
     // For regular cleaning, check that both hours and cleaners are selected
     if (regularCategory && selectedCategoryId === regularCategory.id) {
       const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-      const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+      const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
 
       const hours = Number(form.items[hoursService?.id || ''] || 0)
       const cleaners = Number(form.items[cleanersService?.id || ''] || 0)
@@ -239,7 +239,7 @@ export default function CreateBookingTab() {
       // For regular cleaning, include hours and cleaners items (plus parent wrapper line)
       if (isRegularCleaningSelected && regularCategory) {
         const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-        const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+        const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
 
         if (hoursService && cleanersService) {
           const hours = Number(form.items[hoursService.id] || 0)
@@ -315,7 +315,7 @@ export default function CreateBookingTab() {
         // For regular cleaning, include hours and cleaners items
         if (isRegularCleaningSelected && regularCategory) {
           const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-          const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaners')
+          const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
 
           if (hoursService && cleanersService) {
             const hours = Number(form.items[hoursService.id] || 0)
