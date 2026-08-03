@@ -1,28 +1,19 @@
 // src/app/api/create-checkout-session/route.ts
+// Creates a Stripe Checkout session for an existing booking. The booking row
+// and its items in the database are the source of truth for the amount
+// charged — the client payload only identifies the booking.
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { createServerSupabase } from '@/lib/supabase/server'
+import { buildStripeLines, computeBookingTotals } from '@/lib/pricing'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type CheckoutItem = {
-  service_id: string
-  name: string
-  qty: number
-  unit_price: number
-  time_minutes: number
-}
-
 type CheckoutPayload = {
   bookingId: string
-  items: CheckoutItem[]
-  total: number
-  subtotal?: number
-  discount?: number
   customerEmail?: string
   customerName?: string
   adminTotalOverride?: number | null
@@ -30,128 +21,150 @@ type CheckoutPayload = {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('📝 Creating Stripe checkout session...')
-
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('❌ STRIPE_SECRET_KEY not found in environment')
       return NextResponse.json(
         { error: { message: 'Stripe secret key not configured' } },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
     const payload: CheckoutPayload = await req.json()
-    console.log('📦 Payload received:', {
-      bookingId: payload.bookingId,
-      itemCount: payload.items?.length,
-      total: payload.total,
-      discount: payload.discount
-    })
-
-    if (!payload.items || payload.items.length === 0) {
-      console.error('❌ No items in payload')
+    if (!payload.bookingId) {
       return NextResponse.json(
-        { error: { message: 'No items provided' } },
-        { status: 400 }
+        { error: { message: 'bookingId is required' } },
+        { status: 400 },
       )
     }
 
-    // Calculate subtotal from items
-    const calculatedSubtotal = payload.items.reduce(
-      (sum, item) => sum + (item.unit_price * item.qty),
-      0
-    )
-    const subtotal = payload.subtotal || calculatedSubtotal
-    const discount = payload.discount || 0
-    const calculatedTotal = subtotal - discount
-    const total = payload.total || calculatedTotal
+    const supabase = createServerSupabase(true)
 
-    // Determine if we need to apply proportional price adjustment for admin override
-    const hasAdminOverride = typeof payload.adminTotalOverride === 'number'
-    const priceMultiplier = hasAdminOverride && calculatedTotal > 0
-      ? payload.adminTotalOverride! / calculatedTotal
-      : 1
+    const [bookingRes, itemsRes, servicesRes] = await Promise.all([
+      supabase.from('bookings').select('*').eq('id', payload.bookingId).single(),
+      supabase
+        .from('booking_items')
+        .select('service_id, qty, unit_price, time_minutes')
+        .eq('booking_id', payload.bookingId),
+      supabase
+        .from('services')
+        .select('id, name, price, parent_id, is_category, category_type'),
+    ])
 
-    if (hasAdminOverride) {
-      console.log('🔧 Admin override detected. Calculated total:', calculatedTotal, 'Override:', payload.adminTotalOverride, 'Multiplier:', priceMultiplier)
+    if (bookingRes.error || !bookingRes.data) {
+      return NextResponse.json(
+        { error: { message: 'Booking not found' } },
+        { status: 404 },
+      )
+    }
+    if (itemsRes.error) {
+      return NextResponse.json({ error: itemsRes.error }, { status: 400 })
     }
 
-    // Create line items for Stripe
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+    const booking = bookingRes.data
+    const items = itemsRes.data || []
+    const services = servicesRes.data || []
 
-    // Add service items with proportional pricing if override exists
-    payload.items.forEach((item) => {
-      const adjustedPrice = item.unit_price * priceMultiplier
-      lineItems.push({
+    if (items.length === 0) {
+      return NextResponse.json(
+        { error: { message: 'Booking has no items to charge' } },
+        { status: 400 },
+      )
+    }
+
+    const totals = computeBookingTotals(items, services)
+    const discount = Math.max(0, Number(booking.discount) || 0)
+    const hasAdminOverride =
+      typeof payload.adminTotalOverride === 'number' &&
+      payload.adminTotalOverride > 0
+
+    let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[]
+    let couponId: string | undefined
+
+    if (hasAdminOverride) {
+      // Admin set an exact final amount: charge it as a single line, no coupon.
+      lineItems = [
+        {
+          price_data: {
+            currency: 'gbp',
+            product_data: { name: 'Cleaning service — agreed total' },
+            unit_amount: Math.round(payload.adminTotalOverride! * 100),
+          },
+          quantity: 1,
+        },
+      ]
+    } else {
+      lineItems = buildStripeLines(items, services).map((line) => ({
         price_data: {
           currency: 'gbp',
           product_data: {
-            name: item.name,
-            description: `${item.time_minutes} minutes`,
+            name: line.name,
+            ...(line.description ? { description: line.description } : {}),
           },
-          unit_amount: Math.round(adjustedPrice * 100), // Convert to pence
+          unit_amount: line.unit_amount_pence,
         },
-        quantity: item.qty,
-      })
-    })
+        quantity: line.quantity,
+      }))
 
-    // Get the origin from the request headers
-    const origin = req.headers.get('origin') || 'http://localhost:3000'
-
-    // Create a coupon for the discount if applicable
-    let couponId: string | undefined
-    if (discount > 0) {
-      console.log('🎟️ Creating discount coupon for:', discount, 'GBP')
-      const coupon = await stripe.coupons.create({
-        amount_off: Math.round(discount * 100), // Convert to pence
-        currency: 'gbp',
-        duration: 'once',
-        name: `Discount - ${discount.toFixed(2)} GBP`,
-      })
-      couponId = coupon.id
-      console.log('✅ Coupon created:', couponId)
+      if (discount > 0) {
+        const coupon = await stripe.coupons.create({
+          amount_off: Math.round(discount * 100),
+          currency: 'gbp',
+          duration: 'once',
+          name: `Discount — £${discount.toFixed(2)}`,
+        })
+        couponId = coupon.id
+      }
     }
 
-    // Create Stripe Checkout Session
-    console.log('🔄 Creating Stripe session with origin:', origin)
-    console.log('💰 Subtotal:', subtotal, 'GBP | Discount:', discount, 'GBP | Total:', total, 'GBP')
+    const origin =
+      req.headers.get('origin') ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'http://localhost:3000'
+
+    const chargedTotal = hasAdminOverride
+      ? payload.adminTotalOverride!
+      : Math.max(0, totals.subtotal - discount)
 
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${payload.bookingId}`,
+      success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${booking.id}`,
       cancel_url: `${origin}/book?canceled=true`,
-      customer_email: payload.customerEmail,
+      customer_email: booking.email || payload.customerEmail || undefined,
       metadata: {
-        bookingId: payload.bookingId,
+        bookingId: booking.id,
         discount: discount.toString(),
-        subtotal: subtotal.toString(),
-        total: total.toString(),
+        subtotal: totals.subtotal.toString(),
+        total: chargedTotal.toString(),
       },
     }
-
-    // Add discount coupon if applicable
     if (couponId) {
       sessionParams.discounts = [{ coupon: couponId }]
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    console.log('✅ Stripe session created:', session.id)
-    console.log('💳 Checkout URL:', session.url)
+    // Record the session on the booking so the public success page can look
+    // the booking up with session-scoped access, and keep DB totals in sync
+    // with what Stripe will actually charge.
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({
+        stripe_session_id: session.id,
+        subtotal: totals.subtotal,
+        total: chargedTotal,
+        total_time_minutes: totals.totalTimeMinutes,
+      })
+      .eq('id', booking.id)
+    if (updateError) {
+      console.error('Failed to record Stripe session on booking:', updateError)
+    }
+
     return NextResponse.json({ sessionId: session.id, url: session.url })
-  } catch (error: any) {
-    console.error('❌ Stripe checkout session creation failed:', error)
-    console.error('Error details:', {
-      message: error?.message,
-      type: error?.type,
-      code: error?.code,
-      statusCode: error?.statusCode,
-    })
-    return NextResponse.json(
-      { error: { message: error?.message || 'Failed to create checkout session', details: error?.type } },
-      { status: 500 }
-    )
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to create checkout session'
+    console.error('Stripe checkout session creation failed:', error)
+    return NextResponse.json({ error: { message } }, { status: 500 })
   }
 }
