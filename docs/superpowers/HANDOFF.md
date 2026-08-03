@@ -1,6 +1,9 @@
 # REVAMP HANDOFF — resume here
 
-**Last updated:** 2026-08-03 (end of Phase 3)
+**Last updated:** 2026-08-03 (end of Phase 4)
+
+> **⚠ PUSH BLOCKED:** this session could not push (no `origin` remote existed in this clone; adding one was denied by the permission classifier). Phases 1–4 exist only locally. User must run:
+> `git remote add origin https://github.com/27100340/eleventhhour-site.git && git push -u origin revamp/full-site`
 **Branch:** `revamp/full-site` (pushed to origin). Do all revamp work here.
 **Full spec:** `docs/superpowers/specs/2026-08-03-full-site-revamp-design.md` — read it first.
 
@@ -14,8 +17,8 @@ Eleventh Hour (eleventhhour-site): Next.js 15 App Router + Tailwind v4 (CSS-firs
 | 1. Foundation fixes (security, pricing, dead code) | ✅ DONE | `5b58e20` |
 | 2. Design system (fonts, tokens, ui/, Navbar/Footer) | ✅ DONE | `f06a6a6` |
 | 3. Public pages redesign | ✅ DONE | see git log |
-| 4. Booking flow redesign + refactor | ⬜ NEXT | — |
-| 5. Admin panel redesign | ⬜ | — |
+| 4. Booking flow redesign + refactor | ✅ DONE | see git log |
+| 5. Admin panel redesign | ⬜ NEXT | — |
 | 6. Browser QA sweep + build gate | ⬜ | — |
 
 ## What Phases 1–2 established (do not undo)
@@ -40,8 +43,8 @@ Eleventh Hour (eleventhhour-site): Next.js 15 App Router + Tailwind v4 (CSS-firs
 All public pages rebuilt on the design system: homepage (mode context + TopSelectorBar preserved, memo()/getServiceImage()/gradients removed), `about`, `services/[slug]` (+ `generateMetadata`/`generateStaticParams`; SERVICES `images` arrays reference non-existent `/svc-*.jpg` files so the page is text-led), `household-services` + `commercial-services` (now linked from the homepage services section per mode), `contact` (Formspree endpoint + FormData field names preserved), `careers` (all fields/validation/Formspark endpoint preserved; console.logs removed), `privacy`/`terms` (contact details corrected to hello@eleventhhourcleaning.co.uk / 020 3355 1526; static last-updated), new `not-found.tsx`.
 Also fixed: Navbar linked to dead `/services/pest-control` — now `/services/pet-care` (PawPrint icon). Deleted `src/app/layout.tsx.backup`. LEGACY token block trimmed to only what `/book` + `/admin` still use (brand-amber(+dark)/charcoal/cream/stone/sage, font-playfair/lora, shadow-soft-lg); legacy component classes (`.gradient-bg`, `.glass`, `.text-gradient`, `.focus-ring`) deleted. Verified: `npx tsc --noEmit` clean; all routes 200 via curl; rendered HTML of every public page free of brand-* classes. Chrome extension still disconnected — visual QA deferred to Phase 6.
 
-## Phase 4 notes
-Split `src/app/book/page.tsx` (864 lines now) into step components; restyle with ui/ components; replace its 5 `alert()`s with `useToast()`; **wire `has('service_date')`** so the admin form-builder toggle controls the date field (currently inert — the datetime input renders unconditionally ~line 889 pre-refactor); keep: silent Formspree capture on step advance, discount validation, terms checkbox, payload shapes.
+## Phase 4 (DONE): Booking flow
+`book/page.tsx` split into `book/components/` (StepIndicator, DetailsStep, CategoryPicker, DiscountBox, BookingSummary); 5 `alert()`s → `useToast()`; `has('service_date')` wired (datetime field now respects the form-builder toggle; fallback config includes `service_date` so it shows when no admin row exists). Preserved exactly: silent Formspree capture on step advance, discount validation, terms checkbox, payload shapes, category-exclusivity + cleaner-default logic. `ServiceSection`/`NestedServiceSelector` restyled onto tokens with new shared `QtyStepper` (booking components no longer use brand-*). `booking-success` restyled (ink header + tick-rule), duplicate invoice-builders merged, support email fixed. Step state simplified to 1|2 (indicator shows Payment as step 3 on Stripe). Unused `.step` classes removed from globals.css.
 
 ## Phase 5 notes
 Admin: sidebar shell replacing pill tabs (`admin/dashboard/page.tsx`), restyle all tabs + booking editor + invoice page + login. Replace remaining `alert()`s (CreateBookingTab ×5, DiscountCodesTab ×6, booking editor ×3, invoice ×1, FormBuilderTab ×1) with `useToast()`. Admin pages use `useAdminGuard` (`src/lib/use-admin-guard.ts`).

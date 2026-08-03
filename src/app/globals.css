@@ -158,15 +158,6 @@
     @apply bg-surface rounded-(--radius-card) border border-line;
   }
 
-  .step {
-    @apply rounded-full border border-line px-4 py-2 text-sm font-medium
-    text-ink-soft transition-colors duration-150;
-  }
-
-  .step.active {
-    @apply bg-accent text-white border-accent;
-  }
-
   /* Signature: fine clock-tick rule. A row of hairline ticks with a
      stronger tick on the beat — the "eleventh hour" measure mark. */
   .tick-rule {
