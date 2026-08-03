@@ -536,8 +536,6 @@ export default function HomePage() {
       <TestimonialsSection isHousehold={isHousehold} testimonials={testimonials} />
       <PricingSection isHousehold={isHousehold} />
 
-      {/* Gallery removed per request */}
-
       {/* CTA band */}
       <section className="bg-brand-600">
         <div className="mx-auto max-w-6xl px-4 py-10 text-white grid md:grid-cols-2 gap-6 items-center">

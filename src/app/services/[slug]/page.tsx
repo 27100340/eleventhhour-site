@@ -3,8 +3,9 @@ import { getService } from '@/lib/services'
 import Link from 'next/link'
 import { CheckCircle, AlertCircle } from 'lucide-react'
 
-export default function ServicePage({ params }: { params: { slug: string } }) {
-  const svc = getService(params.slug)
+export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const svc = getService(slug)
   if (!svc) return notFound()
 
   return (
@@ -59,8 +60,6 @@ export default function ServicePage({ params }: { params: { slug: string } }) {
           </div>
         </section>
       )}
-
-      {/* Gallery removed per request */}
 
       {/* CTA Section */}
       <section className="bg-brand-charcoal py-16">

@@ -1,5 +1,6 @@
 // src/app/api/admin/bookings/[id]/route.ts
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -128,8 +129,11 @@ async function createFutureOccurrences(opts: {
 }
 
 /* GET */
-export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
 
@@ -151,6 +155,9 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
 /* PUT */
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
     const payload = await req.json()
@@ -283,8 +290,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
 }
 
 /* DELETE */
-export async function DELETE(_: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
 

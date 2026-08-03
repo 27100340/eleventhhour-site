@@ -20,7 +20,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -96,9 +96,6 @@ export default function Navbar() {
                       </Link>
                     ))}
                   </div>
-                  <div className="mt-6 pt-4 border-t border-gray-100">
-
-                  </div>
                 </div>
               </div>
             )}
@@ -152,7 +149,7 @@ export default function Navbar() {
             <div className="space-y-2">
               <p className="text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wide">Services</p>
               <div className="grid grid-cols-1 gap-1">
-                {navServices.slice(0, 6).map(({ slug, label, Icon }) => (
+                {navServices.map(({ slug, label, Icon }) => (
                   <Link
                     key={slug}
                     href={`/services/${slug}`}

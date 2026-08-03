@@ -1,5 +1,11 @@
 // src/app/api/public/booking/route.ts
 import { createServerSupabase } from '@/lib/supabase/server'
+import {
+  computeBookingTotals,
+  type BookingTotals,
+  type PricingItemInput,
+  type PricingServiceInfo,
+} from '@/lib/pricing'
 
 type Payload = {
   email?: string
@@ -34,15 +40,23 @@ function addMonthsUTC(iso: string, months: number): string {
   return d.toISOString()
 }
 
-function computeTotalsFromItems(items: Payload['items']) {
-  let subtotal = 0
-  let minutes = 0
-  for (const it of items || []) {
-    const qty = Number(it.qty || 0)
-    subtotal += qty * Number(it.unit_price || 0)
-    minutes += qty * Number(it.time_minutes || 0)
-  }
-  return { subtotal, minutes }
+function toPricingItems(items: Payload['items']): PricingItemInput[] {
+  return (items || []).map((it) => ({
+    service_id: it.service_id,
+    qty: Number(it.qty || 0),
+    unit_price: Number(it.unit_price || 0),
+    time_minutes: Number(it.time_minutes || 0),
+  }))
+}
+
+async function loadPricingServices(
+  supabase: ReturnType<typeof createServerSupabase>,
+): Promise<PricingServiceInfo[]> {
+  const res = await supabase
+    .from('services')
+    .select('id,name,price,parent_id,is_category,category_type')
+  if (res.error) return []
+  return (res.data || []) as PricingServiceInfo[]
 }
 
 async function createFutureOccurrences(opts: {
@@ -51,10 +65,12 @@ async function createFutureOccurrences(opts: {
   payload: Payload
   startAtISO: string
   mode: 'weekly' | 'bi_weekly' | 'monthly'
+  totals: BookingTotals
 }) {
-  const { supabase, ruleId, payload, startAtISO, mode } = opts
+  const { supabase, ruleId, payload, startAtISO, mode, totals } = opts
   const items = Array.isArray(payload.items) ? payload.items : []
-  const { subtotal, minutes } = computeTotalsFromItems(items)
+  const subtotal = totals.subtotal
+  const minutes = totals.totalTimeMinutes
 
   const rows: any[] = []
   const count = 6 // ~6 months of occurrences
@@ -114,7 +130,9 @@ async function createFutureOccurrences(opts: {
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !serviceRoleKey) {
       return new Response(JSON.stringify({ error: { message: 'Missing SUPABASE env' } }), { status: 500 })
     }
 
@@ -130,9 +148,12 @@ export async function POST(req: Request) {
 
     const supabase = createServerSupabase(true)
 
-    // Compute totals server-side to avoid 0s
+    // Compute totals server-side (shared pricing rules) to avoid 0s and to keep
+    // Regular Cleaning priced as hours × rate × cleaners.
     const items = Array.isArray(payload.items) ? payload.items : []
-    const totals = computeTotalsFromItems(items)
+    const pricingServices = await loadPricingServices(supabase)
+    const totals = computeBookingTotals(toPricingItems(items), pricingServices)
+    const discount = Number(payload.discount ?? 0)
 
     // Base booking
     const baseRes = await supabase
@@ -150,11 +171,11 @@ export async function POST(req: Request) {
         frequency: payload.frequency,
         service_date: payload.serviceDate ? new Date(payload.serviceDate).toISOString() : null,
         arrival_window: payload.arrivalWindow ?? 'exact',
-        discount: Number(payload.discount ?? 0),
+        discount,
         admin_time_override: null,
         subtotal: totals.subtotal,
-        total: totals.subtotal,
-        total_time_minutes: totals.minutes,
+        total: Math.max(0, totals.subtotal - discount),
+        total_time_minutes: totals.totalTimeMinutes,
         notes: payload.notes ?? null,
       })
       .select('*')
@@ -194,6 +215,7 @@ export async function POST(req: Request) {
           payload,
           startAtISO: rule.data.start_at,
           mode: freq === 'weekly' ? 'weekly' : freq === 'bi_weekly' ? 'bi_weekly' : 'monthly',
+          totals,
         })
       }
     }

@@ -1,11 +1,15 @@
 // src/app/api/admin/form/route.ts
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const { data, error } = await supabase
       .from('form_config')
@@ -22,6 +26,9 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true) // service-role
     const body = await req.json()
     if (!body?.config || typeof body.config !== 'object') {

@@ -1,6 +1,7 @@
 // src/app/api/admin/discount-codes/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,6 +9,9 @@ export const dynamic = 'force-dynamic'
 // GET - List all discount codes
 export async function GET(req: NextRequest) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
 
     // Get query parameters
@@ -41,6 +45,9 @@ export async function GET(req: NextRequest) {
 // POST - Create new discount code
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const body = await req.json()
 

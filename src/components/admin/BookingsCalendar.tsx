@@ -15,9 +15,10 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import enGB from 'date-fns/locale/en-GB'
+import { enGB } from 'date-fns/locale/en-GB'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { useRouter } from 'next/navigation'
+import { adminFetch } from '@/lib/admin-fetch'
 
 type APIRawEvent = {
   id: string
@@ -41,7 +42,7 @@ const locales = { 'en-GB': enGB }
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
   getDay,
   locales,
 })
@@ -88,7 +89,7 @@ export default function BookingsCalendar() {
           end: addDays(end, 1).toISOString(), // include entire last day
           v: String(Date.now()), // cache-bust
         })
-        const res = await fetch(`/api/admin/calendar?${qs.toString()}`, { cache: 'no-store' as RequestCache })
+        const res = await adminFetch(`/api/admin/calendar?${qs.toString()}`, { cache: 'no-store' as RequestCache })
         const json = await res.json()
 
         // Convert ISO strings -> Date objects and drop invalid ones

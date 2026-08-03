@@ -47,8 +47,8 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
   const PriceTime = () =>
     (service.price > 0 || service.time_minutes > 0) && (
       <p className="text-xs text-gray-600">
-        {service.price > 0 && `A�${service.price.toFixed(2)}`}
-        {service.price > 0 && service.time_minutes > 0 && ' �?� '}
+        {service.price > 0 && `£${service.price.toFixed(2)}`}
+        {service.price > 0 && service.time_minutes > 0 && ' · '}
         {service.time_minutes > 0 && `${service.time_minutes} min`}
       </p>
     )
@@ -140,7 +140,7 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
         </div>
         {service.price > 0 && currentQty > 0 && (
           <span className="text-brand-amber font-bold text-sm flex-shrink-0">
-            A�{(service.price * currentQty).toFixed(2)}
+            £{(service.price * currentQty).toFixed(2)}
           </span>
         )}
       </div>
@@ -164,14 +164,14 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
           )}
           {showPrices && service.price > 0 && (
             <p className="text-sm text-gray-600">
-              A�{service.price.toFixed(2)}
+              £{service.price.toFixed(2)}
               {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
             </p>
           )}
         </div>
         {showPrices && service.price > 0 && currentQty > 0 && (
           <span className="text-brand-amber font-semibold">
-            A�{(service.price * currentQty).toFixed(2)}
+            £{(service.price * currentQty).toFixed(2)}
           </span>
         )}
       </div>
@@ -187,7 +187,7 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
         )}
         {showPrices && service.price > 0 && (
           <p className="text-sm text-gray-600 mb-2">
-            A�{service.price.toFixed(2)}
+            £{service.price.toFixed(2)}
             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
           </p>
         )}
@@ -240,15 +240,15 @@ export function NestedServiceSelector({ service, items, onItemChange, showPrices
         )}
         {showPrices && service.price > 0 && (
           <p className="text-sm text-gray-600">
-            A�{service.price.toFixed(2)}
+            £{service.price.toFixed(2)}
             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
-            {service.time_minutes > 0 && ` �?� ${service.time_minutes} min`}
+            {service.time_minutes > 0 && ` · ${service.time_minutes} min`}
           </p>
         )}
       </div>
       {showPrices && service.price > 0 && currentQty > 0 && (
         <span className="text-brand-amber font-bold text-lg">
-          A�{(service.price * currentQty).toFixed(2)}
+          £{(service.price * currentQty).toFixed(2)}
         </span>
       )}
     </div>

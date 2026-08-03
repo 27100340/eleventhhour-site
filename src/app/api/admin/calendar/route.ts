@@ -1,5 +1,6 @@
 // src/app/api/admin/calendar/route.ts
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,9 @@ function firstWeeklyOnOrAfter(base: Date, targetStart: Date, stepDays: number) {
 
 export async function GET(req: Request) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const url = new URL(req.url)
     const startISO = url.searchParams.get('start')

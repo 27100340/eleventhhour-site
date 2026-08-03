@@ -4,26 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
-import jsPDF from 'jspdf'
 import { ServiceSection } from '@/components/booking/ServiceSection'
+import type { Service } from '@/lib/types'
+import { computeBookingTotals } from '@/lib/pricing'
 
-type Service = {
-  id: string
-  name: string
-  price: number
-  time_minutes: number
-  active: boolean
-  order_index: number
-  question_type: 'plus_minus' | 'checkbox' | 'dropdown'
-  dropdown_options: { label: string; value: string | number }[]
-  description?: string | null
-  parent_id?: string | null
-  is_category?: boolean
-  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null
-  nesting_level?: number
-  per_unit_type?: 'item' | 'sqft' | 'hour'
-  children?: Service[]
-}
 type Allowed = { service_id?: string; serviceId?: string; default_qty?: number }
 type FormConfig = {
   base_fields: string[] // email, first_name, last_name, name, phone, address, city, postcode
@@ -62,7 +46,6 @@ export default function BookPage() {
   const [services, setServices] = useState<Service[]>([])
   const [cfg, setCfg] = useState<FormConfig | null>(null)
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [done, setDone] = useState<{ id: string; total: number } | null>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
@@ -156,7 +139,7 @@ export default function BookPage() {
   const acceptTerms = watch('acceptTerms')
 
   // Flatten hierarchical services for calculations
-  const flattenServices = (services: Service[]): Service[] => {
+  const flatServices = useMemo(() => {
     const result: Service[] = []
     const flatten = (svc: Service) => {
       result.push(svc)
@@ -166,13 +149,12 @@ export default function BookPage() {
     }
     services.forEach(flatten)
     return result
-  }
+  }, [services])
 
   // Get all services (flattened) with their quantities
   const rows = useMemo(
     () => {
-      const allServices = flattenServices(services)
-      return allServices
+      return flatServices
         .filter((s) => !allowedIds || allowedIds.has(s.id))
         .map((s) => {
           const value = items?.[s.id] ?? 0
@@ -194,73 +176,34 @@ export default function BookPage() {
           return { ...s, qty, rawValue: value }
         })
     },
-    [services, allowedIds, items, selectedCategoryId],
+    [flatServices, allowedIds, items, selectedCategoryId],
   )
 
-  // Memoized Totals - only recalculate when rows or discount changes
+  // Memoized totals — shared pricing rules keep this identical to what the
+  // server persists and what Stripe charges.
   const { subtotal, totalTime, discountAmount, total } = useMemo(() => {
-    // Check if Regular Cleaning is selected
-    const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
-    const isRegularCleaning = regularCategory && selectedCategoryId === regularCategory.id
+    const totals = computeBookingTotals(
+      rows
+        .filter((r) => r.qty > 0)
+        .map((r) => ({
+          service_id: r.id,
+          qty: r.qty,
+          unit_price: Number(r.price),
+          time_minutes: r.time_minutes,
+          name: r.name,
+        })),
+      flatServices,
+    )
 
-    let sub = 0
-
-    if (isRegularCleaning && regularCategory?.children) {
-      // Special pricing for Regular Cleaning: hours × price_per_hour × cleaners
-      // Try to find services by name (case-insensitive and flexible)
-      const hoursService = regularCategory.children.find((s) =>
-        s.name.toLowerCase().includes('hour')
-      )
-      const cleanersService = regularCategory.children.find((s) =>
-        s.name.toLowerCase().includes('cleaner')
-      )
-
-      if (hoursService && cleanersService) {
-        const hours = Number(items[hoursService.id] || 0)
-        const cleaners = Number(items[cleanersService.id] || 0)
-
-        // Only calculate if both hours and cleaners are > 0
-        if (hours > 0 && cleaners > 0) {
-          const pricePerHour = Number(hoursService.price || 0)
-          sub = hours * pricePerHour * cleaners
-
-          // Debug logging
-          console.log('Regular Cleaning Calculation:', {
-            hours,
-            cleaners,
-            pricePerHour,
-            subtotal: sub,
-            hoursServiceName: hoursService.name,
-            cleanersServiceName: cleanersService.name
-          })
-        }
-      } else {
-        console.log('Services not found:', {
-          hoursService: regularCategory.children.find((s) =>
-            s.name.toLowerCase().includes('hour')
-          )?.name,
-          cleanersService: regularCategory.children.find((s) =>
-            s.name.toLowerCase().includes('cleaner')
-          )?.name,
-          allChildren: regularCategory.children.map(s => s.name)
-        })
-      }
-    } else {
-      // Standard pricing for all other services
-      sub = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
-    }
-
-    const time = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
     const discount = appliedDiscount?.discount_amount || 0
-    const tot = Math.max(0, sub - discount)
 
     return {
-      subtotal: sub,
-      totalTime: time,
+      subtotal: totals.subtotal,
+      totalTime: totals.totalTimeMinutes,
       discountAmount: discount,
-      total: tot,
+      total: Math.max(0, totals.subtotal - discount),
     }
-  }, [rows, appliedDiscount, services, selectedCategoryId, items])
+  }, [rows, flatServices, appliedDiscount])
 
   // All top-level categories are now mutually exclusive (only top-level categories)
   const allCategories = useMemo(() => {
@@ -296,7 +239,7 @@ export default function BookPage() {
 
     // For Regular Cleaning, set cleaners to 1 by default
     if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
-      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaners')
+      const cleanersService = selectedCategory.children.find((s) => /cleaner/i.test(s.name))
       if (cleanersService && !updatedItems[cleanersService.id]) {
         updatedItems[cleanersService.id] = 1
       }
@@ -487,16 +430,6 @@ export default function BookPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId,
-          items: chosen.map((r) => ({
-            service_id: r.id,
-            name: r.name,
-            qty: r.qty,
-            unit_price: r.price,
-            time_minutes: r.time_minutes,
-          })),
-          subtotal,
-          discount: discountAmount,
-          total,
           customerEmail: v.email,
           customerName: `${v.firstName || ''} ${v.lastName || ''}`.trim(),
         }),
@@ -509,11 +442,6 @@ export default function BookPage() {
         return
       }
 
-      // Redirect to Stripe Checkout using the new method
-      // console.log('✅ Checkout session created successfully')
-      // console.log('🔄 Redirecting to Stripe checkout...')
-
-      // Use the direct URL from the session instead of redirectToCheckout
       if (checkoutData.url) {
         window.location.href = checkoutData.url
       } else {
@@ -525,316 +453,6 @@ export default function BookPage() {
       alert(`Error: ${errorMsg}\n\nPlease check the console for more details.`)
       setIsProcessingPayment(false)
     }
-  }
-
-  // PDF
-  async function downloadQuote() {
-    const doc = new jsPDF()
-
-    // Modern color palette matching site design
-    const colors = {
-      primary: '#2563eb',      // blue-600
-      primaryDark: '#1d4ed8',  // blue-700
-      gray900: '#111827',
-      gray700: '#374151',
-      gray600: '#4b5563',
-      gray400: '#9ca3af',
-      gray200: '#e5e7eb',
-      gray100: '#f3f4f6',
-      gray50: '#f9fafb',
-      white: '#ffffff',
-      green600: '#059669'
-    }
-
-    // Helper function to convert hex to RGB
-    const hexToRgb = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : { r: 0, g: 0, b: 0 }
-    }
-
-    // Page dimensions
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const margin = 20
-
-    // Header with gradient background effect
-    const headerHeight = 45
-    const primaryRgb = hexToRgb(colors.primary)
-    const primaryDarkRgb = hexToRgb(colors.primaryDark)
-
-    // Create gradient effect with multiple rectangles
-    for (let i = 0; i < headerHeight; i++) {
-      const ratio = i / headerHeight
-      const r = Math.round(primaryRgb.r + (primaryDarkRgb.r - primaryRgb.r) * ratio)
-      const g = Math.round(primaryRgb.g + (primaryDarkRgb.g - primaryRgb.g) * ratio)
-      const b = Math.round(primaryRgb.b + (primaryDarkRgb.b - primaryRgb.b) * ratio)
-
-      doc.setFillColor(r, g, b)
-      doc.rect(0, i, pageWidth, 1, 'F')
-    }
-
-    // Load and add logo
-    let logoAdded = false
-    try {
-      // Create a white rounded background for the logo
-      doc.setFillColor(255, 255, 255, 0.95)
-      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'F')
-
-      // Create a subtle border
-      doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-      doc.setLineWidth(0.5)
-      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'S')
-
-      // Try to load and add the actual logo
-      const loadLogo = () => new Promise<string>((resolve, reject) => {
-        const logoImg = new Image()
-        logoImg.crossOrigin = 'anonymous'
-
-        logoImg.onload = () => {
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
-
-          if (ctx) {
-            canvas.width = logoImg.width
-            canvas.height = logoImg.height
-            ctx.drawImage(logoImg, 0, 0)
-            try {
-              const logoBase64 = canvas.toDataURL('image/png')
-              resolve(logoBase64)
-            } catch (e) {
-              reject(e)
-            }
-          } else {
-            reject(new Error('Canvas context not available'))
-          }
-        }
-
-        logoImg.onerror = () => reject(new Error('Logo failed to load'))
-        logoImg.src = '/el_logo.png'
-      })
-
-      try {
-        const logoBase64 = await loadLogo()
-        doc.addImage(logoBase64, 'PNG', margin + 3, 14, 29, 16)
-        logoAdded = true
-      } catch (e) {
-        // Logo loading failed, will add fallback below
-      }
-
-    } catch (e) {
-      // Error in logo section
-    }
-
-    // Fallback logo design if actual logo couldn't be loaded
-    if (!logoAdded) {
-      // Create an elegant monogram design
-      doc.setFillColor(hexToRgb(colors.primary).r, hexToRgb(colors.primary).g, hexToRgb(colors.primary).b)
-      doc.circle(margin + 17.5, 22, 8, 'F')
-
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text('EH', margin + 17.5, 24, { align: 'center' })
-    }
-
-    // Company name and tagline
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
-    doc.setFont('helvetica', 'bold')
-    doc.text('EleventhHour', margin + 45, 22)
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Professional Home & Commercial Services', margin + 45, 28)
-
-    // Contact info in header (right aligned)
-    doc.setFontSize(8)
-    doc.text('2033551526', pageWidth - margin, 18, { align: 'right' })
-    doc.text('hello@eleventhhour.co.uk', pageWidth - margin, 23, { align: 'right' })
-    doc.text('Greater London & Surrounding Areas', pageWidth - margin, 28, { align: 'right' })
-
-    // Document title section
-    let currentY = headerHeight + 25
-    doc.setTextColor(colors.gray900)
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Service Estimate', margin, currentY)
-
-    // Add current date
-    doc.setFontSize(10)
-    doc.setTextColor(colors.gray600)
-    doc.setFont('helvetica', 'normal')
-    const currentDate = new Date().toLocaleDateString('en-GB', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-    doc.text(`Generated on ${currentDate}`, pageWidth - margin, currentY, { align: 'right' })
-
-    currentY += 20
-
-    // Customer information section
-    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 40, 4, 4, 'F')
-
-    doc.setTextColor(colors.primary)
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Customer Information', margin + 10, currentY + 12)
-
-    const fn = (watch('firstName') || '') + ' ' + (watch('lastName') || '')
-    const name = fn.trim()
-    const emailVal = watch('email') || ''
-    const phoneVal = watch('phone') || ''
-    const addr = [watch('address') || '', watch('city') || '', watch('postcode') || ''].filter(Boolean).join(', ')
-
-    doc.setTextColor(colors.gray900)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-
-    let infoY = currentY + 20
-    if (name) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Name:', margin + 10, infoY)
-      doc.setFont('helvetica', 'normal')
-      doc.text(name, margin + 35, infoY)
-      infoY += 6
-    }
-
-    if (emailVal) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Email:', margin + 10, infoY)
-      doc.setFont('helvetica', 'normal')
-      doc.text(emailVal, margin + 35, infoY)
-    }
-
-    if (phoneVal) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Phone:', pageWidth/2 + 10, currentY + 20)
-      doc.setFont('helvetica', 'normal')
-      doc.text(phoneVal, pageWidth/2 + 35, currentY + 20)
-    }
-
-    if (addr) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Address:', pageWidth/2 + 10, currentY + 26)
-      doc.setFont('helvetica', 'normal')
-      // Split long addresses
-      const maxWidth = pageWidth/2 - 50
-      const addressLines = doc.splitTextToSize(addr, maxWidth)
-      doc.text(addressLines, pageWidth/2 + 45, currentY + 26)
-    }
-
-    currentY += 55
-
-    // Services section
-    doc.setTextColor(colors.primary)
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Selected Services', margin, currentY)
-    currentY += 15
-
-    // Services table header
-    const tableStartY = currentY
-    doc.setFillColor(hexToRgb(colors.gray100).r, hexToRgb(colors.gray100).g, hexToRgb(colors.gray100).b)
-    doc.rect(margin, currentY, pageWidth - 2 * margin, 12, 'F')
-
-    doc.setTextColor(colors.gray700)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Service', margin + 5, currentY + 8)
-    doc.text('Qty', pageWidth - 100, currentY + 8)
-    doc.text('Rate', pageWidth - 70, currentY + 8)
-    doc.text('Time', pageWidth - 45, currentY + 8)
-    doc.text('Total', pageWidth - margin - 5, currentY + 8, { align: 'right' })
-
-    currentY += 12
-
-    // Service items
-    const selectedServices = rows.filter((r) => r.qty > 0)
-    selectedServices.forEach((r, index) => {
-      // Alternating row colors
-      if (index % 2 === 0) {
-        doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-        doc.rect(margin, currentY, pageWidth - 2 * margin, 10, 'F')
-      }
-
-      doc.setTextColor(colors.gray900)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
-
-      // Service name (truncate if too long)
-      const serviceNameMaxWidth = pageWidth - 130
-      const serviceName = doc.splitTextToSize(r.name, serviceNameMaxWidth)[0]
-      doc.text(serviceName, margin + 5, currentY + 7)
-
-      doc.text(r.qty.toString(), pageWidth - 100, currentY + 7)
-      doc.text(`£${r.price.toFixed(2)}`, pageWidth - 70, currentY + 7)
-      doc.text(`${r.time_minutes}m`, pageWidth - 45, currentY + 7)
-      doc.text(`£${(r.qty * r.price).toFixed(2)}`, pageWidth - margin - 5, currentY + 7, { align: 'right' })
-
-      currentY += 10
-    })
-
-    // Add bottom border to table
-    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-    doc.line(margin, currentY, pageWidth - margin, currentY)
-
-    currentY += 15
-
-    // Summary section
-    const summaryBoxY = currentY
-    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-    doc.roundedRect(pageWidth - 120, currentY, 100, 25, 4, 4, 'F')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(colors.primary)
-    doc.text('Total Estimate:', pageWidth - 115, currentY + 15)
-    doc.setFontSize(14)
-    doc.text(`£${subtotal.toFixed(2)}`, pageWidth - 25, currentY + 15, { align: 'right' })
-
-    currentY += 40
-
-    // Important notes section
-    doc.setTextColor(colors.gray700)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Important Notes:', margin, currentY)
-    currentY += 8
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    const notes = [
-      '• This is an estimate only. Final pricing may vary based on specific requirements.',
-      '• All services include professional supplies and equipment.',
-      '• Our team is fully insured and DBS-checked.',
-      '• We offer a 100% satisfaction guarantee on all services.',
-      '• Payment is due upon completion of services.'
-    ]
-
-    notes.forEach(note => {
-      doc.text(note, margin, currentY)
-      currentY += 5
-    })
-
-    // Footer
-    const footerY = pageHeight - 25
-    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5)
-
-    doc.setTextColor(colors.gray600)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.text('EleventhHour Professional Services', margin, footerY)
-    doc.text(`Generated on ${new Date().toLocaleString('en-GB')}`, pageWidth - margin, footerY, { align: 'right' })
-
-    // Save the PDF
-    doc.save('eleventhhour-service-estimate.pdf')
   }
 
   if (!cfg) {
@@ -1160,18 +778,6 @@ export default function BookPage() {
               </button>
             </div>
           </form>
-        )}
-
-        {/* STEP 3 */}
-        {step === 3 && done && (
-          <div className="mt-6 rounded-2xl border p-6">
-            <h2 className="text-2xl font-semibold">Thank you!</h2>
-            <p className="mt-2">Our team will reach out to you shortly to finalise your booking.</p>
-            <p className="mt-2 font-medium">Estimated total: £{done.total.toFixed(2)}</p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={downloadQuote} className="btn-primary">Download Estimate PDF</button>
-            </div>
-          </div>
         )}
       </div>
 

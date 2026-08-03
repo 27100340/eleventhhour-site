@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,8 +11,11 @@ async function getId(params: Promise<{ id: string }>) {
 }
 
 // GET /api/admin/invoices/[id]
-export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
 
@@ -54,7 +58,7 @@ export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }>
 
     // Fetch parent services for items that have parents
     const parentIds = items?.map(i => i.services?.parent_id).filter(Boolean) || []
-    let parentServices = []
+    let parentServices: { id: string; name: string; category_type: string | null }[] = []
     if (parentIds.length > 0) {
       const { data: parents } = await supabase
         .from('services')
@@ -80,6 +84,9 @@ export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }>
 // PATCH /api/admin/invoices/[id]
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
     const updates = await req.json()
@@ -102,8 +109,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 }
 
 // DELETE /api/admin/invoices/[id]
-export async function DELETE(_: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const id = await getId(ctx.params)
 

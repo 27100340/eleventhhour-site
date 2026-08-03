@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -7,6 +8,9 @@ export const dynamic = 'force-dynamic'
 // GET /api/admin/invoices?bookingId=xxx
 export async function GET(req: NextRequest) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const supabase = createServerSupabase(true)
     const { searchParams } = new URL(req.url)
     const bookingId = searchParams.get('bookingId')
@@ -47,6 +51,9 @@ export async function GET(req: NextRequest) {
 // Body: { bookingId: string, amount?: number, currency?: string, due_date?: string, notes?: string }
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAdminUser(req)
+    if (!user) return unauthorizedResponse()
+
     const { bookingId, amount, currency = 'GBP', due_date, notes } = await req.json()
     if (!bookingId) return NextResponse.json({ error: 'bookingId is required' }, { status: 400 })
 

@@ -17,7 +17,7 @@ export default function Footer() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3 text-brand-cream/80">
                 <Phone className="h-4 w-4 text-brand-amber" />
-                <a href="tel:02033551526" className="font-montserrat text-sm hover:text-brand-amber transition-colors">
+                <a href="tel:+442033551526" className="font-montserrat text-sm hover:text-brand-amber transition-colors">
                   020 3355 1526
                 </a>
               </div>
@@ -31,7 +31,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-3 text-brand-cream/80">
                 <Mail className="h-4 w-4 text-brand-amber" />
-                <a href="mailto:hello@eleventhhour.co.uk" className="font-montserrat text-sm hover:text-brand-amber transition-colors">
+                <a href="mailto:hello@eleventhhourcleaning.co.uk" className="font-montserrat text-sm hover:text-brand-amber transition-colors">
                   hello@eleventhhourcleaning.co.uk
                 </a>
               </div>

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Edit2, Trash2, Tag, Calendar, TrendingUp, Users, X } from 'lucide-react'
+import { adminFetch } from '@/lib/admin-fetch'
 
 type DiscountCode = {
   id: string
@@ -43,7 +44,7 @@ export default function DiscountCodesTab() {
   async function loadCodes() {
     try {
       setLoading(true)
-      const res = await fetch('/api/admin/discount-codes')
+      const res = await adminFetch('/api/admin/discount-codes')
       const data = await res.json()
       if (res.ok) {
         setCodes(data.codes || [])
@@ -111,7 +112,7 @@ export default function DiscountCodesTab() {
         : '/api/admin/discount-codes'
       const method = editingCode ? 'PUT' : 'POST'
 
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -136,7 +137,7 @@ export default function DiscountCodesTab() {
     if (!confirm('Are you sure you want to delete this discount code?')) return
 
     try {
-      const res = await fetch(`/api/admin/discount-codes/${id}`, {
+      const res = await adminFetch(`/api/admin/discount-codes/${id}`, {
         method: 'DELETE',
       })
 

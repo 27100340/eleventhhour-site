@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase/browser'
+import { adminFetch } from '@/lib/admin-fetch'
+import { computeBookingTotals } from '@/lib/pricing'
 import type { Service } from '@/lib/types'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
@@ -99,41 +101,33 @@ export default function CreateBookingTab() {
     [allServicesFlat, form.items, selectedCategoryId],
   )
 
-  const selectedServices = rows.filter((s) => s.qty > 0)
+  const selectedServices = useMemo(() => rows.filter((s) => s.qty > 0), [rows])
 
-  // Calculate subtotal with special handling for Regular Cleaning
-  let subtotal = 0
-  let totalTime = 0
+  const regularCategory = useMemo(
+    () => services.find((s) => s.category_type === 'regular_cleaning' && s.is_category),
+    [services],
+  )
 
-  // Check if regular cleaning category is selected and calculate special pricing
-  const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
-  let isRegularCleaningSelected = false
-
-  if (regularCategory && selectedCategoryId === regularCategory.id) {
-    const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-    const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
-
-    if (hoursService && cleanersService) {
-      const hours = Number(form.items[hoursService.id] || 0)
-      const cleaners = Number(form.items[cleanersService.id] || 0)
-
-      if (hours > 0 && cleaners > 0) {
-        // For regular cleaning: hours × price_per_hour × cleaners
-        subtotal = hours * Number(hoursService.price) * cleaners
-        isRegularCleaningSelected = true
-        // Time is based on hours only
-        totalTime = hours * hoursService.time_minutes
-      }
+  // Shared pricing rules: Regular Cleaning is hours × rate × cleaners, everything
+  // else is qty × unit price. This summary therefore matches what we persist and
+  // what Stripe charges (checkout re-prices the booking from the DB).
+  const { subtotal, totalTime, regular } = useMemo(() => {
+    const totals = computeBookingTotals(
+      selectedServices.map((s) => ({
+        service_id: s.id,
+        qty: s.qty,
+        unit_price: Number(s.price),
+        time_minutes: s.time_minutes,
+        name: s.name,
+      })),
+      allServicesFlat,
+    )
+    return {
+      subtotal: totals.subtotal,
+      totalTime: totals.totalTimeMinutes,
+      regular: totals.regular,
     }
-  }
-
-  // For non-regular cleaning or if regular cleaning doesn't have special calc, use normal calculation
-  if (!isRegularCleaningSelected) {
-    selectedServices.forEach((s) => {
-      subtotal += s.qty * Number(s.price)
-      totalTime += s.qty * s.time_minutes
-    })
-  }
+  }, [selectedServices, allServicesFlat])
 
   const total = Math.max(0, subtotal - (form.discount || 0))
 
@@ -165,7 +159,7 @@ export default function CreateBookingTab() {
 
     // For Regular Cleaning, set cleaners to 1 by default
     if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
-      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaner(s)')
+      const cleanersService = selectedCategory.children.find((s) => /cleaner/i.test(s.name))
       if (cleanersService && !updatedItems[cleanersService.id]) {
         updatedItems[cleanersService.id] = 1
       }
@@ -187,13 +181,7 @@ export default function CreateBookingTab() {
 
     // For regular cleaning, check that both hours and cleaners are selected
     if (regularCategory && selectedCategoryId === regularCategory.id) {
-      const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-      const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
-
-      const hours = Number(form.items[hoursService?.id || ''] || 0)
-      const cleaners = Number(form.items[cleanersService?.id || ''] || 0)
-
-      if (hours === 0 || cleaners === 0) {
+      if (!regular) {
         alert('Please select number of hours and cleaners for regular cleaning')
         return
       }
@@ -237,26 +225,23 @@ export default function CreateBookingTab() {
       let items: Array<any> = []
 
       // For regular cleaning, include hours and cleaners items (plus parent wrapper line)
-      if (isRegularCleaningSelected && regularCategory) {
-        const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-        const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
+      if (regular && regularCategory) {
+        const hoursService = allServicesFlat.find((s) => s.id === regular.hoursServiceId)
+        const cleanersService = allServicesFlat.find((s) => s.id === regular.cleanersServiceId)
 
         if (hoursService && cleanersService) {
-          const hours = Number(form.items[hoursService.id] || 0)
-          const cleaners = Number(form.items[cleanersService.id] || 0)
-
           items.push(
             {
               booking_id: booking.id,
               service_id: hoursService.id,
-              qty: hours,
+              qty: regular.hours,
               unit_price: hoursService.price,
               time_minutes: hoursService.time_minutes,
             },
             {
               booking_id: booking.id,
               service_id: cleanersService.id,
-              qty: cleaners,
+              qty: regular.cleaners,
               unit_price: cleanersService.price,
               time_minutes: cleanersService.time_minutes,
             },
@@ -288,7 +273,7 @@ export default function CreateBookingTab() {
       // Generate invoice if requested
       if (form.generateInvoice) {
         try {
-          const invoiceRes = await fetch('/api/admin/invoices', {
+          await adminFetch('/api/admin/invoices', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -298,10 +283,6 @@ export default function CreateBookingTab() {
               total,
             }),
           })
-
-          if (invoiceRes.ok) {
-            console.log('Invoice created successfully')
-          }
         } catch (invoiceError) {
           console.error('Error creating invoice:', invoiceError)
           // Don't fail the booking creation if invoice fails
@@ -310,54 +291,11 @@ export default function CreateBookingTab() {
 
       // If Stripe payment is requested, redirect to checkout
       if (form.processStripePayment) {
-        let checkoutItems: Array<any> = []
-
-        // For regular cleaning, include hours and cleaners items
-        if (isRegularCleaningSelected && regularCategory) {
-          const hoursService = regularCategory.children?.find((s) => s.name === 'Number of Hours')
-          const cleanersService = regularCategory.children?.find((s) => s.name === 'Number of Cleaner(s)')
-
-          if (hoursService && cleanersService) {
-            const hours = Number(form.items[hoursService.id] || 0)
-            const cleaners = Number(form.items[cleanersService.id] || 0)
-
-            checkoutItems.push(
-              {
-                service_id: hoursService.id,
-                name: hoursService.name,
-                qty: hours,
-                unit_price: hoursService.price,
-                time_minutes: hoursService.time_minutes,
-              },
-              {
-                service_id: cleanersService.id,
-                name: cleanersService.name,
-                qty: cleaners,
-                unit_price: cleanersService.price,
-                time_minutes: cleanersService.time_minutes,
-              },
-            )
-          }
-        } else {
-          // For other services, use selectedServices
-          checkoutItems = selectedServices.map((s) => ({
-            service_id: s.id,
-            name: s.name,
-            qty: s.qty,
-            unit_price: s.price,
-            time_minutes: s.time_minutes,
-          }))
-        }
-
         const checkoutRes = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             bookingId: booking.id,
-            items: checkoutItems,
-            subtotal,
-            discount: form.discount || 0,
-            total,
             customerEmail: form.email,
             customerName: `${form.firstName} ${form.lastName}`,
           }),

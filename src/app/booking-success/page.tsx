@@ -44,16 +44,18 @@ function BookingSuccessContent() {
 
   useEffect(() => {
     if (sessionId && bookingId) {
-      fetchBookingDetails()
+      fetchBookingDetails(bookingId, sessionId)
     } else {
       setError('Missing session information')
       setLoading(false)
     }
   }, [sessionId, bookingId])
 
-  async function fetchBookingDetails() {
+  async function fetchBookingDetails(id: string, session: string) {
     try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`)
+      const response = await fetch(
+        `/api/public/booking/${id}?session_id=${encodeURIComponent(session)}`
+      )
       if (!response.ok) throw new Error('Failed to fetch booking details')
 
       const data = await response.json()
@@ -265,8 +267,8 @@ function BookingSuccessContent() {
                 hello@eleventhhour.co.uk
               </a>{' '}
               or call{' '}
-              <a href="tel:2033551526" className="text-blue-600 font-medium hover:underline">
-                2033551526
+              <a href="tel:+442033551526" className="text-blue-600 font-medium hover:underline">
+                020 3355 1526
               </a>
             </p>
           </div>

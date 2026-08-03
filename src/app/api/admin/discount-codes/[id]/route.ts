@@ -1,6 +1,7 @@
 // src/app/api/admin/discount-codes/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { getAdminUser, unauthorizedResponse } from '@/lib/supabase/admin-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,9 @@ type Params = {
 
 // GET - Get single discount code
 export async function GET(req: NextRequest, props: Params) {
+  const user = await getAdminUser(req)
+  if (!user) return unauthorizedResponse()
+
   const params = await props.params
   try {
     const supabase = createServerSupabase(true)
@@ -40,6 +44,9 @@ export async function GET(req: NextRequest, props: Params) {
 
 // PUT - Update discount code
 export async function PUT(req: NextRequest, props: Params) {
+  const user = await getAdminUser(req)
+  if (!user) return unauthorizedResponse()
+
   const params = await props.params
   try {
     const supabase = createServerSupabase(true)
@@ -79,6 +86,9 @@ export async function PUT(req: NextRequest, props: Params) {
 
 // DELETE - Delete discount code
 export async function DELETE(req: NextRequest, props: Params) {
+  const user = await getAdminUser(req)
+  if (!user) return unauthorizedResponse()
+
   const params = await props.params
   try {
     const supabase = createServerSupabase(true)

@@ -2,8 +2,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { adminFetch } from '@/lib/admin-fetch'
+import { useAdminGuard } from '@/lib/use-admin-guard'
 
-type Service = { id: string; name: string; price: number; time_minutes: number }
+type Service ={ id: string; name: string; price: number; time_minutes: number }
 type Item = { service_id: string; qty: number; unit_price: number; time_minutes: number; name?: string }
 type Booking = {
   id: string
@@ -30,6 +32,7 @@ type Booking = {
 }
 
 export default function BookingEditor() {
+  useAdminGuard()
   const router = useRouter()
   const params = useParams() as { id?: string }
   const bookingId = (params?.id as string) || ''
@@ -51,9 +54,9 @@ export default function BookingEditor() {
       try {
         setLoading(true)
         const [bRes, sRes, iRes] = await Promise.all([
-          fetch(`/api/admin/bookings/${bookingId}`).then(r => r.json()),
+          adminFetch(`/api/admin/bookings/${bookingId}`).then(r => r.json()),
           fetch('/api/public/services').then(r => r.json()),
-          fetch(`/api/admin/invoices?bookingId=${bookingId}`).then(r => r.json()),
+          adminFetch(`/api/admin/invoices?bookingId=${bookingId}`).then(r => r.json()),
         ])
         if (abort) return
         if (bRes?.error) throw new Error(bRes.error.message || 'Failed to load booking')
@@ -135,7 +138,7 @@ export default function BookingEditor() {
           time_minutes: i.time_minutes,
         })),
       }
-      const res = await fetch(`/api/admin/bookings/${booking.id}`, {
+      const res = await adminFetch(`/api/admin/bookings/${booking.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -154,7 +157,7 @@ export default function BookingEditor() {
     if (!bookingId) return
     try {
       setInvoicing(true)
-      const res = await fetch('/api/admin/invoices', {
+      const res = await adminFetch('/api/admin/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId }),
@@ -163,7 +166,7 @@ export default function BookingEditor() {
       if (!res.ok) throw new Error(data?.error || 'Failed to create invoice')
 
       // Refresh invoices list
-      const iRes = await fetch(`/api/admin/invoices?bookingId=${bookingId}`)
+      const iRes = await adminFetch(`/api/admin/invoices?bookingId=${bookingId}`)
       const iData = await iRes.json()
       setInvoices(iData?.data || [])
 
@@ -186,22 +189,12 @@ export default function BookingEditor() {
     try {
       setProcessingPayment(true)
 
-      // Create checkout session with booking items
+      // The endpoint loads the booking and its items from the DB itself
       const payload = {
         bookingId: booking.id,
-        items: items.map(i => ({
-          service_id: i.service_id,
-          name: i.name || services.find(s => s.id === i.service_id)?.name || 'Service',
-          qty: i.qty,
-          unit_price: i.unit_price,
-          time_minutes: i.time_minutes,
-        })),
-        total: computed.finalTotal,
-        subtotal: computed.subtotal,
-        discount: booking.discount || 0,
         customerEmail: booking.email,
         customerName: `${booking.first_name || ''} ${booking.last_name || ''}`.trim(),
-        adminTotalOverride: booking.admin_total_override,
+        adminTotalOverride: booking.admin_total_override ?? undefined,
       }
 
       const res = await fetch('/api/create-checkout-session', {
@@ -230,7 +223,7 @@ export default function BookingEditor() {
     if (!confirm('Delete this booking? This cannot be undone.')) return
     setSaving(true); setErr(null)
     try {
-      const res = await fetch(`/api/admin/bookings/${booking.id}`, { method: 'DELETE' })
+      const res = await adminFetch(`/api/admin/bookings/${booking.id}`, { method: 'DELETE' })
       const json: { error?: { message?: string } } = await res.json()
       if (!res.ok) throw new Error(json?.error?.message || 'Delete failed')
       router.replace('/admin/dashboard')
