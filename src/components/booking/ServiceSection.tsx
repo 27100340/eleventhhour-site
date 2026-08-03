@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import type { Service } from '@/lib/types'
 import { NestedServiceSelector } from './NestedServiceSelector'
+import { QtyStepper } from './QtyStepper'
 
 type Props = {
   title: string
@@ -47,7 +49,6 @@ export function ServiceSection({
     onItemChange(serviceId, value)
   }
 
-  // Better event handling for expand/collapse with stopPropagation
   const handleExpandToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -55,32 +56,29 @@ export function ServiceSection({
   }
 
   return (
-    <div className="rounded-2xl border-2 border-brand-stone bg-white overflow-hidden pointer-events-auto">
+    <div className="overflow-hidden rounded-(--radius-card) border border-line bg-surface">
       {/* Header */}
       <button
         type="button"
         onClick={handleExpandToggle}
-        className="w-full flex items-center justify-between p-5 bg-brand-amber/5 hover:bg-brand-amber/10 transition-colors cursor-pointer pointer-events-auto"
+        className="flex w-full cursor-pointer items-center justify-between bg-accent-tint/60 p-5 transition-colors duration-150 hover:bg-accent-tint"
         aria-expanded={expanded}
         aria-label={`${expanded ? 'Collapse' : 'Expand'} ${title}`}
       >
-        <div className="text-left pointer-events-none">
-          <h3 className="text-lg font-bold text-brand-charcoal">{title}</h3>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+        <div className="pointer-events-none text-left">
+          <h3 className="text-base">{title}</h3>
+          {description && <p className="mt-1 text-sm text-ink-soft">{description}</p>}
         </div>
-        <svg
-          className={`w-5 h-5 transform transition-transform text-brand-charcoal flex-shrink-0 pointer-events-none ${expanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown
+          className={`pointer-events-none h-5 w-5 shrink-0 text-ink-soft transition-transform duration-150 ${
+            expanded ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {/* Content */}
       {expanded && (
-        <div className="p-5 space-y-3">
+        <div className="space-y-3 p-5">
           {services.map((service, index) => {
             const currentValue = items[service.id] ?? 0
             const currentQty =
@@ -93,8 +91,8 @@ export function ServiceSection({
             return (
               <div key={service.id}>
                 {showExtrasDivider && (
-                  <div className="pt-4 pb-2">
-                    <h4 className="text-md font-semibold text-brand-charcoal border-b-2 border-brand-amber inline-block pb-1">
+                  <div className="pb-2 pt-4">
+                    <h4 className="inline-block border-b-2 border-accent pb-1 text-sm font-semibold text-ink">
                       Extras
                     </h4>
                   </div>
@@ -111,24 +109,22 @@ export function ServiceSection({
                   />
                 ) : (
                   <>
-                    {/* Original logic for services without children */}
-
                     {/* Dropdown style for non-extra dropdown-type services */}
                     {service.question_type === 'dropdown' && service.dropdown_options?.length && !isExtra ? (
-                      <div className="p-3 rounded-lg border bg-white">
-                        <p className="font-medium mb-1 text-brand-charcoal">{service.name}</p>
+                      <div className="rounded-(--radius-ctl) border border-line bg-surface p-3.5">
+                        <p className="font-medium text-ink">{service.name}</p>
                         {service.description && (
-                          <p className="text-xs text-gray-600 mb-2">{service.description}</p>
+                          <p className="mt-0.5 text-xs text-ink-soft">{service.description}</p>
                         )}
                         {showPrices && service.price > 0 && (
-                          <p className="text-xs text-gray-600 mb-2">
+                          <p className="mt-0.5 text-xs text-ink-soft">
                             £{service.price.toFixed(2)}
                             {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
                             {service.time_minutes > 0 && ` · ${service.time_minutes} min`}
                           </p>
                         )}
                         <select
-                          className="input w-full"
+                          className="input mt-2 w-full"
                           value={currentValue ?? ''}
                           onChange={(e) => handleDropdownChange(service.id, e.target.value)}
                         >
@@ -142,79 +138,52 @@ export function ServiceSection({
                       </div>
                     ) : service.question_type === 'checkbox' && !isExtra ? (
                       // Checkbox style
-                      <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors cursor-pointer pointer-events-auto">
+                      <label className="flex cursor-pointer items-center gap-3 rounded-(--radius-ctl) border border-line p-3.5 transition-colors duration-150 hover:border-accent/50">
                         <input
                           type="checkbox"
                           checked={currentQty > 0}
                           onChange={() => handleCheckboxToggle(service.id)}
-                          className="w-5 h-5 text-brand-amber focus:ring-brand-amber rounded cursor-pointer"
+                          className="h-4.5 w-4.5 cursor-pointer accent-(--color-accent)"
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-brand-charcoal">{service.name}</p>
+                          <p className="font-medium text-ink">{service.name}</p>
                           {service.description && (
-                            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                            <p className="mt-0.5 text-xs text-ink-soft">{service.description}</p>
                           )}
                           {showPrices && service.price > 0 && (
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-ink-soft">
                               £{service.price.toFixed(2)}
                               {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
                             </p>
                           )}
                         </div>
                         {showPrices && service.price > 0 && currentQty > 0 && (
-                          <span className="text-brand-amber font-bold">
+                          <span className="font-semibold text-accent-dark">
                             £{(service.price * currentQty).toFixed(2)}
                           </span>
                         )}
-                      </div>
+                      </label>
                     ) : (
                       // Plus/minus style (default, including extras)
-                      <div className="flex items-center gap-3 p-3 rounded-lg border hover:border-brand-amber/50 transition-colors pointer-events-auto">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleQtyChange(service.id, currentQty - 1)
-                            }}
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min={0}
-                            className="input w-16 text-center pointer-events-auto"
-                            value={currentQty}
-                            onChange={(e) => handleQtyChange(service.id, Number(e.target.value))}
-                          />
-                          <button
-                            type="button"
-                            className="rounded-full border-2 border-brand-charcoal w-8 h-8 hover:bg-brand-charcoal hover:text-white transition-colors font-bold flex items-center justify-center cursor-pointer pointer-events-auto"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleQtyChange(service.id, currentQty + 1)
-                            }}
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-3 rounded-(--radius-ctl) border border-line p-3.5 transition-colors duration-150 hover:border-accent/50">
+                        <QtyStepper
+                          qty={currentQty}
+                          onChange={(qty) => handleQtyChange(service.id, qty)}
+                        />
                         <div className="flex-1">
-                          <p className="font-medium text-brand-charcoal">{service.name}</p>
+                          <p className="font-medium text-ink">{service.name}</p>
                           {service.description && (
-                            <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
+                            <p className="mt-0.5 text-xs text-ink-soft">{service.description}</p>
                           )}
                           {showPrices && service.price > 0 && (
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-ink-soft">
                               £{service.price.toFixed(2)}
                               {service.per_unit_type && service.per_unit_type !== 'item' && ` per ${service.per_unit_type}`}
                             </p>
                           )}
                         </div>
                         {showPrices && service.price > 0 && currentQty > 0 && (
-                          <span className="text-brand-amber font-bold text-lg">
+                          <span className="text-lg font-semibold text-accent-dark">
                             £{(service.price * currentQty).toFixed(2)}
                           </span>
                         )}
@@ -230,4 +199,3 @@ export function ServiceSection({
     </div>
   )
 }
-

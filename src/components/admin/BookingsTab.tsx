@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { adminFetch } from '@/lib/admin-fetch'
 
 type Row = {
   id: string
@@ -35,7 +36,7 @@ export default function BookingsTab() {
     const sp = new URLSearchParams()
     if (q) sp.set('q', q)
     if (status) sp.set('status', status)
-    const res = await fetch(`/api/admin/bookings?${sp.toString()}`)
+    const res = await adminFetch(`/api/admin/bookings?${sp.toString()}`)
     const json = await res.json()
     setRows(json.data || [])
     setLoading(false)

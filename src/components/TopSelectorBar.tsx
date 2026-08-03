@@ -7,24 +7,24 @@ export default function TopSelectorBar() {
   const Btn = ({ value }: { value: 'household' | 'commercial' }) => (
     <button
       onClick={() => setMode(value)}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150 ${
         mode === value
-          ? 'bg-brand-amber text-white shadow-lg'
-          : 'bg-white text-brand-charcoal hover:text-brand-amber hover:bg-brand-cream border border-brand-stone hover:border-brand-amber/40'
+          ? 'bg-ink text-paper'
+          : 'text-ink-soft hover:text-ink'
       }`}
       aria-pressed={mode === value}
     >
-      {value === 'household' ? 'Household Services' : 'Commercial Services'}
+      {value === 'household' ? 'Household' : 'Commercial'}
     </button>
   )
 
   return (
-    <div className="w-full bg-gradient-to-r from-brand-cream to-brand-sage/20 border-b border-brand-stone/50 relative z-10">
-      <div className="mx-auto max-w-7xl flex items-center justify-center gap-4 py-3 px-6">
-        <span className="text-xs font-semibold text-brand-charcoal/70 uppercase tracking-wider">
-          Services for:
+    <div className="w-full border-b border-line bg-surface">
+      <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-6 py-2.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">
+          Services for
         </span>
-        <div className="flex items-center gap-2">
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-line bg-paper p-0.5">
           <Btn value="household" />
           <Btn value="commercial" />
         </div>

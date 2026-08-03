@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { adminFetch } from '@/lib/admin-fetch'
+import { useAdminGuard } from '@/lib/use-admin-guard'
 
 type Row = {
   id: string
@@ -20,6 +22,7 @@ type Row = {
 }
 
 export default function AdminBookingsPage() {
+  useAdminGuard()
   const [rows, setRows] = useState<Row[]>([])
   const [q, setQ] = useState('')
   const [status, setStatus] = useState('')
@@ -29,7 +32,7 @@ export default function AdminBookingsPage() {
       const qs = new URLSearchParams()
       if (q) qs.set('q', q)
       if (status) qs.set('status', status)
-      const res = await fetch(`/api/admin/bookings?${qs.toString()}`, { cache: 'no-store' as RequestCache })
+      const res = await adminFetch(`/api/admin/bookings?${qs.toString()}`, { cache: 'no-store' as RequestCache })
       const json = await res.json()
       setRows(json?.data || [])
     })()

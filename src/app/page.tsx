@@ -2,16 +2,15 @@
 import { useMode } from '@/components/ModeContext'
 import TopSelectorBar from '@/components/TopSelectorBar'
 import Link from 'next/link'
-import { ShieldCheck, Leaf, Clock, Sparkles, Users, CreditCard, ArrowRight, Star, MapPin, CheckCircle } from 'lucide-react'
-import React, { useMemo, memo } from 'react'
+import { ShieldCheck, Leaf, Clock, Sparkles, Users, CreditCard, ArrowRight, MapPin } from 'lucide-react'
 
 type Tile = { title: string; href: string; img: string; desc: string }
 
 const faqs = [
-  { q: 'Do you bring supplies?', a: 'Yes—hospital-grade supplies and eco options on request.' },
-  { q: 'Are you insured?', a: 'Fully insured & background-checked operatives.' },
+  { q: 'Do you bring supplies?', a: 'Yes — hospital-grade supplies, with eco options on request.' },
+  { q: 'Are you insured?', a: 'Fully insured and background-checked operatives on every job.' },
   { q: 'Which areas do you cover?', a: 'Greater London and surrounding areas.' },
-  { q: 'Can I reschedule?', a: 'Of course. You can reschedule up to 24h before your appointment.' },
+  { q: 'Can I reschedule?', a: 'Of course. Reschedule up to 24 hours before your appointment.' },
 ]
 
 const householdTiles: Tile[] = [
@@ -33,184 +32,163 @@ const commercialTiles: Tile[] = [
 ]
 
 const householdTestimonials = [
-  { name: 'Hannah • W4', quote: 'Immaculate every time and so easy to rebook. The deep clean was worth every penny.' },
-  { name: 'Josh • E2', quote: 'Turned up on time, friendly, and left the flat spotless—even the oven!' },
-  { name: 'Priya • SW9', quote: 'Booking took 2 minutes and they worked around my work-from-home day.' },
+  { name: 'Hannah', place: 'W4', quote: 'Immaculate every time and so easy to rebook. The deep clean was worth every penny.' },
+  { name: 'Josh', place: 'E2', quote: 'Turned up on time, friendly, and left the flat spotless — even the oven!' },
+  { name: 'Priya', place: 'SW9', quote: 'Booking took 2 minutes and they worked around my work-from-home day.' },
 ]
 
 const commercialTestimonials = [
-  { name: 'Ops Manager, Tech Co.', quote: 'They scaled from 3 to 5 days/week as we grew—no drop in quality.' },
-  { name: 'Store Lead, Retail', quote: 'Audits + photos after each visit give us real oversight.' },
-  { name: 'Venue GM', quote: 'Sparkle cleans before events and quick turnarounds afterwards—reliable.' },
+  { name: 'Ops Manager', place: 'Tech Co.', quote: 'They scaled from 3 to 5 days/week as we grew — no drop in quality.' },
+  { name: 'Store Lead', place: 'Retail', quote: 'Audits + photos after each visit give us real oversight.' },
+  { name: 'Venue GM', place: 'Events', quote: 'Sparkle cleans before events and quick turnarounds afterwards — reliable.' },
 ]
 
-function getServiceImage(title: string, isHousehold: boolean): string {
-  const serviceImages = {
-    household: {
-      'Regular Cleaning': '1581578731548-c64695cc6952',
-      'Deep Cleaning': '1558618047-3c8c76ca7d13',
-      'Gardening': '1416879595882-3373a0480b5b',
-      'Handyman': '1581578731548-c64695cc6952',
-      'Plumbing & Heating': '1585704032915-c3400ca199e7',
-      'Electrical': '1621905251918-48416bd8575a',
-    },
-    commercial: {
-      'Office Cleaning': '1497366216548-37526070297c',
-      'Retail & Showrooms': '1497366811353-6870744d04b2',
-      'Landscaping': '/landscaping.jpg',
-      'Plumbing & Heating': '1585704032915-c3400ca199e7',
-      'Electrical': '1621905251918-48416bd8575a',
-      'Handyman': '1581578731548-c64695cc6952',
-    }
-  }
-
-  const images = isHousehold ? serviceImages.household : serviceImages.commercial
-  return images[title as keyof typeof images] || '1581578731548-c64695cc6952'
+const heroImages = {
+  household: {
+    main: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg',
+    secondary1: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg',
+    secondary2: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg',
+  },
+  commercial: {
+    main: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center',
+    secondary1: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center',
+    secondary2: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/warehouse.jpg',
+  },
 }
 
-// Memoized Hero Section
-const HeroSection = memo(({ isHousehold, currentImages }: { isHousehold: boolean; currentImages: { main: string; secondary1: string; secondary2: string } }) => {
-  return (
-    <section className={`relative overflow-hidden transition-colors duration-500 ${isHousehold ? 'bg-white' : 'bg-brand-brown-cream'}`}>
-      <div className={`absolute inset-0 transition-all duration-500 ${isHousehold ? 'bg-gradient-to-br from-brand-cream via-white to-brand-sage/20' : 'bg-gradient-to-br from-brand-brown-cream via-brand-brown-light/30 to-brand-brown/10'}`} />
-      <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div className="animate-fade-in">
-            <div className={`inline-flex items-center gap-2 px-3 py-1 text-brand-charcoal text-sm font-medium rounded-full mb-6 transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/30' : 'bg-brand-brown/30'}`}>
-              <Star className="h-4 w-4" fill="currentColor" />
-              {isHousehold ? 'Trusted by 10,000+ customers' : 'Trusted by 500+ businesses'}
-            </div>
+const coverageAreas = ['Central London', 'North London', 'East London', 'South London', 'West London', 'Surrey & Kent']
 
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-gray-900">
+function SectionHeader({ eyebrow, title, lede }: { eyebrow: string; title: string; lede?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-3">{title}</h2>
+      {lede && <p className="mt-4 text-lg text-ink-soft">{lede}</p>}
+    </div>
+  )
+}
+
+function HeroSection({ isHousehold }: { isHousehold: boolean }) {
+  const images = isHousehold ? heroImages.household : heroImages.commercial
+  return (
+    <section className="bg-surface">
+      <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+          <div className="animate-fade-in">
+            <p className="eyebrow">
+              {isHousehold ? 'Household cleaning & maintenance' : 'Commercial cleaning & facilities'}
+            </p>
+            <h1 className="mt-4">
               {isHousehold ? (
-                <>When Time Matters, <span className="text-gradient">Quality Counts.</span></>
+                <>When time matters, <span className="text-accent">quality counts.</span></>
               ) : (
-                <>Professional Spaces, <span className="text-gradient">Pristine Results.</span></>
+                <>Professional spaces, <span className="text-accent">pristine results.</span></>
               )}
             </h1>
-
-            <p className="mt-6 text-lg text-gray-600 max-w-lg">
+            <p className="mt-6 max-w-lg text-lg text-ink-soft">
               {isHousehold
-                ? "At Eleventh Hour Cleaning, we take care of your home like it's our own. From last-minute refreshes to regular maintenance, our team delivers spotless results — every time."
-                : "At Eleventh Hour Cleaning, we understand that your business environment matters. From offices to retail spaces, our professional teams deliver consistent, reliable service that keeps your workplace pristine."}
+                ? "We take care of your home like it's our own. From last-minute refreshes to regular maintenance, our team delivers spotless results — every time."
+                : 'Your business environment matters. From offices to retail spaces, our professional teams deliver consistent, reliable service that keeps your workplace pristine.'}
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <Link href="/book" className="btn-primary group">
-                Book Now
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/book" className="btn-primary group px-6 py-3 text-base">
+                Book now
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
               </Link>
-              <Link href="/contact" className="rounded-full border-2 border-gray-300 px-8 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors text-center">
-                Request a Quote
+              <Link href="/contact" className="btn-secondary px-6 py-3 text-base">
+                Request a quote
               </Link>
             </div>
 
-            <div className="mt-10 grid sm:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/40' : 'bg-brand-brown/30'}`}>
-                  <CheckCircle className={`h-4 w-4 transition-colors duration-500 ${isHousehold ? 'text-brand-amber' : 'text-brand-brown-dark'}`} />
-                </div>
-                <span>{isHousehold ? 'Fully insured & DBS-checked' : 'Fully insured & vetted teams'}</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 ${isHousehold ? 'bg-brand-sage/40' : 'bg-brand-brown/30'}`}>
-                  <Clock className={`h-4 w-4 transition-colors duration-500 ${isHousehold ? 'text-brand-amber' : 'text-brand-brown-dark'}`} />
-                </div>
-                <span>{isHousehold ? 'Same/next-day availability' : 'Flexible scheduling & contracts'}</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="flex-shrink-0 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <Leaf className="h-4 w-4 text-emerald-600" />
-                </div>
-                <span>Eco-friendly options</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                </div>
-                <span>{isHousehold ? '100% satisfaction guarantee' : 'Quality audits & reporting'}</span>
-              </div>
-            </div>
+            <ul className="mt-10 grid gap-x-6 gap-y-3 text-sm text-ink-soft sm:grid-cols-2">
+              {[
+                isHousehold ? 'Fully insured & DBS-checked' : 'Fully insured & vetted teams',
+                isHousehold ? 'Same/next-day availability' : 'Flexible scheduling & contracts',
+                'Eco-friendly options',
+                isHousehold ? '100% satisfaction guarantee' : 'Quality audits & reporting',
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="animate-slide-up">
-            <div className="relative">
-              <div className={`absolute -inset-4 rounded-3xl blur-2xl transition-all duration-500 ${isHousehold ? 'bg-gradient-to-r from-brand-amber/15 to-brand-sage/15' : 'bg-gradient-to-r from-brand-brown/20 to-brand-brown-dark/15'}`} />
-              <div className="relative bg-white rounded-2xl p-6 shadow-soft-lg border border-gray-200/50">
-                <img
-                  className="rounded-xl w-full h-72 object-cover transition-opacity duration-300"
-                  src={currentImages.main}
-                  alt={isHousehold ? 'Professional home cleaning' : 'Commercial office cleaning'}
-                  loading="lazy"
-                />
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  <img
-                    className="rounded-lg w-full h-32 object-cover transition-opacity duration-300"
-                    src={currentImages.secondary1}
-                    alt="Service example 1"
-                    loading="lazy"
-                  />
-                  <img
-                    className="rounded-lg w-full h-32 object-cover transition-opacity duration-300"
-                    src={currentImages.secondary2}
-                    alt="Service example 2"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
+            <div className="overflow-hidden rounded-(--radius-card) border border-line">
+              <img
+                className="aspect-[3/2] w-full object-cover"
+                src={images.main}
+                alt={isHousehold ? 'Professional home cleaning' : 'Commercial office cleaning'}
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <img
+                className="aspect-[8/5] w-full rounded-(--radius-card) border border-line object-cover"
+                src={images.secondary1}
+                alt=""
+                loading="lazy"
+              />
+              <img
+                className="aspect-[8/5] w-full rounded-(--radius-card) border border-line object-cover"
+                src={images.secondary2}
+                alt=""
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
       </div>
+      <div aria-hidden="true" className="tick-rule" />
     </section>
   )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold && prevProps.currentImages.main === nextProps.currentImages.main)
+}
 
-// Memoized Featured Services Section
-const FeaturedServicesSection = memo(({ isHousehold, tiles }: { isHousehold: boolean; tiles: Tile[] }) => {
+function ServicesSection({ isHousehold }: { isHousehold: boolean }) {
+  const tiles = isHousehold ? householdTiles : commercialTiles
   return (
-    <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            {isHousehold ? 'Popular household services' : 'Solutions for your business'}
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {isHousehold
-              ? "From elegant townhouses to cozy apartments, we understand what makes a house feel like home. Our team of vetted professionals handles everything — cleaning, gardening, handyman work, and complete property maintenance — so you can relax and focus on what truly matters."
-              : "From corporate offices to retail spaces, we understand what professional environments require. Our commercial teams deliver consistent, reliable service with detailed reporting and flexible scheduling — keeping your business looking its best."}
-          </p>
-          <p className="text-lg text-gray-900 font-semibold mt-4">
-            {isHousehold ? 'Premium service. Trusted professionals. Peace of mind.' : 'Professional service. Reliable teams. Consistent quality.'}
-          </p>
+    <section className="py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <SectionHeader
+            eyebrow={isHousehold ? 'For your home' : 'For your business'}
+            title={isHousehold ? 'Popular household services' : 'Solutions for your business'}
+            lede={
+              isHousehold
+                ? 'Vetted professionals for cleaning, gardening, handyman work and complete property maintenance — so you can focus on what matters.'
+                : 'Consistent, reliable service with detailed reporting and flexible scheduling — keeping your business looking its best.'
+            }
+          />
+          <Link
+            href={isHousehold ? '/household-services' : '/commercial-services'}
+            className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-accent transition-colors duration-150 hover:text-accent-dark"
+          >
+            {isHousehold ? 'All household services' : 'All commercial services'}
+            <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((t) => (
-            <Link
-              key={t.title}
-              href={t.href}
-              className="group card hover:scale-[1.02] transition-transform duration-200 will-change-transform"
-            >
-              <div className="relative overflow-hidden rounded-t-2xl" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
+            <Link key={t.title} href={t.href} className="card group overflow-hidden">
+              <div className="overflow-hidden border-b border-line">
                 <img
-                  src={t.img ? (t.img.startsWith('http') || t.img.startsWith('/') ? t.img : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_BUCKET || 'website-images'}/${t.img}`) : `https://images.unsplash.com/photo-${getServiceImage(t.title, isHousehold)}?w=400&h=250&fit=crop&crop=center`}
+                  src={t.img}
                   alt={t.title}
-                  className="h-48 w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="aspect-[8/5] w-full object-cover"
                   loading="lazy"
                   decoding="async"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               </div>
               <div className="p-6">
-                <h3 className="font-semibold text-lg text-brand-charcoal group-hover:text-brand-amber transition-colors duration-200">
-                  {t.title}
-                </h3>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
-                <div className="mt-4 flex items-center text-brand-amber text-sm font-medium">
+                <h3 className="transition-colors duration-150 group-hover:text-accent">{t.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{t.desc}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
                   Learn more
-                  <ArrowRight className="ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform duration-200" />
-                </div>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+                </span>
               </div>
             </Link>
           ))}
@@ -218,229 +196,111 @@ const FeaturedServicesSection = memo(({ isHousehold, tiles }: { isHousehold: boo
       </div>
     </section>
   )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold && prevProps.tiles === nextProps.tiles)
+}
 
-// Memoized How It Works Section
-const HowItWorksSection = memo(({ isHousehold }: { isHousehold: boolean }) => {
+function HowItWorksSection({ isHousehold }: { isHousehold: boolean }) {
+  const steps = [
+    {
+      title: 'Choose your service',
+      desc: isHousehold
+        ? 'Select from our range of home services and any extras you need.'
+        : 'Pick the service type and scope that matches your business needs.',
+    },
+    {
+      title: 'Schedule & book',
+      desc: isHousehold
+        ? 'Pick a convenient time slot and pay securely online.'
+        : 'We arrange a schedule that works around your business operations.',
+    },
+    {
+      title: 'We deliver',
+      desc: isHousehold
+        ? 'Our vetted professionals arrive with all supplies and get to work.'
+        : 'Uniformed teams follow strict protocols with quality checklists.',
+    },
+  ]
   return (
-    <section className="py-20 bg-white">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">How it works</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Getting professional {isHousehold ? 'home' : 'commercial'} services has never been easier. Here's our simple 3-step process.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center group">
-            <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
-              <div className="absolute -inset-2 bg-brand-amber/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              1
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Choose your service</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {isHousehold
-                ? 'Select from our range of home services and any extras you need.'
-                : 'Pick the service type and scope that matches your business needs.'}
-            </p>
-          </div>
-
-          <div className="text-center group">
-            <div className="relative mx-auto w-16 h-16 bg-brand-amber rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
-              <div className="absolute -inset-2 bg-brand-amber/25 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              2
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Schedule & book</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {isHousehold
-                ? 'Pick a convenient time slot with our real-time availability system.'
-                : 'We arrange a schedule that works around your business operations.'}
-            </p>
-          </div>
-
-          <div className="text-center group">
-            <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-6 group-hover:scale-110 transition-transform duration-300">
-              <div className="absolute -inset-2 bg-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              3
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">We deliver excellence</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {isHousehold
-                ? 'Our vetted professionals arrive with all supplies and get to work.'
-                : 'Uniformed teams follow strict protocols with quality checklists.'}
-            </p>
-          </div>
-        </div>
+    <section className="bg-surface py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionHeader
+          eyebrow="How it works"
+          title="Booked in minutes, done in hours"
+          lede={`Getting professional ${isHousehold ? 'home' : 'commercial'} services has never been easier.`}
+        />
+        <ol className="mt-12 grid gap-10 md:grid-cols-3">
+          {steps.map((step, i) => (
+            <li key={step.title} className="border-t-2 border-accent pt-5">
+              <span className="font-display text-sm font-semibold tabular-nums text-accent">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h3 className="mt-2">{step.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-soft">{step.desc}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold)
+}
 
-// Memoized Why Choose Us Section
-const WhyChooseUsSection = memo(({ isHousehold }: { isHousehold: boolean }) => {
+function WhyChooseUsSection({ isHousehold }: { isHousehold: boolean }) {
+  const points = [
+    {
+      Icon: ShieldCheck,
+      title: 'Vetted & insured staff',
+      desc: 'All our professionals undergo DBS checks, reference verification, and regular quality audits.',
+    },
+    {
+      Icon: Clock,
+      title: 'Flexible scheduling',
+      desc: isHousehold
+        ? 'One-off, weekly, or bi-weekly visits that fit your lifestyle.'
+        : 'Daily, weekly, or out-of-hours contracts tailored to your business.',
+    },
+    {
+      Icon: Leaf,
+      title: 'Eco-friendly options',
+      desc: 'Low-VOC products and sustainable microfibre cleaning systems available on request.',
+    },
+    {
+      Icon: Users,
+      title: isHousehold ? 'Consistent team' : 'Dedicated support',
+      desc: isHousehold
+        ? 'We assign the same professional where possible for continuity and trust.'
+        : 'Single point of contact with dedicated account management and KPI tracking.',
+    },
+    {
+      Icon: Sparkles,
+      title: 'Quality assurance',
+      desc: isHousehold
+        ? 'Comprehensive room-by-room checklists ensure nothing is missed.'
+        : 'Photo reports and detailed sign-off sheets for full transparency.',
+    },
+    {
+      Icon: CreditCard,
+      title: 'Transparent pricing',
+      desc: isHousehold
+        ? 'Clear, upfront rates with no hidden fees or surprises.'
+        : 'Fixed-rate contracts or flexible time-and-materials pricing.',
+    },
+  ]
   return (
-    <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Why choose EleventhHour</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We're committed to delivering exceptional service with the reliability and professionalism you deserve.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="card p-8 text-center group hover:bg-brand-sage/20">
-            <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
-              <ShieldCheck className="h-6 w-6 text-brand-amber" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Vetted & insured staff</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">All our professionals undergo DBS checks, reference verification, and regular quality audits.</p>
-          </div>
-
-          <div className="card p-8 text-center group hover:bg-brand-sage/20">
-            <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
-              <Clock className="h-6 w-6 text-brand-amber" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Flexible scheduling</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'One-off, weekly, or bi-weekly visits that fit your lifestyle.' : 'Daily, weekly, or out-of-hours contracts tailored to your business.'}</p>
-          </div>
-
-          <div className="card p-8 text-center group hover:bg-emerald-50">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-200 transition-colors">
-              <Leaf className="h-6 w-6 text-emerald-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Eco-friendly options</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">Low-VOC products and sustainable microfibre cleaning systems available on request.</p>
-          </div>
-
-          <div className="card p-8 text-center group hover:bg-purple-50">
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
-              <Users className="h-6 w-6 text-purple-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{isHousehold ? 'Consistent team' : 'Dedicated support'}</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'We assign the same professional where possible for continuity and trust.' : 'Single point of contact with dedicated account management and KPI tracking.'}</p>
-          </div>
-
-          <div className="card p-8 text-center group hover:bg-amber-50">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-200 transition-colors">
-              <Sparkles className="h-6 w-6 text-amber-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Quality assurance</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'Comprehensive room-by-room checklists ensure nothing is missed.' : 'Photo reports and detailed sign-off sheets for full transparency.'}</p>
-          </div>
-
-          <div className="card p-8 text-center group hover:bg-brand-sage/20">
-            <div className="w-12 h-12 bg-brand-sage/40 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-sage/60 transition-colors">
-              <CreditCard className="h-6 w-6 text-brand-amber" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Transparent pricing</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">{isHousehold ? 'Clear, upfront rates with no hidden fees or surprises.' : 'Choose between fixed-rate contracts or flexible time-and-materials pricing.'}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold)
-
-// Memoized Coverage Section
-const CoverageSection = memo(() => {
-  return (
-    <section className="py-20 bg-white">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full mb-6">
-              <MapPin className="h-4 w-4" />
-              Service Coverage
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">We cover Greater London</h2>
-            <p className="text-lg text-gray-600 mb-8">
-              From Zone 1 to the suburbs—consistent quality everywhere. We also travel for larger commercial contracts across the UK.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>Central London</span>
+    <section className="py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionHeader
+          eyebrow="Why Eleventh Hour"
+          title="Reliability you can measure"
+          lede="Exceptional service with the professionalism you deserve — and the paperwork to prove it."
+        />
+        <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {points.map(({ Icon, title, desc }) => (
+            <div key={title} className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+                <Icon className="h-5 w-5 text-accent" />
               </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>North London</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>East London</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>South London</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>West London</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span>Surrey & Kent</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-3xl blur-2xl" />
-            <img
-              src="https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/london.jpg"
-              alt="London cityscape showing our service coverage area"
-              className="relative rounded-2xl shadow-xl w-full h-80 object-cover"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-})
-
-// Memoized Testimonials Section
-const TestimonialsSection = memo(({ isHousehold, testimonials }: { isHousehold: boolean; testimonials: Array<{ name: string; quote: string }> }) => {
-  return (
-    <section className={`py-20 transition-colors duration-500 ${isHousehold ? 'bg-gray-50' : 'bg-brand-brown-light/20'}`}>
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            {isHousehold ? 'What our customers say' : 'What our clients say'}
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what real customers have to say about our services.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((t, index) => (
-            <div
-              key={t.name}
-              className="card p-8 relative"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 text-amber-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6 italic">
-                "{t.quote}"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {t.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{t.name.split(' •')[0]}</p>
-                  {t.name.includes('•') && (
-                    <p className="text-sm text-gray-500">{t.name.split(' •')[1]}</p>
-                  )}
-                </div>
+              <div>
+                <h3 className="text-base">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{desc}</p>
               </div>
             </div>
           ))}
@@ -448,123 +308,187 @@ const TestimonialsSection = memo(({ isHousehold, testimonials }: { isHousehold: 
       </div>
     </section>
   )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold && prevProps.testimonials === nextProps.testimonials)
+}
 
-// Memoized Pricing Section
-const PricingSection = memo(({ isHousehold }: { isHousehold: boolean }) => {
+function CoverageSection() {
   return (
-    <section className="bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        {isHousehold ? (
-          <>
-            <h2 className="text-2xl font-semibold">Simple pricing</h2>
-            <div className="mt-6 grid md:grid-cols-3 gap-6">
-              <div className="rounded-2xl border p-6">
-                <p className="font-semibold">Weekly</p>
-                <p className="text-3xl font-bold mt-2">from £18<span className="text-base font-medium">/hr</span></p>
-                <p className="text-sm text-slate-600 mt-2">Minimum 2 hours. Same cleaner where possible.</p>
-              </div>
-              <div className="rounded-2xl border p-6">
-                <p className="font-semibold">Bi-Weekly</p>
-                <p className="text-3xl font-bold mt-2">from £19<span className="text-base font-medium">/hr</span></p>
-                <p className="text-sm text-slate-600 mt-2">Flexible rescheduling up to 24h before.</p>
-              </div>
-              <div className="rounded-2xl border p-6">
-                <p className="font-semibold">One-Off / Deep Clean</p>
-                <p className="text-3xl font-bold mt-2">fixed quote</p>
-                <p className="text-sm text-slate-600 mt-2">We'll estimate based on size and extras.</p>
-              </div>
-            </div>
-            <div className="mt-6 flex items-center justify-center gap-3 text-sm text-slate-500">
-              <CreditCard className="h-4 w-4" />
-              <span>Secure online payments powered by</span>
-              <img src="/stripe.png" alt="Stripe" className="h-5 w-auto" />
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-semibold">Tailored quotes for every site</h2>
-            <p className="mt-3 text-slate-700">Send us your scope and we'll price fairly—no surprises. We can work around opening hours and security procedures.</p>
-            <div className="mt-6 flex items-center gap-3 text-sm text-slate-500">
-              <CreditCard className="h-4 w-4" />
-              <span>Secure online payments powered by</span>
-              <img src="/stripe.png" alt="Stripe" className="h-5 w-auto" />
-            </div>
-          </>
-        )}
-        <div className="mt-6">
-          <Link href="/book" className="btn-primary">Get {isHousehold ? 'your home' : 'a site'} booked</Link>
+    <section className="bg-surface py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div>
+            <p className="eyebrow inline-flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              Coverage
+            </p>
+            <h2 className="mt-3">We cover Greater London</h2>
+            <p className="mt-4 text-lg text-ink-soft">
+              From Zone 1 to the suburbs — consistent quality everywhere. We also travel for larger
+              commercial contracts across the UK.
+            </p>
+            <ul className="mt-8 grid grid-cols-2 gap-3 text-sm text-ink">
+              {coverageAreas.map((area) => (
+                <li key={area} className="flex items-center gap-2.5">
+                  <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                  {area}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <img
+            src="https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/london.jpg"
+            alt="London cityscape showing our service coverage area"
+            className="aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>
   )
-}, (prevProps, nextProps) => prevProps.isHousehold === nextProps.isHousehold)
+}
+
+function TestimonialsSection({ isHousehold }: { isHousehold: boolean }) {
+  const testimonials = isHousehold ? householdTestimonials : commercialTestimonials
+  return (
+    <section className="py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionHeader
+          eyebrow="In their words"
+          title={isHousehold ? 'What our customers say' : 'What our clients say'}
+        />
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {testimonials.map((t) => (
+            <figure key={t.name} className="card flex flex-col p-7">
+              <span aria-hidden="true" className="font-display text-4xl leading-none text-accent">
+                &ldquo;
+              </span>
+              <blockquote className="mt-2 flex-1 leading-relaxed text-ink">{t.quote}</blockquote>
+              <figcaption className="mt-6 border-t border-line pt-4 text-sm">
+                <span className="font-semibold text-ink">{t.name}</span>
+                <span className="text-ink-faint"> · {t.place}</span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function PricingSection({ isHousehold }: { isHousehold: boolean }) {
+  return (
+    <section className="bg-surface py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        {isHousehold ? (
+          <>
+            <SectionHeader eyebrow="Pricing" title="Simple pricing" />
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              <div className="card p-7">
+                <p className="text-sm font-semibold text-ink-soft">Weekly</p>
+                <p className="mt-3 font-display text-3xl font-semibold text-ink">
+                  from £18<span className="text-base font-medium text-ink-soft">/hr</span>
+                </p>
+                <p className="mt-3 text-sm text-ink-soft">Minimum 2 hours. Same cleaner where possible.</p>
+              </div>
+              <div className="card p-7">
+                <p className="text-sm font-semibold text-ink-soft">Bi-weekly</p>
+                <p className="mt-3 font-display text-3xl font-semibold text-ink">
+                  from £19<span className="text-base font-medium text-ink-soft">/hr</span>
+                </p>
+                <p className="mt-3 text-sm text-ink-soft">Flexible rescheduling up to 24h before.</p>
+              </div>
+              <div className="card p-7">
+                <p className="text-sm font-semibold text-ink-soft">One-off / deep clean</p>
+                <p className="mt-3 font-display text-3xl font-semibold text-ink">Fixed quote</p>
+                <p className="mt-3 text-sm text-ink-soft">We&rsquo;ll estimate based on size and extras.</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <SectionHeader
+              eyebrow="Pricing"
+              title="Tailored quotes for every site"
+              lede="Send us your scope and we'll price fairly — no surprises. We can work around opening hours and security procedures."
+            />
+          </>
+        )}
+        <div className="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/book" className="btn-primary px-6 py-3 text-base">
+            {isHousehold ? 'Get your home booked' : 'Get a site booked'}
+          </Link>
+          <div className="flex items-center gap-2.5 text-sm text-ink-faint">
+            <CreditCard className="h-4 w-4" />
+            <span>Secure online payments powered by</span>
+            <img src="/stripe.png" alt="Stripe" className="h-5 w-auto" />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FaqSection() {
+  return (
+    <section className="py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionHeader eyebrow="Questions" title="FAQs" />
+        <dl className="mt-10 grid gap-x-10 md:grid-cols-2">
+          {faqs.map(({ q, a }) => (
+            <div key={q} className="border-t border-line py-5">
+              <dt className="font-semibold text-ink">{q}</dt>
+              <dd className="mt-1.5 text-sm leading-relaxed text-ink-soft">{a}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
+}
+
+function CtaBand({ isHousehold }: { isHousehold: boolean }) {
+  return (
+    <section className="bg-ink text-paper">
+      <div aria-hidden="true" className="tick-rule opacity-40" />
+      <div className="mx-auto grid max-w-6xl items-center gap-6 px-6 py-14 md:grid-cols-2">
+        <div>
+          <h2 className="text-paper">
+            {isHousehold ? 'Ready to reclaim your free time?' : 'Ready for a cleaner workplace?'}
+          </h2>
+          <p className="mt-2 text-paper/70">
+            {isHousehold
+              ? 'Book a trusted professional in minutes.'
+              : 'Book a site visit or start with a trial clean.'}
+          </p>
+        </div>
+        <div className="md:text-right">
+          <Link
+            href="/book"
+            className="inline-flex items-center justify-center gap-2 rounded-(--radius-ctl) bg-paper px-6 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-white"
+          >
+            {isHousehold ? 'Book home clean' : 'Book commercial clean'}
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 export default function HomePage() {
   const { mode } = useMode()
   const isHousehold = mode === 'household'
 
-  // Memoize tiles to prevent re-creation on every render
-  const tiles = useMemo(() => isHousehold ? householdTiles : commercialTiles, [isHousehold])
-  const testimonials = useMemo(() => isHousehold ? householdTestimonials : commercialTestimonials, [isHousehold])
-
-  // Dynamic hero images based on service mode - memoized
-  const currentImages = useMemo(() => {
-    const heroImages = {
-      household: {
-        main: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg',
-        secondary1: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg',
-        secondary2: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg'
-      },
-      commercial: {
-        main: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center',
-        secondary1: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center',
-        secondary2: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/warehouse.jpg'
-      }
-    }
-    return isHousehold ? heroImages.household : heroImages.commercial
-  }, [isHousehold])
-
   return (
     <>
       <TopSelectorBar />
-      <HeroSection isHousehold={isHousehold} currentImages={currentImages} />
-      <FeaturedServicesSection isHousehold={isHousehold} tiles={tiles} />
+      <HeroSection isHousehold={isHousehold} />
+      <ServicesSection isHousehold={isHousehold} />
       <HowItWorksSection isHousehold={isHousehold} />
       <WhyChooseUsSection isHousehold={isHousehold} />
       <CoverageSection />
-      <TestimonialsSection isHousehold={isHousehold} testimonials={testimonials} />
+      <TestimonialsSection isHousehold={isHousehold} />
       <PricingSection isHousehold={isHousehold} />
-
-      {/* Gallery removed per request */}
-
-      {/* CTA band */}
-      <section className="bg-brand-600">
-        <div className="mx-auto max-w-6xl px-4 py-10 text-white grid md:grid-cols-2 gap-6 items-center">
-          <div>
-            <h2 className="text-2xl font-semibold">{isHousehold ? 'Ready to reclaim your free time?' : 'Ready for a cleaner workplace?'}</h2>
-            <p className="mt-2 text-brand-100">{isHousehold ? 'Book a trusted professional in minutes.' : 'Book a site visit or start with a trial clean.'}</p>
-          </div>
-          <div className="md:text-right">
-            <Link href="/book" className="inline-block rounded-full bg-white text-brand-600 px-6 py-3 font-semibold shadow hover:bg-brand-50">
-              {isHousehold ? 'Book home clean' : 'Book commercial clean'}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQs (kept, expanded) */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="text-2xl font-semibold">FAQs</h2>
-        <div className="mt-6 grid md:grid-cols-3 gap-6">
-          {faqs.map(({ q, a }) => (
-            <div key={q} className="rounded-2xl border p-5">
-              <p className="font-medium">{q}</p>
-              <p className="mt-2 text-slate-700 text-sm">{a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <FaqSection />
+      <CtaBand isHousehold={isHousehold} />
     </>
   )
 }

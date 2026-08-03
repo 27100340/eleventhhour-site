@@ -1,41 +1,125 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/browser'
+import { adminFetch } from '@/lib/admin-fetch'
 import type { FormConfig, Service } from '@/lib/types'
 
+type Config = FormConfig['config']
+
+// Keys must match the base_fields values that src/app/book/page.tsx checks via has().
+const BASE_FIELDS: { key: string; label: string }[] = [
+  { key: 'email', label: 'Email' },
+  { key: 'first_name', label: 'First name' },
+  { key: 'last_name', label: 'Last name' },
+  { key: 'address', label: 'Address' },
+  { key: 'city', label: 'City' },
+  { key: 'postcode', label: 'Postcode' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'service_date', label: 'Service date' },
+]
+
+const FREQUENCIES: { key: Config['frequencies'][number]; label: string }[] = [
+  { key: 'one_time', label: 'One time' },
+  { key: 'weekly', label: 'Weekly' },
+  { key: 'bi_weekly', label: 'Bi weekly' },
+  { key: 'monthly', label: 'Monthly' },
+]
+
+const ARRIVAL_WINDOWS: { key: string; label: string }[] = [
+  { key: 'exact', label: 'Exact' },
+  { key: 'morning', label: 'Morning' },
+  { key: 'afternoon', label: 'Afternoon' },
+]
+
+function toggleValue<T>(list: T[] | undefined, value: T, checked: boolean): T[] {
+  const current = list ?? []
+  if (checked) return current.includes(value) ? current : [...current, value]
+  return current.filter((x) => x !== value)
+}
+
 export default function FormBuilderTab() {
-  const [config, setConfig] = useState<FormConfig | null>(null)
+  const [config, setConfig] = useState<Config | null>(null)
   const [services, setServices] = useState<Service[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   async function load() {
-    const [{ data: cfg }, { data: svcs }] = await Promise.all([
-      supabase.from('form_configs').select('*').eq('active', true).single(),
-      supabase.from('services').select('*').eq('active', true)
+    setError(null)
+    const [formRes, servicesRes] = await Promise.all([
+      adminFetch('/api/admin/form'),
+      fetch('/api/public/services', { cache: 'no-store' }),
     ])
-    if (cfg) setConfig(cfg as any)
-    if (svcs) setServices(svcs as any)
+
+    const formJson = await formRes.json()
+    if (!formRes.ok || formJson?.error) {
+      setError(formJson?.error?.message || 'Failed to load form config')
+    } else if (formJson?.data?.config) {
+      setConfig(formJson.data.config as Config)
+    }
+
+    const servicesJson = await servicesRes.json()
+    if (Array.isArray(servicesJson?.data)) setServices(servicesJson.data as Service[])
   }
-  useEffect(()=>{ load() }, [])
 
-  if (!config) return <p>Loading…</p>
+  useEffect(() => {
+    load()
+  }, [])
 
-  const c = { ...config.config }
+  function patch(next: Partial<Config>) {
+    setConfig((c) => (c ? { ...c, ...next } : c))
+  }
+
   function toggleService(id: string) {
-    const set = new Set(c.allowed_services?.map((s:any)=>s.service_id))
-    if (set.has(id)) c.allowed_services = (c.allowed_services||[]).filter((s:any)=>s.service_id!==id)
-    else (c.allowed_services ||= []).push({ service_id: id, default_qty: 0 })
-    setConfig({ ...config, config: c } as any)
+    setConfig((c) => {
+      if (!c) return c
+      const current = c.allowed_services ?? []
+      return {
+        ...c,
+        allowed_services: current.some((s) => s.service_id === id)
+          ? current.filter((s) => s.service_id !== id)
+          : [...current, { service_id: id, default_qty: 0 }],
+      }
+    })
   }
+
   function setDefaultQty(id: string, qty: number) {
-    const found = (c.allowed_services||[]).find((s:any)=>s.service_id===id)
-    if (found) found.default_qty = qty
-    setConfig({ ...config, config: c } as any)
+    setConfig((c) =>
+      c
+        ? {
+            ...c,
+            allowed_services: (c.allowed_services ?? []).map((s) =>
+              s.service_id === id ? { ...s, default_qty: qty } : s,
+            ),
+          }
+        : c,
+    )
   }
+
   async function save() {
-    await supabase.from('form_configs').update({ config: c }).eq('id', config!.id)
-    await load()
-    alert('Form saved. Public booking form will reflect these changes immediately.')
+    if (!config) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await adminFetch('/api/admin/form', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ config }),
+      })
+      const json = await res.json()
+      if (!res.ok || json?.error) {
+        setError(json?.error?.message || 'Failed to save form')
+        return
+      }
+      await load()
+      alert('Form saved. Public booking form will reflect these changes immediately.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unexpected error while saving')
+    } finally {
+      setSaving(false)
+    }
   }
+
+  if (error && !config) return <p className="text-red-600 text-sm">{error}</p>
+  if (!config) return <p>Loading…</p>
 
   return (
     <div className="grid md:grid-cols-[2fr_1fr] gap-6">
@@ -46,48 +130,48 @@ export default function FormBuilderTab() {
           <div>
             <p className="text-sm font-medium">Base fields</p>
             <div className="mt-2 grid gap-1 text-sm">
-              {['email','firstName','lastName','address','city','postcode','phone','serviceDate'].map(f=>(
-                <label key={f} className="flex items-center gap-2">
+              {BASE_FIELDS.map((f) => (
+                <label key={f.key} className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={c.base_fields.includes(f)}
-                    onChange={e=>{
-                      if (e.target.checked) c.base_fields.push(f)
-                      else c.base_fields = c.base_fields.filter((x:string)=>x!==f)
-                      setConfig({ ...config, config: c } as any)
-                    }}
+                    checked={(config.base_fields ?? []).includes(f.key)}
+                    onChange={(e) =>
+                      patch({ base_fields: toggleValue(config.base_fields, f.key, e.target.checked) })
+                    }
                   />
-                  {f}
+                  {f.label}
                 </label>
               ))}
             </div>
 
             <p className="text-sm font-medium mt-4">Frequencies</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {(['one_time','weekly','bi_weekly','monthly'] as const).map(f=>(
-                <label key={f} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox"
-                    checked={c.frequencies.includes(f)}
-                    onChange={e=>{
-                      if (e.target.checked) c.frequencies.push(f)
-                      else c.frequencies = c.frequencies.filter((x:any)=>x!==f)
-                      setConfig({ ...config, config: c } as any)
-                    }}/> {f.replace('_',' ')}
+              {FREQUENCIES.map((f) => (
+                <label key={f.key} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={(config.frequencies ?? []).includes(f.key)}
+                    onChange={(e) =>
+                      patch({ frequencies: toggleValue(config.frequencies, f.key, e.target.checked) })
+                    }
+                  />
+                  {f.label}
                 </label>
               ))}
             </div>
 
             <p className="text-sm font-medium mt-4">Arrival windows</p>
             <div className="mt-2 grid grid-cols-3 gap-2">
-              {['exact','morning','afternoon'].map(w=>(
-                <label key={w} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox"
-                    checked={c.arrival_windows.includes(w)}
-                    onChange={e=>{
-                      if (e.target.checked) c.arrival_windows.push(w)
-                      else c.arrival_windows = c.arrival_windows.filter((x:any)=>x!==w)
-                      setConfig({ ...config, config: c } as any)
-                    }}/> {w}
+              {ARRIVAL_WINDOWS.map((w) => (
+                <label key={w.key} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={(config.arrival_windows ?? []).includes(w.key)}
+                    onChange={(e) =>
+                      patch({ arrival_windows: toggleValue(config.arrival_windows, w.key, e.target.checked) })
+                    }
+                  />
+                  {w.label}
                 </label>
               ))}
             </div>
@@ -96,11 +180,15 @@ export default function FormBuilderTab() {
           <div>
             <p className="text-sm font-medium">Service selector type</p>
             <div className="mt-2">
-              {(['quantities','checkboxes'] as const).map(t=>(
+              {(['quantities', 'checkboxes'] as const).map((t) => (
                 <label key={t} className="mr-4 text-sm">
-                  <input type="radio" name="selectorType" className="mr-2"
-                    checked={c.service_selector===t}
-                    onChange={()=>{ c.service_selector=t; setConfig({ ...config, config: c } as any) }} />
+                  <input
+                    type="radio"
+                    name="selectorType"
+                    className="mr-2"
+                    checked={config.service_selector === t}
+                    onChange={() => patch({ service_selector: t })}
+                  />
                   {t}
                 </label>
               ))}
@@ -112,13 +200,13 @@ export default function FormBuilderTab() {
 
         <p className="text-sm font-medium mb-2">Allowed services & default quantities</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.map(s=>{
-            const selected = (c.allowed_services||[]).some((x:any)=>x.service_id===s.id)
-            const current = (c.allowed_services||[]).find((x:any)=>x.service_id===s.id)
+          {services.map((s) => {
+            const current = (config.allowed_services ?? []).find((x) => x.service_id === s.id)
+            const selected = !!current
             return (
-              <div key={s.id} className={`rounded-xl border p-3 transition-all duration-200 ${selected?'border-blue-600 bg-blue-50':'border-gray-200 hover:border-gray-300'}`}>
+              <div key={s.id} className={`rounded-xl border p-3 transition-all duration-200 ${selected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={!!selected} onChange={()=>toggleService(s.id)} />
+                  <input type="checkbox" checked={selected} onChange={() => toggleService(s.id)} />
                   <span className="font-medium">{s.name}</span>
                 </label>
                 <p className="text-xs text-slate-600 mt-1">£{Number(s.price).toFixed(2)} • {s.time_minutes} mins</p>
@@ -127,7 +215,7 @@ export default function FormBuilderTab() {
                     <span className="text-xs">Default qty</span>
                     <input type="number" min={0} className="input"
                       value={current?.default_qty ?? 0}
-                      onChange={e=>setDefaultQty(s.id, Number(e.target.value))}
+                      onChange={(e) => setDefaultQty(s.id, Number(e.target.value))}
                     />
                   </div>
                 )}
@@ -136,8 +224,12 @@ export default function FormBuilderTab() {
           })}
         </div>
 
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
         <div className="mt-6">
-          <button onClick={save} className="btn-primary">Save Form</button>
+          <button onClick={save} disabled={saving} className="btn-primary">
+            {saving ? 'Saving…' : 'Save Form'}
+          </button>
         </div>
       </div>
 

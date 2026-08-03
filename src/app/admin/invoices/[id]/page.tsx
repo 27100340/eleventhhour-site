@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Printer, Download, ArrowLeft, Mail } from 'lucide-react'
+import { adminFetch } from '@/lib/admin-fetch'
+import { useAdminGuard } from '@/lib/use-admin-guard'
 
 type Invoice = {
   id: string
@@ -43,7 +45,7 @@ type Item = {
 }
 
 export default function InvoiceDetailPage() {
-  const router = useRouter()
+  useAdminGuard()
   const params = useParams() as { id?: string }
   const invoiceId = (params?.id as string) || ''
 
@@ -59,7 +61,7 @@ export default function InvoiceDetailPage() {
     ;(async () => {
       try {
         setLoading(true)
-        const res = await fetch(`/api/admin/invoices/${invoiceId}`)
+        const res = await adminFetch(`/api/admin/invoices/${invoiceId}`)
         const json = await res.json()
         if (abort) return
         if (!res.ok) throw new Error(json?.error || 'Failed to load invoice')
@@ -82,7 +84,7 @@ export default function InvoiceDetailPage() {
   const handleStatusChange = async (newStatus: Invoice['status']) => {
     if (!invoice) return
     try {
-      const res = await fetch(`/api/admin/invoices/${invoice.id}`, {
+      const res = await adminFetch(`/api/admin/invoices/${invoice.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

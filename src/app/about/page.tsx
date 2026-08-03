@@ -7,122 +7,123 @@ export const metadata: Metadata = {
   description: 'Learn more about Eleventh Hour Cleaning — London\'s premium cleaning and maintenance service offering exceptional care for homes and businesses.',
 }
 
+const values = [
+  {
+    Icon: ShieldCheck,
+    title: 'Fully insured & background-checked staff',
+    desc: 'Every team member undergoes thorough vetting, DBS checks, and is fully insured for your peace of mind.',
+  },
+  {
+    Icon: Leaf,
+    title: 'Eco-conscious cleaning methods',
+    desc: 'We use environmentally friendly products and sustainable practices to protect your home and our planet.',
+  },
+  {
+    Icon: Clock,
+    title: 'Transparent pricing and punctual service',
+    desc: 'No hidden fees, no surprises. We arrive on time and deliver exactly what we promise.',
+  },
+  {
+    Icon: PhoneCall,
+    title: '24/7 emergency call-outs',
+    desc: 'When emergencies happen, we\'re ready to respond — day or night, weekday or weekend.',
+  },
+]
+
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
-        <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
+    <div>
+      {/* Hero */}
+      <section className="bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
           <div className="max-w-3xl">
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-gray-900 mb-6">
-              About <span className="text-gradient">Eleventh Hour Cleaning</span>
+            <p className="eyebrow">About us</p>
+            <h1 className="mt-4">
+              Premium service, <span className="text-accent">without the premium stress.</span>
             </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Eleventh Hour Cleaning was founded on a simple idea: <strong>premium service without the premium stress.</strong>
+            <p className="mt-6 text-xl leading-relaxed text-ink-soft">
+              Eleventh Hour Cleaning was founded on a simple idea: exceptional care for homes and
+              businesses, delivered exactly when you need it.
             </p>
           </div>
         </div>
+        <div aria-hidden="true" className="tick-rule" />
       </section>
 
-      {/* Story Section */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      {/* Story */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
-              <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+              <p className="eyebrow">Our story</p>
+              <h2 className="mt-3">One trusted name for the whole property</h2>
+              <div className="mt-6 space-y-4 text-lg leading-relaxed text-ink-soft">
                 <p>
-                  We bring together experienced cleaners, engineers, and maintenance experts under one trusted name — offering reliable, last-minute and scheduled services for homes and businesses that value quality.
+                  We bring together experienced cleaners, engineers, and maintenance experts under one
+                  trusted name — offering reliable, last-minute and scheduled services for homes and
+                  businesses that value quality.
                 </p>
                 <p>
-                  From elegant townhouses to bustling offices, we understand what true cleanliness looks like. Our team of vetted professionals handles everything — cleaning, gardening, handyman work, and complete property maintenance — so you can relax and focus on what truly matters.
+                  From elegant townhouses to bustling offices, we understand what true cleanliness
+                  looks like. Our team of vetted professionals handles everything — cleaning,
+                  gardening, handyman work, and complete property maintenance — so you can relax and
+                  focus on what truly matters.
                 </p>
-                <p className="text-xl font-semibold text-gray-900 mt-6">
-                  When we say "Eleventh Hour," we mean it — we're there when you need us most.
+                <p className="font-semibold text-ink">
+                  When we say &ldquo;Eleventh Hour,&rdquo; we mean it — we&rsquo;re there when you need us most.
                 </p>
               </div>
             </div>
-
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 rounded-3xl blur-2xl" />
-              <img
-                src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop&crop=center"
-                alt="Professional cleaning team"
-                className="relative rounded-2xl shadow-xl w-full h-96 object-cover"
-              />
-            </div>
+            <img
+              src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop&crop=center"
+              alt="Professional cleaning team"
+              className="aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>
 
-      {/* Values Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">We pride ourselves on:</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+      {/* Values */}
+      <section className="bg-surface py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="max-w-2xl">
+            <p className="eyebrow">What we stand by</p>
+            <h2 className="mt-3">We pride ourselves on</h2>
+            <p className="mt-4 text-lg text-ink-soft">
               These are the principles that guide everything we do at Eleventh Hour Cleaning.
             </p>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="card p-8 text-center group hover:bg-brand-sage/20 transition-colors">
-              <div className="w-16 h-16 bg-brand-sage/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-brand-sage/60 transition-colors">
-                <ShieldCheck className="h-8 w-8 text-brand-amber" />
+          <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2">
+            {values.map(({ Icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+                  <Icon className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-base">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{desc}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Fully insured & background-checked staff</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Every team member undergoes thorough vetting, DBS checks, and is fully insured for your peace of mind.
-              </p>
-            </div>
-
-            <div className="card p-8 text-center group hover:bg-emerald-50 transition-colors">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-200 transition-colors">
-                <Leaf className="h-8 w-8 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Eco-conscious cleaning methods</h3>
-              <p className="text-gray-600 leading-relaxed">
-                We use environmentally friendly products and sustainable practices to protect your home and our planet.
-              </p>
-            </div>
-
-            <div className="card p-8 text-center group hover:bg-purple-50 transition-colors">
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-200 transition-colors">
-                <Clock className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Transparent pricing and punctual service</h3>
-              <p className="text-gray-600 leading-relaxed">
-                No hidden fees, no surprises. We arrive on time and deliver exactly what we promise.
-              </p>
-            </div>
-
-            <div className="card p-8 text-center group hover:bg-amber-50 transition-colors">
-              <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-amber-200 transition-colors">
-                <PhoneCall className="h-8 w-8 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">24/7 emergency call-outs</h3>
-              <p className="text-gray-600 leading-relaxed">
-                When emergencies happen, we're ready to respond — day or night, weekday or weekend.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to experience the difference?</h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of satisfied customers who trust Eleventh Hour Cleaning for their property care needs.
+      {/* CTA */}
+      <section className="py-20">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2>Ready to experience the difference?</h2>
+          <p className="mt-4 text-lg text-ink-soft">
+            Join thousands of satisfied customers who trust Eleventh Hour Cleaning for their property
+            care needs.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/book" className="btn-primary">
-              Book a Service
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/book" className="btn-primary px-6 py-3 text-base">
+              Book a service
             </Link>
-            <Link href="/contact" className="rounded-full border-2 border-gray-300 px-8 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              Contact Us
+            <Link href="/contact" className="btn-secondary px-6 py-3 text-base">
+              Contact us
             </Link>
           </div>
         </div>

@@ -2,31 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input'
+import { parsePhoneNumber } from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
-import jsPDF from 'jspdf'
 import { ServiceSection } from '@/components/booking/ServiceSection'
+import { useToast } from '@/components/ui/Toast'
+import { Spinner } from '@/components/ui/Spinner'
+import type { Service } from '@/lib/types'
+import { computeBookingTotals } from '@/lib/pricing'
+import { StepIndicator } from './components/StepIndicator'
+import { DetailsStep } from './components/DetailsStep'
+import { CategoryPicker } from './components/CategoryPicker'
+import { DiscountBox } from './components/DiscountBox'
+import { BookingSummary } from './components/BookingSummary'
 
-type Service = {
-  id: string
-  name: string
-  price: number
-  time_minutes: number
-  active: boolean
-  order_index: number
-  question_type: 'plus_minus' | 'checkbox' | 'dropdown'
-  dropdown_options: { label: string; value: string | number }[]
-  description?: string | null
-  parent_id?: string | null
-  is_category?: boolean
-  category_type?: 'regular_cleaning' | 'deep_cleaning' | 'end_of_tenancy' | 'windows' | 'gardening' | 'landscaping' | 'handyman' | 'waste_removal' | null
-  nesting_level?: number
-  per_unit_type?: 'item' | 'sqft' | 'hour'
-  children?: Service[]
-}
 type Allowed = { service_id?: string; serviceId?: string; default_qty?: number }
 type FormConfig = {
-  base_fields: string[] // email, first_name, last_name, name, phone, address, city, postcode
+  base_fields: string[] // email, first_name, last_name, name, phone, address, city, postcode, service_date
   arrival_windows: string[]
   frequencies: Array<'one_time' | 'weekly' | 'bi_weekly' | 'monthly'>
   service_selector: 'quantities' | 'checkboxes'
@@ -59,10 +50,10 @@ function joinCompact(...parts: (string | undefined)[]) {
 }
 
 export default function BookPage() {
+  const toast = useToast()
   const [services, setServices] = useState<Service[]>([])
   const [cfg, setCfg] = useState<FormConfig | null>(null)
-  const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [done, setDone] = useState<{ id: string; total: number } | null>(null)
+  const [step, setStep] = useState<1 | 2>(1)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
@@ -76,7 +67,6 @@ export default function BookPage() {
   })
 
   const has = (k: string) => !!cfg?.base_fields?.includes(k)
-  const hasNamePair = has('first_name') || has('last_name') || has('name')
 
   // Load services + form config (no-cache + cache-bust)
   useEffect(() => {
@@ -93,7 +83,7 @@ export default function BookPage() {
       // safe defaults if admin row is missing or malformed
       const c: FormConfig | null =
         (cRes?.data?.config as FormConfig) ?? {
-          base_fields: ['email', 'first_name', 'last_name', 'phone', 'address', 'city', 'postcode'],
+          base_fields: ['email', 'first_name', 'last_name', 'phone', 'address', 'city', 'postcode', 'service_date'],
           arrival_windows: ['exact', 'morning', 'afternoon'],
           frequencies: ['one_time', 'weekly', 'bi_weekly', 'monthly'],
           service_selector: 'quantities',
@@ -156,7 +146,7 @@ export default function BookPage() {
   const acceptTerms = watch('acceptTerms')
 
   // Flatten hierarchical services for calculations
-  const flattenServices = (services: Service[]): Service[] => {
+  const flatServices = useMemo(() => {
     const result: Service[] = []
     const flatten = (svc: Service) => {
       result.push(svc)
@@ -166,13 +156,12 @@ export default function BookPage() {
     }
     services.forEach(flatten)
     return result
-  }
+  }, [services])
 
   // Get all services (flattened) with their quantities
   const rows = useMemo(
     () => {
-      const allServices = flattenServices(services)
-      return allServices
+      return flatServices
         .filter((s) => !allowedIds || allowedIds.has(s.id))
         .map((s) => {
           const value = items?.[s.id] ?? 0
@@ -186,90 +175,48 @@ export default function BookPage() {
             qty = 1
           } else if (s.question_type === 'checkbox') {
             qty = value ? 1 : 0
-          } else if (s.question_type === 'dropdown') {
-            qty = typeof value === 'number' ? value : Number(value) || 0
           } else {
             qty = typeof value === 'number' ? value : Number(value) || 0
           }
           return { ...s, qty, rawValue: value }
         })
     },
-    [services, allowedIds, items, selectedCategoryId],
+    [flatServices, allowedIds, items, selectedCategoryId],
   )
 
-  // Memoized Totals - only recalculate when rows or discount changes
+  // Memoized totals — shared pricing rules keep this identical to what the
+  // server persists and what Stripe charges.
   const { subtotal, totalTime, discountAmount, total } = useMemo(() => {
-    // Check if Regular Cleaning is selected
-    const regularCategory = services.find((s) => s.category_type === 'regular_cleaning' && s.is_category)
-    const isRegularCleaning = regularCategory && selectedCategoryId === regularCategory.id
+    const totals = computeBookingTotals(
+      rows
+        .filter((r) => r.qty > 0)
+        .map((r) => ({
+          service_id: r.id,
+          qty: r.qty,
+          unit_price: Number(r.price),
+          time_minutes: r.time_minutes,
+          name: r.name,
+        })),
+      flatServices,
+    )
 
-    let sub = 0
-
-    if (isRegularCleaning && regularCategory?.children) {
-      // Special pricing for Regular Cleaning: hours × price_per_hour × cleaners
-      // Try to find services by name (case-insensitive and flexible)
-      const hoursService = regularCategory.children.find((s) =>
-        s.name.toLowerCase().includes('hour')
-      )
-      const cleanersService = regularCategory.children.find((s) =>
-        s.name.toLowerCase().includes('cleaner')
-      )
-
-      if (hoursService && cleanersService) {
-        const hours = Number(items[hoursService.id] || 0)
-        const cleaners = Number(items[cleanersService.id] || 0)
-
-        // Only calculate if both hours and cleaners are > 0
-        if (hours > 0 && cleaners > 0) {
-          const pricePerHour = Number(hoursService.price || 0)
-          sub = hours * pricePerHour * cleaners
-
-          // Debug logging
-          console.log('Regular Cleaning Calculation:', {
-            hours,
-            cleaners,
-            pricePerHour,
-            subtotal: sub,
-            hoursServiceName: hoursService.name,
-            cleanersServiceName: cleanersService.name
-          })
-        }
-      } else {
-        console.log('Services not found:', {
-          hoursService: regularCategory.children.find((s) =>
-            s.name.toLowerCase().includes('hour')
-          )?.name,
-          cleanersService: regularCategory.children.find((s) =>
-            s.name.toLowerCase().includes('cleaner')
-          )?.name,
-          allChildren: regularCategory.children.map(s => s.name)
-        })
-      }
-    } else {
-      // Standard pricing for all other services
-      sub = rows.reduce((sum, r) => sum + (r.qty || 0) * Number(r.price), 0)
-    }
-
-    const time = rows.reduce((sum, r) => sum + (r.qty || 0) * r.time_minutes, 0)
     const discount = appliedDiscount?.discount_amount || 0
-    const tot = Math.max(0, sub - discount)
 
     return {
-      subtotal: sub,
-      totalTime: time,
+      subtotal: totals.subtotal,
+      totalTime: totals.totalTimeMinutes,
       discountAmount: discount,
-      total: tot,
+      total: Math.max(0, totals.subtotal - discount),
     }
-  }, [rows, appliedDiscount, services, selectedCategoryId, items])
+  }, [rows, flatServices, appliedDiscount])
 
-  // All top-level categories are now mutually exclusive (only top-level categories)
+  // All top-level categories are mutually exclusive
   const allCategories = useMemo(() => {
     return services.filter((s) => s.is_category && !s.parent_id)
   }, [services])
 
   // Handle category selection - clear items from other categories
   const handleCategoryChange = (categoryId: string) => {
-    // If selecting the same category, do nothing
     if (selectedCategoryId === categoryId) return
 
     const selectedCategory = allCategories.find((cat) => cat.id === categoryId)
@@ -296,7 +243,7 @@ export default function BookPage() {
 
     // For Regular Cleaning, set cleaners to 1 by default
     if (selectedCategory.category_type === 'regular_cleaning' && selectedCategory.children) {
-      const cleanersService = selectedCategory.children.find((s) => s.name === 'Number of Cleaners')
+      const cleanersService = selectedCategory.children.find((s) => /cleaner/i.test(s.name))
       if (cleanersService && !updatedItems[cleanersService.id]) {
         updatedItems[cleanersService.id] = 1
       }
@@ -340,7 +287,7 @@ export default function BookPage() {
         setAppliedDiscount(null)
         setDiscountError(data.error || 'Invalid discount code')
       }
-    } catch (error) {
+    } catch {
       setDiscountError('Failed to validate discount code')
       setAppliedDiscount(null)
     } finally {
@@ -404,7 +351,7 @@ export default function BookPage() {
     if (has('phone') && !(getValues('phone') || '').trim()) missing.push('Phone')
 
     if (missing.length) {
-      alert(`Please fill: ${missing.join(', ')}`)
+      toast.error(`Please fill: ${missing.join(', ')}`)
       return
     }
 
@@ -428,7 +375,7 @@ export default function BookPage() {
     if (!v.acceptTerms) missing.push('You must accept the Terms and Services')
 
     if (missing.length) {
-      alert(`Please complete: ${missing.join(', ')}`)
+      toast.error(`Please complete: ${missing.join(', ')}`)
       return
     }
 
@@ -457,7 +404,7 @@ export default function BookPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        alert(data?.error?.message || data?.error?.hint || data?.error?.details || 'Could not save booking.')
+        toast.error(data?.error?.message || data?.error?.hint || data?.error?.details || 'Could not save booking.')
         setIsProcessingPayment(false)
         return
       }
@@ -487,16 +434,6 @@ export default function BookPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bookingId,
-          items: chosen.map((r) => ({
-            service_id: r.id,
-            name: r.name,
-            qty: r.qty,
-            unit_price: r.price,
-            time_minutes: r.time_minutes,
-          })),
-          subtotal,
-          discount: discountAmount,
-          total,
           customerEmail: v.email,
           customerName: `${v.firstName || ''} ${v.lastName || ''}`.trim(),
         }),
@@ -504,754 +441,241 @@ export default function BookPage() {
 
       const checkoutData = await checkoutRes.json()
       if (!checkoutRes.ok) {
-        alert(checkoutData?.error?.message || 'Failed to create checkout session.')
+        toast.error(checkoutData?.error?.message || 'Failed to create checkout session.')
         setIsProcessingPayment(false)
         return
       }
 
-      // Redirect to Stripe Checkout using the new method
-      // console.log('✅ Checkout session created successfully')
-      // console.log('🔄 Redirecting to Stripe checkout...')
-
-      // Use the direct URL from the session instead of redirectToCheckout
       if (checkoutData.url) {
         window.location.href = checkoutData.url
       } else {
         throw new Error('No checkout URL received from Stripe')
       }
     } catch (error: any) {
-      console.error('Booking error:', error)
-      const errorMsg = error?.message || 'An unexpected error occurred. Please try again.'
-      alert(`Error: ${errorMsg}\n\nPlease check the console for more details.`)
+      toast.error(error?.message || 'An unexpected error occurred. Please try again.')
       setIsProcessingPayment(false)
     }
   }
 
-  // PDF
-  async function downloadQuote() {
-    const doc = new jsPDF()
-
-    // Modern color palette matching site design
-    const colors = {
-      primary: '#2563eb',      // blue-600
-      primaryDark: '#1d4ed8',  // blue-700
-      gray900: '#111827',
-      gray700: '#374151',
-      gray600: '#4b5563',
-      gray400: '#9ca3af',
-      gray200: '#e5e7eb',
-      gray100: '#f3f4f6',
-      gray50: '#f9fafb',
-      white: '#ffffff',
-      green600: '#059669'
-    }
-
-    // Helper function to convert hex to RGB
-    const hexToRgb = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : { r: 0, g: 0, b: 0 }
-    }
-
-    // Page dimensions
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const margin = 20
-
-    // Header with gradient background effect
-    const headerHeight = 45
-    const primaryRgb = hexToRgb(colors.primary)
-    const primaryDarkRgb = hexToRgb(colors.primaryDark)
-
-    // Create gradient effect with multiple rectangles
-    for (let i = 0; i < headerHeight; i++) {
-      const ratio = i / headerHeight
-      const r = Math.round(primaryRgb.r + (primaryDarkRgb.r - primaryRgb.r) * ratio)
-      const g = Math.round(primaryRgb.g + (primaryDarkRgb.g - primaryRgb.g) * ratio)
-      const b = Math.round(primaryRgb.b + (primaryDarkRgb.b - primaryRgb.b) * ratio)
-
-      doc.setFillColor(r, g, b)
-      doc.rect(0, i, pageWidth, 1, 'F')
-    }
-
-    // Load and add logo
-    let logoAdded = false
-    try {
-      // Create a white rounded background for the logo
-      doc.setFillColor(255, 255, 255, 0.95)
-      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'F')
-
-      // Create a subtle border
-      doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-      doc.setLineWidth(0.5)
-      doc.roundedRect(margin, 12, 35, 20, 3, 3, 'S')
-
-      // Try to load and add the actual logo
-      const loadLogo = () => new Promise<string>((resolve, reject) => {
-        const logoImg = new Image()
-        logoImg.crossOrigin = 'anonymous'
-
-        logoImg.onload = () => {
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
-
-          if (ctx) {
-            canvas.width = logoImg.width
-            canvas.height = logoImg.height
-            ctx.drawImage(logoImg, 0, 0)
-            try {
-              const logoBase64 = canvas.toDataURL('image/png')
-              resolve(logoBase64)
-            } catch (e) {
-              reject(e)
-            }
-          } else {
-            reject(new Error('Canvas context not available'))
-          }
-        }
-
-        logoImg.onerror = () => reject(new Error('Logo failed to load'))
-        logoImg.src = '/el_logo.png'
-      })
-
-      try {
-        const logoBase64 = await loadLogo()
-        doc.addImage(logoBase64, 'PNG', margin + 3, 14, 29, 16)
-        logoAdded = true
-      } catch (e) {
-        // Logo loading failed, will add fallback below
-      }
-
-    } catch (e) {
-      // Error in logo section
-    }
-
-    // Fallback logo design if actual logo couldn't be loaded
-    if (!logoAdded) {
-      // Create an elegant monogram design
-      doc.setFillColor(hexToRgb(colors.primary).r, hexToRgb(colors.primary).g, hexToRgb(colors.primary).b)
-      doc.circle(margin + 17.5, 22, 8, 'F')
-
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text('EH', margin + 17.5, 24, { align: 'center' })
-    }
-
-    // Company name and tagline
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
-    doc.setFont('helvetica', 'bold')
-    doc.text('EleventhHour', margin + 45, 22)
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Professional Home & Commercial Services', margin + 45, 28)
-
-    // Contact info in header (right aligned)
-    doc.setFontSize(8)
-    doc.text('2033551526', pageWidth - margin, 18, { align: 'right' })
-    doc.text('hello@eleventhhour.co.uk', pageWidth - margin, 23, { align: 'right' })
-    doc.text('Greater London & Surrounding Areas', pageWidth - margin, 28, { align: 'right' })
-
-    // Document title section
-    let currentY = headerHeight + 25
-    doc.setTextColor(colors.gray900)
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Service Estimate', margin, currentY)
-
-    // Add current date
-    doc.setFontSize(10)
-    doc.setTextColor(colors.gray600)
-    doc.setFont('helvetica', 'normal')
-    const currentDate = new Date().toLocaleDateString('en-GB', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-    doc.text(`Generated on ${currentDate}`, pageWidth - margin, currentY, { align: 'right' })
-
-    currentY += 20
-
-    // Customer information section
-    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 40, 4, 4, 'F')
-
-    doc.setTextColor(colors.primary)
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Customer Information', margin + 10, currentY + 12)
-
-    const fn = (watch('firstName') || '') + ' ' + (watch('lastName') || '')
-    const name = fn.trim()
-    const emailVal = watch('email') || ''
-    const phoneVal = watch('phone') || ''
-    const addr = [watch('address') || '', watch('city') || '', watch('postcode') || ''].filter(Boolean).join(', ')
-
-    doc.setTextColor(colors.gray900)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-
-    let infoY = currentY + 20
-    if (name) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Name:', margin + 10, infoY)
-      doc.setFont('helvetica', 'normal')
-      doc.text(name, margin + 35, infoY)
-      infoY += 6
-    }
-
-    if (emailVal) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Email:', margin + 10, infoY)
-      doc.setFont('helvetica', 'normal')
-      doc.text(emailVal, margin + 35, infoY)
-    }
-
-    if (phoneVal) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Phone:', pageWidth/2 + 10, currentY + 20)
-      doc.setFont('helvetica', 'normal')
-      doc.text(phoneVal, pageWidth/2 + 35, currentY + 20)
-    }
-
-    if (addr) {
-      doc.setFont('helvetica', 'bold')
-      doc.text('Address:', pageWidth/2 + 10, currentY + 26)
-      doc.setFont('helvetica', 'normal')
-      // Split long addresses
-      const maxWidth = pageWidth/2 - 50
-      const addressLines = doc.splitTextToSize(addr, maxWidth)
-      doc.text(addressLines, pageWidth/2 + 45, currentY + 26)
-    }
-
-    currentY += 55
-
-    // Services section
-    doc.setTextColor(colors.primary)
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Selected Services', margin, currentY)
-    currentY += 15
-
-    // Services table header
-    const tableStartY = currentY
-    doc.setFillColor(hexToRgb(colors.gray100).r, hexToRgb(colors.gray100).g, hexToRgb(colors.gray100).b)
-    doc.rect(margin, currentY, pageWidth - 2 * margin, 12, 'F')
-
-    doc.setTextColor(colors.gray700)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Service', margin + 5, currentY + 8)
-    doc.text('Qty', pageWidth - 100, currentY + 8)
-    doc.text('Rate', pageWidth - 70, currentY + 8)
-    doc.text('Time', pageWidth - 45, currentY + 8)
-    doc.text('Total', pageWidth - margin - 5, currentY + 8, { align: 'right' })
-
-    currentY += 12
-
-    // Service items
-    const selectedServices = rows.filter((r) => r.qty > 0)
-    selectedServices.forEach((r, index) => {
-      // Alternating row colors
-      if (index % 2 === 0) {
-        doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-        doc.rect(margin, currentY, pageWidth - 2 * margin, 10, 'F')
-      }
-
-      doc.setTextColor(colors.gray900)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
-
-      // Service name (truncate if too long)
-      const serviceNameMaxWidth = pageWidth - 130
-      const serviceName = doc.splitTextToSize(r.name, serviceNameMaxWidth)[0]
-      doc.text(serviceName, margin + 5, currentY + 7)
-
-      doc.text(r.qty.toString(), pageWidth - 100, currentY + 7)
-      doc.text(`£${r.price.toFixed(2)}`, pageWidth - 70, currentY + 7)
-      doc.text(`${r.time_minutes}m`, pageWidth - 45, currentY + 7)
-      doc.text(`£${(r.qty * r.price).toFixed(2)}`, pageWidth - margin - 5, currentY + 7, { align: 'right' })
-
-      currentY += 10
-    })
-
-    // Add bottom border to table
-    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-    doc.line(margin, currentY, pageWidth - margin, currentY)
-
-    currentY += 15
-
-    // Summary section
-    const summaryBoxY = currentY
-    doc.setFillColor(hexToRgb(colors.gray50).r, hexToRgb(colors.gray50).g, hexToRgb(colors.gray50).b)
-    doc.roundedRect(pageWidth - 120, currentY, 100, 25, 4, 4, 'F')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(12)
-    doc.setTextColor(colors.primary)
-    doc.text('Total Estimate:', pageWidth - 115, currentY + 15)
-    doc.setFontSize(14)
-    doc.text(`£${subtotal.toFixed(2)}`, pageWidth - 25, currentY + 15, { align: 'right' })
-
-    currentY += 40
-
-    // Important notes section
-    doc.setTextColor(colors.gray700)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Important Notes:', margin, currentY)
-    currentY += 8
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    const notes = [
-      '• This is an estimate only. Final pricing may vary based on specific requirements.',
-      '• All services include professional supplies and equipment.',
-      '• Our team is fully insured and DBS-checked.',
-      '• We offer a 100% satisfaction guarantee on all services.',
-      '• Payment is due upon completion of services.'
-    ]
-
-    notes.forEach(note => {
-      doc.text(note, margin, currentY)
-      currentY += 5
-    })
-
-    // Footer
-    const footerY = pageHeight - 25
-    doc.setDrawColor(hexToRgb(colors.gray200).r, hexToRgb(colors.gray200).g, hexToRgb(colors.gray200).b)
-    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5)
-
-    doc.setTextColor(colors.gray600)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.text('EleventhHour Professional Services', margin, footerY)
-    doc.text(`Generated on ${new Date().toLocaleString('en-GB')}`, pageWidth - margin, footerY, { align: 'right' })
-
-    // Save the PDF
-    doc.save('eleventhhour-service-estimate.pdf')
-  }
-
   if (!cfg) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Spinner className="h-8 w-8 text-accent" />
       </div>
     )
   }
 
+  const selectedCategory = selectedCategoryId
+    ? allCategories.find((c) => c.id === selectedCategoryId) ?? null
+    : null
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Book Your Service</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Fill in your details, choose your service, and we'll handle the rest. Whether you need a one-time emergency clean or regular maintenance, our team is ready — 7 days a week.
-          </p>
-
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <div className={`step ${step >= 1 ? 'active' : ''}`}>1</div>
-            <div className="h-px bg-gray-300 w-8"></div>
-            <div className={`step ${step >= 2 ? 'active' : ''}`}>2</div>
-            <div className="h-px bg-gray-300 w-8"></div>
-            <div className={`step ${step >= 3 ? 'active' : ''}`}>3</div>
-          </div>
+    <div className="mx-auto max-w-6xl px-6 py-12 lg:py-16">
+      <div className="mx-auto mb-10 max-w-2xl text-center">
+        <p className="eyebrow">Book online</p>
+        <h1 className="mt-3">Book your service</h1>
+        <p className="mt-4 text-lg text-ink-soft">
+          Fill in your details, choose your service, and we&rsquo;ll handle the rest — 7 days a week.
+        </p>
+        <div className="mt-8">
+          <StepIndicator current={step} />
         </div>
+      </div>
 
-        <div className="grid lg:grid-cols-[2fr_1fr] gap-12">
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
+      <div className="grid gap-8 lg:grid-cols-[2fr_1fr] lg:gap-10">
+        <div className="rounded-(--radius-card) border border-line bg-surface p-6 md:p-8">
+          {/* STEP 1 */}
+          {step === 1 && (
+            <DetailsStep
+              has={has}
+              register={register}
+              watch={watch}
+              setValue={setValue}
+              onContinue={goToStep2}
+            />
+          )}
 
-        {/* STEP 1 */}
-        {step === 1 && (
-          <div className="mt-6 grid gap-4">
-            {has('email') && <input className="input" type="email" placeholder="Email" {...register('email')} />}
-            {(hasNamePair) && (
-              <div className="grid md:grid-cols-2 gap-4">
-                {(has('first_name') || has('name')) && (
-                  <input className="input" placeholder="First name" {...register('firstName')} />
-                )}
-                {(has('last_name') || has('name')) && (
-                  <input className="input" placeholder="Last name" {...register('lastName')} />
-                )}
+          {/* STEP 2 */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+              {has('address') && <input className="input" placeholder="Address" {...register('address')} />}
+              <div className="grid gap-4 md:grid-cols-2">
+                {has('city') && <input className="input" placeholder="City" {...register('city')} />}
+                {has('postcode') && <input className="input" placeholder="Postcode" {...register('postcode')} />}
               </div>
-            )}
-            {has('phone') && (
-              <div className="grid md:grid-cols-[100px_1fr] items-center gap-4">
-                <label className="text-sm text-slate-600">Phone</label>
-                <PhoneInput
-                  defaultCountry="GB"
-                  value={watch('phone') as any}
-                  onChange={(v) => setValue('phone', v || '', { shouldValidate: true })}
-                  className="input"
-                  placeholder="Phone number"
-                />
-              </div>
-            )}
-            <button onClick={goToStep2} className="btn-primary mt-2">Continue</button>
-          </div>
-        )}
-
-        {/* STEP 2 */}
-        {step === 2 && (
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 grid gap-4">
-            {has('address') && <input className="input" placeholder="Address" {...register('address')} />}
-            <div className="grid md:grid-cols-3 gap-4">
-              {has('city') && <input className="input" placeholder="City" {...register('city')} />}
-              {has('postcode') && <input className="input" placeholder="Postcode" {...register('postcode')} />}
-              <input className="input" type="datetime-local" {...register('serviceDate')} />
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <select className="input" {...register('frequency')}>
-                {(cfg.frequencies || ['one_time']).map((f) => (
-                  <option key={f} value={f}>{f.replace('_', ' ')}</option>
-                ))}
-              </select>
-              <select className="input" {...register('arrivalWindow')}>
-                {(cfg.arrival_windows || ['exact', 'morning', 'afternoon']).map((w) => (
-                  <option key={w} value={w}>{w}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Service Sections */}
-            <div className="space-y-4">
-              <h3 className="text-xl font-bold text-brand-charcoal mb-4">Select Your Service</h3>
-              <p className="text-gray-600 mb-6">
-                Choose one service category below, then customize your selections.
-              </p>
-
-              {/* All service categories selector - mutually exclusive */}
-              {allCategories.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-sm font-semibold text-brand-charcoal mb-3">Service Categories (select one)</p>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                    {allCategories.map((category) => {
-                      const isSelected = selectedCategoryId === category.id
-                      const categoryIcons: Record<string, string> = {
-                        regular_cleaning: '🏠',
-                        deep_cleaning: '✨',
-                        end_of_tenancy: '🔑',
-                        windows: '🪟',
-                        gardening: '🌿',
-                        landscaping: '🌳',
-                        handyman: '🔧',
-                        waste_removal: '🗑️',
-                      }
-                      const icon = categoryIcons[category.category_type || ''] || '📋'
-
-                      return (
-                        <button
-                          key={category.id}
-                          type="button"
-                          onClick={() => handleCategoryChange(category.id)}
-                          className={`text-left rounded-2xl border-2 px-4 py-3 transition-all ${
-                            isSelected
-                              ? 'border-brand-amber bg-brand-amber/10 ring-2 ring-brand-amber/50'
-                              : 'border-slate-200 bg-white hover:border-brand-amber/60 hover:bg-brand-amber/5'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-2xl">{icon}</span>
-                            <p className="font-semibold text-sm">{category.name}</p>
-                          </div>
-                          {isSelected && (
-                            <p className="text-xs text-brand-amber font-medium">Selected</p>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
+              {has('service_date') && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Preferred date &amp; time</label>
+                  <input className="input" type="datetime-local" {...register('serviceDate')} />
                 </div>
               )}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Frequency</label>
+                  <select className="input" {...register('frequency')}>
+                    {(cfg.frequencies || ['one_time']).map((f) => (
+                      <option key={f} value={f}>{f.replace('_', ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Arrival window</label>
+                  <select className="input" {...register('arrivalWindow')}>
+                    {(cfg.arrival_windows || ['exact', 'morning', 'afternoon']).map((w) => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-              {/* Selected category details */}
-              <div className="space-y-4">
-                {selectedCategoryId && allCategories.length > 0 && (
-                  (() => {
-                    const selectedCategory = allCategories.find(
-                      (c) => c.id === selectedCategoryId,
-                    )
-                    if (!selectedCategory) return null
+              {/* Service selection */}
+              <div className="mt-2 space-y-4 border-t border-line pt-6">
+                <div>
+                  <h3>Select your service</h3>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    Choose one service category below, then customise your selections.
+                  </p>
+                </div>
 
-                    const childServices = selectedCategory.children || []
-                    const showExtras = selectedCategory.category_type === 'deep_cleaning' || selectedCategory.category_type === 'end_of_tenancy'
-                    const extrasStartIndex = showExtras ? 8 : 0
-
-                    // Category-specific descriptions
-                    const getDescription = () => {
-                      switch (selectedCategory.category_type) {
-                        case 'regular_cleaning':
-                          return 'Select number of hours and cleaners needed'
-                        case 'deep_cleaning':
-                        case 'end_of_tenancy':
-                          return 'Select rooms to be cleaned and any extras'
-                        case 'windows':
-                          return 'Exterior window cleaning - enter square footage'
-                        case 'gardening':
-                          return 'Select gardening services needed'
-                        case 'landscaping':
-                          return 'Professional landscaping services'
-                        case 'handyman':
-                          return 'Handyman services for your property'
-                        case 'waste_removal':
-                          return 'Waste and junk removal services'
-                        default:
-                          return ''
-                      }
-                    }
-
-                    // Build service array: include parent IF it has a price, then add children
-                    const servicesForSection = []
-
-                    // Add parent service if it has a price or time
-                    if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
-                      servicesForSection.push(selectedCategory)
-                      // Don't add children here - NestedServiceSelector will handle them when expanded
-                    } else if (childServices.length > 0) {
-                      // If parent has no price/time, add children directly
-                      servicesForSection.push(...childServices)
-                    }
-
-                    // If no services at all, show parent anyway
-                    if (servicesForSection.length === 0) {
-                      servicesForSection.push(selectedCategory)
-                    }
-
-                    return (
-                      <ServiceSection
-                        key={selectedCategory.id}
-                        title={selectedCategory.name}
-                        description={getDescription()}
-                        services={servicesForSection}
-                        items={items || {}}
-                        onItemChange={(serviceId, value) => {
-                          setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
-                        }}
-                        showExtrasLabel={showExtras}
-                        extrasStartIndex={showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex}
-                        showPrices={false}
-                        defaultExpandedNested={true}
-                      />
-                    )
-                  })()
+                {allCategories.length > 0 && (
+                  <CategoryPicker
+                    categories={allCategories}
+                    selectedId={selectedCategoryId}
+                    onSelect={handleCategoryChange}
+                  />
                 )}
 
+                {selectedCategory && (() => {
+                  const childServices = selectedCategory.children || []
+                  const showExtras =
+                    selectedCategory.category_type === 'deep_cleaning' ||
+                    selectedCategory.category_type === 'end_of_tenancy'
+                  const extrasStartIndex = showExtras ? 8 : 0
+
+                  // Category-specific descriptions
+                  const getDescription = () => {
+                    switch (selectedCategory.category_type) {
+                      case 'regular_cleaning':
+                        return 'Select number of hours and cleaners needed'
+                      case 'deep_cleaning':
+                      case 'end_of_tenancy':
+                        return 'Select rooms to be cleaned and any extras'
+                      case 'windows':
+                        return 'Exterior window cleaning - enter square footage'
+                      case 'gardening':
+                        return 'Select gardening services needed'
+                      case 'landscaping':
+                        return 'Professional landscaping services'
+                      case 'handyman':
+                        return 'Handyman services for your property'
+                      case 'waste_removal':
+                        return 'Waste and junk removal services'
+                      default:
+                        return ''
+                    }
+                  }
+
+                  // Build service array: include parent IF it has a price, then add children
+                  const servicesForSection = []
+
+                  if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
+                    servicesForSection.push(selectedCategory)
+                    // Children are rendered by NestedServiceSelector when expanded
+                  } else if (childServices.length > 0) {
+                    servicesForSection.push(...childServices)
+                  }
+
+                  if (servicesForSection.length === 0) {
+                    servicesForSection.push(selectedCategory)
+                  }
+
+                  return (
+                    <ServiceSection
+                      key={selectedCategory.id}
+                      title={selectedCategory.name}
+                      description={getDescription()}
+                      services={servicesForSection}
+                      items={items || {}}
+                      onItemChange={(serviceId, value) => {
+                        setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
+                      }}
+                      showExtrasLabel={showExtras}
+                      extrasStartIndex={showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex}
+                      showPrices={false}
+                      defaultExpandedNested={true}
+                    />
+                  )
+                })()}
+
                 {services.length === 0 && (
-                  <div className="text-sm text-slate-600 p-6 text-center border rounded-2xl">
+                  <div className="rounded-(--radius-card) border border-line p-6 text-center text-sm text-ink-soft">
                     No services available. Please contact us for assistance.
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Discount Code Section */}
-            <div className="rounded-2xl border p-4 bg-gradient-to-r from-green-50 to-emerald-50">
-              <p className="font-medium mb-3 text-gray-900">Have a discount code?</p>
+              <DiscountBox
+                discountCode={discountCode}
+                onCodeChange={setDiscountCode}
+                appliedDiscount={appliedDiscount}
+                discountAmount={discountAmount}
+                discountError={discountError}
+                validating={validatingDiscount}
+                onApply={validateDiscountCode}
+                onRemove={removeDiscount}
+              />
 
-              {!appliedDiscount ? (
-                <div className="flex gap-2">
+              {/* Terms & Services */}
+              <div className="rounded-(--radius-card) border border-line bg-paper p-4">
+                <label className="flex cursor-pointer items-start gap-3">
                   <input
-                    type="text"
-                    className="input flex-1 uppercase"
-                    placeholder="Enter code (e.g., SAVE20)"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                    disabled={validatingDiscount}
+                    type="checkbox"
+                    checked={acceptTerms || false}
+                    onChange={(e) => setValue('acceptTerms', e.target.checked, { shouldValidate: true })}
+                    className="mt-1 h-4 w-4 accent-(--color-accent)"
+                    required
                   />
-                  <button
-                    type="button"
-                    onClick={validateDiscountCode}
-                    disabled={validatingDiscount || !discountCode.trim()}
-                    className="rounded-full bg-green-600 text-white px-6 py-2 font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {validatingDiscount ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Checking...
-                      </span>
-                    ) : (
-                      'Apply'
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-green-500">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-bold text-green-700">{appliedDiscount.code} Applied!</p>
-                      {appliedDiscount.description && (
-                        <p className="text-sm text-gray-600">{appliedDiscount.description}</p>
-                      )}
-                      <p className="text-sm font-semibold text-green-600">
-                        You save £{discountAmount.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeDiscount}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Remove discount"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-
-              {discountError && (
-                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                  <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-sm text-red-700">{discountError}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Terms & Services Checkbox - AT BOTTOM */}
-            <div className="rounded-2xl border p-4 bg-blue-50 border-blue-200">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms || false}
-                  onChange={(e) => setValue('acceptTerms', e.target.checked, { shouldValidate: true })}
-                  className="mt-1"
-                  required
-                />
-                <span className="text-sm">
-                  I accept the{' '}
-                  <a href="/terms" target="_blank" className="text-blue-600 hover:underline font-medium">
-                    Terms and Services
-                  </a>
-                  <span className="text-red-600 ml-1">*</span>
-                </span>
-              </label>
-            </div>
-
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setStep(1)} className="rounded-full border px-6 py-3" disabled={isProcessingPayment}>Back</button>
-              <button className="btn-primary" disabled={isProcessingPayment}>
-                {isProcessingPayment ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
+                  <span className="text-sm text-ink">
+                    I accept the{' '}
+                    <a href="/terms" target="_blank" className="font-medium text-accent hover:text-accent-dark">
+                      Terms and Services
+                    </a>
+                    <span className="ml-1 text-red-700">*</span>
                   </span>
-                ) : (
-                  'Proceed to Payment'
-                )}
-              </button>
-            </div>
-          </form>
-        )}
+                </label>
+              </div>
 
-        {/* STEP 3 */}
-        {step === 3 && done && (
-          <div className="mt-6 rounded-2xl border p-6">
-            <h2 className="text-2xl font-semibold">Thank you!</h2>
-            <p className="mt-2">Our team will reach out to you shortly to finalise your booking.</p>
-            <p className="mt-2 font-medium">Estimated total: £{done.total.toFixed(2)}</p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={downloadQuote} className="btn-primary">Download Estimate PDF</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-          {/* Live receipt */}
-          <aside className="bg-white rounded-2xl p-6 shadow-lg h-max sticky top-24">
-            <div className="border-b border-gray-200 pb-4 mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Booking Summary</h3>
-              <p className="text-sm text-gray-600 mt-1">Review your selected services</p>
-            </div>
-
-            <div className="space-y-3 mb-6">
-              {rows
-                .filter((r) => r.qty > 0)
-                .map((r) => (
-                  <div key={r.id} className="py-2 border-b border-gray-100 pb-2">
-                    <p className="font-medium text-gray-900 text-sm">{r.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {r.question_type === 'checkbox' ? 'Selected' : `Quantity: ${r.qty}`}
-                    </p>
-                  </div>
-                ))}
-
-              {rows.every((r) => r.qty === 0) && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600">Select services to see your estimate</p>
-                </div>
-              )}
-            </div>
-
-            {rows.some((r) => r.qty > 0) && (
-              <>
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium text-gray-900">£{subtotal.toFixed(2)}</span>
-                  </div>
-
-                  {discountAmount > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-green-600 font-medium">Discount ({appliedDiscount.code})</span>
-                      <span className="font-semibold text-green-600">-£{discountAmount.toFixed(2)}</span>
-                    </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="btn-secondary px-6 py-3"
+                  disabled={isProcessingPayment}
+                >
+                  Back
+                </button>
+                <button className="btn-primary flex-1 py-3 text-base" disabled={isProcessingPayment}>
+                  {isProcessingPayment ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner />
+                      Processing…
+                    </span>
+                  ) : (
+                    'Proceed to payment'
                   )}
-
-                  <div className="flex items-center justify-between border-t pt-3">
-                    <span className="text-lg font-semibold text-gray-900">Total</span>
-                    <span className="text-2xl font-bold text-blue-600">£{total.toFixed(2)}</span>
-                  </div>
-
-                  {discountAmount > 0 && (
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <p className="text-xs text-green-800 font-medium text-center">
-                        You're saving £{discountAmount.toFixed(2)}!
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-                  <p className="text-xs text-blue-800">
-                    <strong>Note:</strong> This is an estimate. Final pricing may vary based on specific requirements and will be confirmed before service.
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-center gap-2 text-xs text-gray-500">
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span>Secured by</span>
-                  <img src="/stripe.png" alt="Stripe" className="h-4 w-auto" />
-                </div>
-              </>
-            )}
-          </aside>
+                </button>
+              </div>
+            </form>
+          )}
         </div>
+
+        <BookingSummary
+          rows={rows}
+          subtotal={subtotal}
+          discountAmount={discountAmount}
+          discountCode={appliedDiscount?.code}
+          total={total}
+        />
       </div>
     </div>
   )
