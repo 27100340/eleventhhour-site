@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
-import { Wrench, Leaf, Paintbrush, Plug, Flame, Bug, KeySquare, Hammer, Refrigerator, Trees, ChevronDown, Menu, X } from 'lucide-react'
+import { Wrench, Leaf, Paintbrush, Plug, Flame, Bug, KeySquare, Refrigerator, Trees, ChevronDown, Menu, X } from 'lucide-react'
 
 const navServices = [
   { slug: 'cleaning', label: 'Cleaning', Icon: Paintbrush, desc: 'Professional cleaning services' },
@@ -16,11 +16,18 @@ const navServices = [
   { slug: 'landscaping', label: 'Landscaping', Icon: Trees, desc: 'Complete landscaping projects' },
 ]
 
+const pageLinks = [
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/careers', label: 'Careers' },
+]
+
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -41,161 +48,126 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-brand-cream/95 backdrop-blur-sm border-b border-brand-stone/50 shadow-sm supports-[backdrop-filter]:bg-brand-cream/90 overflow-visible" style={{ willChange: 'transform' }}>
-      <div className="mx-auto max-w-7xl flex items-center justify-between py-4 px-6">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative">
-            <img
-              src="/el_logo.png"
-              alt="Eleventh Hour Logo"
-              className="h-10 md:h-12 w-auto transition-transform group-hover:scale-105"
-            />
-          </div>
+    <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
+          <img src="/el_logo.png" alt="Eleventh Hour" className="h-9 w-auto md:h-10" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1">
+        {/* Desktop navigation */}
+        <nav className="hidden items-center gap-1 lg:flex">
           <div
             ref={dropdownRef}
-            className="relative z-[100]"
+            className="relative"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <button
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200 ${
-                dropdownOpen ? 'bg-white/50 text-brand-amber' : ''
+              className={`flex items-center gap-1.5 rounded-(--radius-ctl) px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+                dropdownOpen ? 'text-ink bg-ink/5' : 'text-ink-soft hover:text-ink'
               }`}
+              aria-expanded={dropdownOpen}
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
               Services
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-150 ${dropdownOpen ? 'rotate-180' : ''}`}
+              />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-[620px] bg-white border border-gray-200/80 rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden z-[100]">
-                <div className="p-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    {navServices.map(({ slug, label, Icon, desc }) => (
-                      <Link
-                        key={slug}
-                        href={`/services/${slug}`}
-                        className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors duration-200 group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-lg flex items-center justify-center group-hover:bg-brand-sage/60 transition-colors">
-                          <Icon className="h-5 w-5 text-brand-amber" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-brand-charcoal group-hover:text-brand-amber transition-colors">
-                            {label}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            {desc}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+              <div className="absolute left-0 top-full mt-2 w-[600px] overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-soft">
+                <div className="grid grid-cols-2 gap-1 p-3">
+                  {navServices.map(({ slug, label, Icon, desc }) => (
+                    <Link
+                      key={slug}
+                      href={`/services/${slug}`}
+                      className="group flex items-start gap-3.5 rounded-(--radius-ctl) p-3 transition-colors duration-150 hover:bg-paper"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+                        <Icon className="h-4.5 w-4.5 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ink">{label}</p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-ink-faint">{desc}</p>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             )}
           </div>
 
-          <Link
-            href="/about"
-            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
-          >
-            About
-          </Link>
-
-          <Link
-            href="/contact"
-            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
-          >
-            Contact
-          </Link>
-
-          <Link
-            href="/careers"
-            className="px-4 py-2 text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors duration-200"
-          >
-            Careers
-          </Link>
+          {pageLinks.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-(--radius-ctl) px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-150 hover:text-ink"
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-
-        {/* CTA Button - Brand Amber */}
-        <div className="hidden lg:block">
-          <Link
-            href="/book"
-            className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg hover:shadow-xl transition-colors duration-200 transition-transform hover:-translate-y-0.5"
-          >
-            Book Now
+        <div className="flex items-center gap-2">
+          <Link href="/book" className="btn-primary hidden lg:inline-flex">
+            Book now
           </Link>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="rounded-(--radius-ctl) p-2 text-ink transition-colors hover:bg-ink/5 lg:hidden"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-brand-cream border-t border-brand-stone">
-          <div className="px-6 py-4 space-y-3">
-            <div className="space-y-2">
-              <p className="text-xs font-montserrat font-semibold text-gray-600 uppercase tracking-wide">Services</p>
-              <div className="grid grid-cols-1 gap-1">
+        <div className="border-t border-line bg-paper lg:hidden">
+          <div className="max-h-[calc(100vh-4rem)] space-y-4 overflow-y-auto px-6 py-4">
+            <div>
+              <p className="eyebrow mb-2">Services</p>
+              <div className="grid grid-cols-1 gap-0.5">
                 {navServices.map(({ slug, label, Icon }) => (
                   <Link
                     key={slug}
                     href={`/services/${slug}`}
-                    className="flex items-center gap-3 p-3 text-sm font-montserrat text-brand-charcoal hover:text-brand-amber hover:bg-white/50 rounded-lg transition-colors"
+                    className="flex items-center gap-3 rounded-(--radius-ctl) p-2.5 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Icon className="h-4 w-4 text-brand-amber" />
+                    <Icon className="h-4 w-4 text-accent" />
                     {label}
                   </Link>
                 ))}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-brand-stone space-y-2">
-              <Link
-                href="/about"
-                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </Link>
-              <Link
-                href="/careers"
-                className="block text-sm font-montserrat font-medium text-brand-charcoal hover:text-brand-amber py-2 px-3 rounded-lg hover:bg-white/50 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Careers
-              </Link>
+            <div className="space-y-0.5 border-t border-line pt-3">
+              {pageLinks.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="block rounded-(--radius-ctl) px-2.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-ink/5"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
 
-            <div className="pt-3">
-              <Link
-                href="/book"
-                className="flex items-center justify-center w-full px-6 py-3 text-sm font-montserrat font-semibold uppercase tracking-wider text-white bg-brand-amber hover:bg-brand-amber-dark rounded-xl shadow-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Book Now
-              </Link>
-            </div>
+            <Link
+              href="/book"
+              className="btn-primary w-full"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Book now
+            </Link>
           </div>
         </div>
       )}
