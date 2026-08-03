@@ -1,6 +1,6 @@
 # REVAMP HANDOFF — resume here
 
-**Last updated:** 2026-08-03 (end of Phase 2)
+**Last updated:** 2026-08-03 (end of Phase 3)
 **Branch:** `revamp/full-site` (pushed to origin). Do all revamp work here.
 **Full spec:** `docs/superpowers/specs/2026-08-03-full-site-revamp-design.md` — read it first.
 
@@ -13,8 +13,8 @@ Eleventh Hour (eleventhhour-site): Next.js 15 App Router + Tailwind v4 (CSS-firs
 |---|---|---|
 | 1. Foundation fixes (security, pricing, dead code) | ✅ DONE | `5b58e20` |
 | 2. Design system (fonts, tokens, ui/, Navbar/Footer) | ✅ DONE | `f06a6a6` |
-| 3. Public pages redesign | ⬜ NEXT | — |
-| 4. Booking flow redesign + refactor | ⬜ | — |
+| 3. Public pages redesign | ✅ DONE | see git log |
+| 4. Booking flow redesign + refactor | ⬜ NEXT | — |
 | 5. Admin panel redesign | ⬜ | — |
 | 6. Browser QA sweep + build gate | ⬜ | — |
 
@@ -36,10 +36,9 @@ Eleventh Hour (eleventhhour-site): Next.js 15 App Router + Tailwind v4 (CSS-firs
 - `.eyebrow` class for section labels. Copy style: sentence case ("Book now", not "BOOK NOW"), plain verbs, no uppercase tracking on buttons.
 - Design stance: no gradient text, no hover translate-y lifts, no blue/purple/emerald/amber accents anywhere, motion 150–200ms color/opacity only. Aesthetic must not read as AI-template (that's why display font is Archivo expanded, NOT a serif on cream).
 
-## Phase 3 (NEXT): Public pages redesign
-Redesign with the design system, preserving all functionality/links/mode context:
-`src/app/page.tsx` (homepage; household+commercial modes via `useMode()` — TopSelectorBar is rendered inside page.tsx, check), `about`, `services/[slug]` (data from `src/lib/services.ts`), `household-services`, `commercial-services` (orphan pages — link them or fold in), `contact` (Formspree form), `careers` (762-line Formspark form — restyle, keep every field + endpoint), `privacy`, `terms`, plus a `not-found.tsx`.
-When done: purge `brand-*` legacy classes from these pages so the LEGACY token block in globals.css shrinks. Homepage still uses dead-ish `getServiceImage()`, hardcoded Supabase image URLs, triple-nested ternaries, six memo() wrappers — simplify while redesigning.
+## Phase 3 (DONE): Public pages redesign
+All public pages rebuilt on the design system: homepage (mode context + TopSelectorBar preserved, memo()/getServiceImage()/gradients removed), `about`, `services/[slug]` (+ `generateMetadata`/`generateStaticParams`; SERVICES `images` arrays reference non-existent `/svc-*.jpg` files so the page is text-led), `household-services` + `commercial-services` (now linked from the homepage services section per mode), `contact` (Formspree endpoint + FormData field names preserved), `careers` (all fields/validation/Formspark endpoint preserved; console.logs removed), `privacy`/`terms` (contact details corrected to hello@eleventhhourcleaning.co.uk / 020 3355 1526; static last-updated), new `not-found.tsx`.
+Also fixed: Navbar linked to dead `/services/pest-control` — now `/services/pet-care` (PawPrint icon). Deleted `src/app/layout.tsx.backup`. LEGACY token block trimmed to only what `/book` + `/admin` still use (brand-amber(+dark)/charcoal/cream/stone/sage, font-playfair/lora, shadow-soft-lg); legacy component classes (`.gradient-bg`, `.glass`, `.text-gradient`, `.focus-ring`) deleted. Verified: `npx tsc --noEmit` clean; all routes 200 via curl; rendered HTML of every public page free of brand-* classes. Chrome extension still disconnected — visual QA deferred to Phase 6.
 
 ## Phase 4 notes
 Split `src/app/book/page.tsx` (864 lines now) into step components; restyle with ui/ components; replace its 5 `alert()`s with `useToast()`; **wire `has('service_date')`** so the admin form-builder toggle controls the date field (currently inert — the datetime input renders unconditionally ~line 889 pre-refactor); keep: silent Formspree capture on step advance, discount validation, terms checkbox, payload shapes.

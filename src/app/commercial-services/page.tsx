@@ -1,236 +1,202 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building2, Store, UtensilsCrossed, School, Warehouse, HardHat, CheckCircle } from 'lucide-react'
+import { Building2, Store, UtensilsCrossed, School, Warehouse, HardHat, Check } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Professional Office & Commercial Cleaning in London | Eleventh Hour Cleaning',
   description: 'Maintain a spotless, professional environment with our tailored commercial cleaning and facility management services for offices, shops, and hospitality venues.',
 }
 
-export default function CommercialServicesPage() {
-  const services = [
-    {
-      title: 'Office Cleaning',
-      description: 'Daily/weekly office contracts with audits & sign-off for consistent quality.',
-      icon: Building2,
-    },
-    {
-      title: 'Retail & Showrooms',
-      description: 'Front-of-house shine to match your brand and impress customers.',
-      icon: Store,
-    },
-    {
-      title: 'Hospitality',
-      description: 'Bars, cafés & restaurants—FOH & BOH standards for food safety compliance.',
-      icon: UtensilsCrossed,
-    },
-    {
-      title: 'Education',
-      description: 'Schools & nurseries with safer products and flexible cleaning rotas.',
-      icon: School,
-    },
-    {
-      title: 'Industrial & Warehousing',
-      description: 'High-traffic floors, welfare areas & mezzanines cleaned to safety standards.',
-      icon: Warehouse,
-    },
-    {
-      title: 'After Builders',
-      description: 'Dust control, sparkle cleans & handover for construction completions.',
-      icon: HardHat,
-    },
-  ]
+const services = [
+  {
+    title: 'Office Cleaning',
+    description: 'Daily/weekly office contracts with audits & sign-off for consistent quality.',
+    Icon: Building2,
+  },
+  {
+    title: 'Retail & Showrooms',
+    description: 'Front-of-house shine to match your brand and impress customers.',
+    Icon: Store,
+  },
+  {
+    title: 'Hospitality',
+    description: 'Bars, cafés & restaurants — FOH & BOH standards for food safety compliance.',
+    Icon: UtensilsCrossed,
+  },
+  {
+    title: 'Education',
+    description: 'Schools & nurseries with safer products and flexible cleaning rotas.',
+    Icon: School,
+  },
+  {
+    title: 'Industrial & Warehousing',
+    description: 'High-traffic floors, welfare areas & mezzanines cleaned to safety standards.',
+    Icon: Warehouse,
+  },
+  {
+    title: 'After Builders',
+    description: 'Dust control, sparkle cleans & handover for construction completions.',
+    Icon: HardHat,
+  },
+]
 
+const reasons = [
+  {
+    title: 'Dedicated support',
+    desc: 'Single point of contact with dedicated account management and KPI tracking for your business.',
+  },
+  {
+    title: 'Flexible scheduling',
+    desc: 'Daily, weekly, or out-of-hours contracts tailored to your business operations and workflow.',
+  },
+  {
+    title: 'Quality assurance',
+    desc: 'Photo reports and detailed sign-off sheets for full transparency and accountability.',
+  },
+  {
+    title: 'Transparent pricing',
+    desc: 'Choose between fixed-rate contracts or flexible time-and-materials pricing to suit your budget.',
+  },
+]
+
+const testimonials = [
+  { name: 'Ops Manager', place: 'Tech Co.', quote: 'They scaled from 3 to 5 days/week as we grew — no drop in quality.' },
+  { name: 'Store Lead', place: 'Retail', quote: 'Audits + photos after each visit give us real oversight.' },
+  { name: 'Venue GM', place: 'Events', quote: 'Sparkle cleans before events and quick turnarounds afterwards — reliable.' },
+]
+
+export default function CommercialServicesPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-cream via-white to-brand-sage/20" />
-        <div className="relative mx-auto max-w-7xl px-6 py-20 lg:py-32">
+    <div>
+      {/* Hero */}
+      <section className="bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
           <div className="max-w-3xl">
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-brand-charcoal mb-6">
-              Professional Office & <span className="text-gradient">Commercial Cleaning</span>
+            <p className="eyebrow">For your business</p>
+            <h1 className="mt-4">
+              Office & <span className="text-accent">commercial cleaning</span>
             </h1>
-            <p className="text-xl text-brand-charcoal/80 leading-relaxed mb-4">
-              Our commercial cleaning teams work quietly, efficiently, and after-hours — keeping your workspace spotless and inviting.
+            <p className="mt-6 text-xl leading-relaxed text-ink-soft">
+              Our commercial cleaning teams work quietly, efficiently, and after-hours — keeping your
+              workspace spotless and inviting.
             </p>
-            <p className="text-lg text-brand-charcoal/70 leading-relaxed">
-              We cater to offices, retail stores, restaurants, and more, ensuring your brand looks as polished as your business.
+            <p className="mt-4 text-lg leading-relaxed text-ink-soft">
+              We cater to offices, retail stores, restaurants, and more, ensuring your brand looks as
+              polished as your business.
             </p>
           </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-4">
-            <Link href="/book" className="btn-primary">
-              Book Commercial Clean
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/book" className="btn-primary px-6 py-3 text-base">
+              Book commercial clean
             </Link>
-            <Link href="/contact" className="rounded-full border-2 border-brand-stone px-8 py-3 font-semibold text-brand-charcoal hover:bg-brand-cream transition-colors text-center">
-              Get a Site Quote
+            <Link href="/contact" className="btn-secondary px-6 py-3 text-base">
+              Get a site quote
             </Link>
           </div>
         </div>
+        <div aria-hidden="true" className="tick-rule" />
       </section>
 
-      {/* Services Grid */}
-      <section className="py-20 bg-brand-cream">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Solutions for Your Business</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+      {/* Services grid */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="max-w-2xl">
+            <p className="eyebrow">What we cover</p>
+            <h2 className="mt-3">Solutions for your business</h2>
+            <p className="mt-4 text-lg text-ink-soft">
               Comprehensive commercial cleaning services tailored to your industry and schedule.
             </p>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => {
-              const Icon = service.icon
-              return (
-                <div
-                  key={service.title}
-                  className="card p-8 group hover:bg-brand-sage/20 transition-colors"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="w-16 h-16 bg-brand-sage/40 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-sage/60 transition-colors">
-                    <Icon className="h-8 w-8 text-brand-amber" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-brand-charcoal mb-3">{service.title}</h3>
-                  <p className="text-brand-charcoal/70 leading-relaxed">{service.description}</p>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map(({ title, description, Icon }) => (
+              <div key={title} className="card p-7">
+                <div className="flex h-10 w-10 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+                  <Icon className="h-5 w-5 text-accent" />
                 </div>
-              )
-            })}
+                <h3 className="mt-4">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">{description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-brand-amber/10 to-brand-sage/10 rounded-3xl blur-2xl" />
-              <img
-                src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center"
-                alt="Professional office cleaning"
-                className="relative rounded-2xl shadow-xl w-full h-96 object-cover"
-              />
-            </div>
-
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Why Choose Us for Your Business?</h2>
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-brand-amber" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Dedicated Support</h3>
-                    <p className="text-gray-600">Single point of contact with dedicated account management and KPI tracking for your business.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-brand-sage/40 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-brand-amber" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Flexible Scheduling</h3>
-                    <p className="text-gray-600">Daily, weekly, or out-of-hours contracts tailored to your business operations and workflow.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Quality Assurance</h3>
-                    <p className="text-gray-600">Photo reports and detailed sign-off sheets for full transparency and accountability.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Transparent Pricing</h3>
-                    <p className="text-gray-600">Choose between fixed-rate contracts or flexible time-and-materials pricing to suit your budget.</p>
-                  </div>
-                </div>
-              </div>
+      {/* Why us */}
+      <section className="bg-surface py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <img
+              src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center"
+              alt="Professional office cleaning"
+              className="order-2 aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover lg:order-1"
+              loading="lazy"
+            />
+            <div className="order-1 lg:order-2">
+              <p className="eyebrow">Why choose us</p>
+              <h2 className="mt-3">Why choose us for your business?</h2>
+              <ul className="mt-8 space-y-6">
+                {reasons.map(({ title, desc }) => (
+                  <li key={title} className="flex items-start gap-4">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-tint">
+                      <Check className="h-4 w-4 text-accent" />
+                    </span>
+                    <div>
+                      <h3 className="text-base">{title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-ink-soft">{desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-brand-cream">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-brand-charcoal mb-4">What Our Clients Say</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Trusted by businesses across London for reliable commercial cleaning services.
-            </p>
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="max-w-2xl">
+            <p className="eyebrow">In their words</p>
+            <h2 className="mt-3">What our clients say</h2>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="card p-8">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="h-5 w-5 text-amber-400 fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6 italic">
-                "They scaled from 3 to 5 days/week as we grew—no drop in quality."
-              </p>
-              <p className="font-medium text-gray-900">Ops Manager, Tech Co.</p>
-            </div>
-
-            <div className="card p-8">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="h-5 w-5 text-amber-400 fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6 italic">
-                "Audits + photos after each visit give us real oversight."
-              </p>
-              <p className="font-medium text-gray-900">Store Lead, Retail</p>
-            </div>
-
-            <div className="card p-8">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="h-5 w-5 text-amber-400 fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed mb-6 italic">
-                "Sparkle cleans before events and quick turnarounds afterwards—reliable."
-              </p>
-              <p className="font-medium text-gray-900">Venue GM</p>
-            </div>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {testimonials.map((t) => (
+              <figure key={t.name} className="card flex flex-col p-7">
+                <span aria-hidden="true" className="font-display text-4xl leading-none text-accent">
+                  &ldquo;
+                </span>
+                <blockquote className="mt-2 flex-1 leading-relaxed text-ink">{t.quote}</blockquote>
+                <figcaption className="mt-6 border-t border-line pt-4 text-sm">
+                  <span className="font-semibold text-ink">{t.name}</span>
+                  <span className="text-ink-faint"> · {t.place}</span>
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-brand-600 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center text-white">
-          <h2 className="text-4xl font-bold mb-6">Ready for a Cleaner Workplace?</h2>
-          <p className="text-xl text-brand-100 mb-8">
-            Book a site visit or start with a trial clean to experience our professional commercial services.
+      {/* CTA */}
+      <section className="bg-ink text-paper">
+        <div aria-hidden="true" className="tick-rule opacity-40" />
+        <div className="mx-auto max-w-6xl px-6 py-16 text-center">
+          <h2 className="text-paper">Ready for a cleaner workplace?</h2>
+          <p className="mx-auto mt-3 max-w-xl text-paper/70">
+            Book a site visit or start with a trial clean to experience our professional commercial
+            services.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/book" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-brand-600 bg-white rounded-xl hover:bg-brand-50 transition-colors shadow-lg">
-              Book Commercial Clean
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              href="/book"
+              className="inline-flex items-center justify-center gap-2 rounded-(--radius-ctl) bg-paper px-6 py-3 text-base font-semibold text-ink transition-colors duration-150 hover:bg-white"
+            >
+              Book commercial clean
             </Link>
-            <Link href="/contact" className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white/10 transition-colors">
-              Request a Quote
+            <Link
+              href="/contact"
+              className="inline-flex items-center justify-center gap-2 rounded-(--radius-ctl) border border-paper/40 px-6 py-3 text-base font-semibold text-paper transition-colors duration-150 hover:bg-paper/10"
+            >
+              Request a quote
             </Link>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 import { useForm } from 'react-hook-form'
-import { Upload, Briefcase, Users, Award, TrendingUp } from 'lucide-react'
+import { Upload, Briefcase, Users, Award, TrendingUp, Check } from 'lucide-react'
 import { useState } from 'react'
 
 type FormValues = {
@@ -51,6 +51,63 @@ type FormValues = {
   declaration: boolean
 }
 
+const perks = [
+  {
+    Icon: TrendingUp,
+    title: 'Career growth',
+    desc: 'Clear advancement paths and ongoing training opportunities to help you reach your potential.',
+  },
+  {
+    Icon: Award,
+    title: 'Competitive pay',
+    desc: 'Industry-leading compensation packages with performance bonuses and incentives.',
+  },
+  {
+    Icon: Users,
+    title: 'Supportive team',
+    desc: 'Work alongside experienced professionals in a collaborative, friendly environment.',
+  },
+  {
+    Icon: Briefcase,
+    title: 'Flexible schedule',
+    desc: 'Full-time, part-time, and flexible scheduling options to fit your lifestyle.',
+  },
+]
+
+const openPositions = [
+  {
+    title: 'Cleaning professionals',
+    desc: 'Join our residential and commercial cleaning teams across London.',
+    points: ['Full training provided', 'Flexible hours available', 'Competitive hourly rates'],
+  },
+  {
+    title: 'Maintenance technicians',
+    desc: 'Skilled tradespeople for plumbing, electrical, and general maintenance.',
+    points: ['Certifications preferred', 'Company vehicle provided', 'Premium pay rates'],
+  },
+  {
+    title: 'Customer service representatives',
+    desc: 'Help our customers book services and resolve inquiries.',
+    points: ['Remote options available', 'Full benefits package', 'Career progression opportunities'],
+  },
+  {
+    title: 'Operations coordinators',
+    desc: 'Manage scheduling, logistics, and team coordination.',
+    points: ['Office-based role', 'Organizational skills essential', 'Growth into management'],
+  },
+]
+
+function FormSection({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="border-t border-line pt-6">
+      <legend className="sr-only">{title}</legend>
+      <h3 className="text-base">{title}</h3>
+      {hint && <p className="mt-1 text-sm text-ink-soft">{hint}</p>}
+      <div className="mt-4 grid gap-4">{children}</div>
+    </fieldset>
+  )
+}
+
 export default function CareersPage() {
   const { register, handleSubmit, reset, formState: { isSubmitting, isSubmitSuccessful, errors } } = useForm<FormValues>()
   const [fileName, setFileName] = useState<string>('')
@@ -61,9 +118,7 @@ export default function CareersPage() {
       setSubmitError('')
       const FORM_ID = process.env.NEXT_PUBLIC_FORMSPARK_CAREERS_ID || 'J4MBLqxwy'
 
-      console.log('Submitting to Formspark with ID:', FORM_ID)
-
-      // Prepare submission data as JSON (Formspark expects JSON, not FormData)
+      // Formspark expects JSON, not FormData
       const submissionData: Record<string, any> = {
         // Personal Information
         firstName: data.firstName,
@@ -110,15 +165,11 @@ export default function CareersPage() {
         coverLetter: data.coverLetter,
       }
 
-      // Check if file was uploaded
       const fileInput = document.querySelector('input[name="resume"]') as HTMLInputElement
       if (fileInput?.files?.[0]) {
-        console.log('File selected:', fileInput.files[0].name)
         submissionData.resumeFileName = fileInput.files[0].name
         submissionData.note = 'Resume attached - please contact applicant for file'
       }
-
-      console.log('Submission data:', submissionData)
 
       const response = await fetch(`https://submit-form.com/${FORM_ID}`, {
         method: 'POST',
@@ -129,30 +180,21 @@ export default function CareersPage() {
         body: JSON.stringify(submissionData),
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
-
       if (!response.ok) {
         let errorMessage = 'Form submission failed'
         try {
           const responseData = await response.json()
-          console.log('Error response:', responseData)
           errorMessage = responseData.error || responseData.message || errorMessage
-        } catch (e) {
-          const text = await response.text()
-          console.log('Error response text:', text)
+        } catch {
+          await response.text()
         }
         throw new Error(errorMessage)
       }
 
-      const result = await response.json()
-      console.log('Success response:', result)
-
-      // Reset form on success
+      await response.json()
       reset()
       setFileName('')
     } catch (error) {
-      console.error('Form submission error:', error)
       setSubmitError(error instanceof Error ? error.message : 'There was an error submitting your application. Please try again.')
     }
   }
@@ -164,155 +206,118 @@ export default function CareersPage() {
     }
   }
 
+  const fieldError = (message?: string) =>
+    message ? <p className="mt-1 text-sm font-medium text-red-700">{message}</p> : null
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cream via-white to-sage/10">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-cream to-sage/20 py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <h1 className="text-4xl md:text-5xl font-bold font-serif text-charcoal">Join Our Team</h1>
-          <p className="mt-4 text-lg md:text-xl text-charcoal max-w-3xl">
-            Build your career with London's most trusted cleaning and maintenance service. We're looking for passionate professionals to join our growing team.
-          </p>
-        </div>
-      </div>
-
-      {/* Why Join Us Section */}
-      <div className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">Why Work With Eleventh Hour?</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-amber/10 rounded-full flex items-center justify-center mb-4">
-              <TrendingUp className="w-8 h-8 text-amber" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Career Growth</h3>
-            <p className="text-gray-600 text-sm">
-              Clear advancement paths and ongoing training opportunities to help you reach your potential.
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-amber/10 rounded-full flex items-center justify-center mb-4">
-              <Award className="w-8 h-8 text-amber" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Competitive Pay</h3>
-            <p className="text-gray-600 text-sm">
-              Industry-leading compensation packages with performance bonuses and incentives.
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-amber/10 rounded-full flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-amber" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Supportive Team</h3>
-            <p className="text-gray-600 text-sm">
-              Work alongside experienced professionals in a collaborative, friendly environment.
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-amber/10 rounded-full flex items-center justify-center mb-4">
-              <Briefcase className="w-8 h-8 text-amber" />
-            </div>
-            <h3 className="font-bold text-lg mb-2">Flexible Schedule</h3>
-            <p className="text-gray-600 text-sm">
-              Full-time, part-time, and flexible scheduling options to fit your lifestyle.
+    <div>
+      {/* Hero */}
+      <section className="bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
+          <div className="max-w-3xl">
+            <p className="eyebrow">Careers</p>
+            <h1 className="mt-4">Join our team</h1>
+            <p className="mt-6 text-xl leading-relaxed text-ink-soft">
+              Build your career with London&rsquo;s most trusted cleaning and maintenance service.
+              We&rsquo;re looking for passionate professionals to join our growing team.
             </p>
           </div>
         </div>
-      </div>
+        <div aria-hidden="true" className="tick-rule" />
+      </section>
 
-      {/* Open Positions */}
-      <div className="bg-white py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Open Positions</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="card p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-xl mb-2">Cleaning Professionals</h3>
-              <p className="text-gray-600 mb-4">Join our residential and commercial cleaning teams across London.</p>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Full training provided</li>
-                <li>• Flexible hours available</li>
-                <li>• Competitive hourly rates</li>
-              </ul>
-            </div>
-            <div className="card p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-xl mb-2">Maintenance Technicians</h3>
-              <p className="text-gray-600 mb-4">Skilled tradespeople for plumbing, electrical, and general maintenance.</p>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Certifications preferred</li>
-                <li>• Company vehicle provided</li>
-                <li>• Premium pay rates</li>
-              </ul>
-            </div>
-            <div className="card p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-xl mb-2">Customer Service Representatives</h3>
-              <p className="text-gray-600 mb-4">Help our customers book services and resolve inquiries.</p>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Remote options available</li>
-                <li>• Full benefits package</li>
-                <li>• Career progression opportunities</li>
-              </ul>
-            </div>
-            <div className="card p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-xl mb-2">Operations Coordinators</h3>
-              <p className="text-gray-600 mb-4">Manage scheduling, logistics, and team coordination.</p>
-              <ul className="text-sm text-gray-600 space-y-2">
-                <li>• Office-based role</li>
-                <li>• Organizational skills essential</li>
-                <li>• Growth into management</li>
-              </ul>
-            </div>
+      {/* Why join */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="max-w-2xl">
+            <p className="eyebrow">Why Eleventh Hour</p>
+            <h2 className="mt-3">Work that works for you</h2>
           </div>
-        </div>
-      </div>
-
-      {/* Application Form */}
-      <div className="mx-auto max-w-3xl px-4 py-16">
-        <div className="card p-8 md:p-12">
-          <h2 className="text-3xl font-bold mb-2">Apply Now</h2>
-          <p className="text-gray-600 mb-8">
-            Complete the form below to submit your application. We review all applications and will contact qualified candidates within 5 business days.
-          </p>
-
-          {isSubmitSuccessful ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <div className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            {perks.map(({ Icon, title, desc }) => (
+              <div key={title}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+                  <Icon className="h-5 w-5 text-accent" />
+                </div>
+                <h3 className="mt-4 text-base">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{desc}</p>
               </div>
-              <h3 className="text-2xl font-bold mb-3">Application Submitted!</h3>
-              <p className="text-gray-600 mb-6">
-                Thank you for your interest in joining Eleventh Hour. We've received your application and will review it carefully.
-              </p>
-              <p className="text-sm text-gray-500">
-                We'll be in touch within 5 business days if your qualifications match our current openings.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
-              {/* Personal Information */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Personal Information</h3>
-                <div className="grid gap-4">
-                  <div className="grid md:grid-cols-2 gap-4">
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Open positions */}
+      <section className="bg-surface py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="max-w-2xl">
+            <p className="eyebrow">Open positions</p>
+            <h2 className="mt-3">Where you could fit in</h2>
+          </div>
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {openPositions.map(({ title, desc, points }) => (
+              <div key={title} className="card p-7">
+                <h3>{title}</h3>
+                <p className="mt-2 text-sm text-ink-soft">{desc}</p>
+                <ul className="mt-4 space-y-2 text-sm text-ink-soft">
+                  {points.map((point) => (
+                    <li key={point} className="flex items-center gap-2.5">
+                      <Check className="h-4 w-4 shrink-0 text-accent" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Application form */}
+      <section className="py-20">
+        <div className="mx-auto max-w-3xl px-6">
+          <div className="card p-7 md:p-10">
+            <p className="eyebrow">Application</p>
+            <h2 className="mt-3">Apply now</h2>
+            <p className="mt-3 text-ink-soft">
+              Complete the form below to submit your application. We review all applications and will
+              contact qualified candidates within 5 business days.
+            </p>
+
+            {isSubmitSuccessful ? (
+              <div className="py-12 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-tint">
+                  <Check className="h-8 w-8 text-accent" />
+                </div>
+                <h3 className="mt-6 text-2xl">Application submitted</h3>
+                <p className="mt-3 text-ink-soft">
+                  Thank you for your interest in joining Eleventh Hour. We&rsquo;ve received your
+                  application and will review it carefully.
+                </p>
+                <p className="mt-4 text-sm text-ink-faint">
+                  We&rsquo;ll be in touch within 5 business days if your qualifications match our
+                  current openings.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-8">
+                <FormSection title="Personal information">
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <input
                         {...register('firstName', { required: 'First name is required' })}
                         placeholder="First name *"
-                        className="input w-full"
+                        className="input"
                       />
-                      {errors.firstName && (
-                        <p className="text-red-600 text-sm mt-1">{errors.firstName.message}</p>
-                      )}
+                      {fieldError(errors.firstName?.message)}
                     </div>
                     <div>
                       <input
                         {...register('lastName', { required: 'Last name is required' })}
                         placeholder="Last name *"
-                        className="input w-full"
+                        className="input"
                       />
-                      {errors.lastName && (
-                        <p className="text-red-600 text-sm mt-1">{errors.lastName.message}</p>
-                      )}
+                      {fieldError(errors.lastName?.message)}
                     </div>
                   </div>
                   <div>
@@ -326,34 +331,26 @@ export default function CareersPage() {
                       })}
                       placeholder="Email address *"
                       type="email"
-                      className="input w-full"
+                      className="input"
                     />
-                    {errors.email && (
-                      <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
-                    )}
+                    {fieldError(errors.email?.message)}
                   </div>
                   <div>
                     <input
                       {...register('phone', { required: 'Phone number is required' })}
                       placeholder="Phone number *"
                       type="tel"
-                      className="input w-full"
+                      className="input"
                     />
-                    {errors.phone && (
-                      <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>
-                    )}
+                    {fieldError(errors.phone?.message)}
                   </div>
-                </div>
-              </div>
+                </FormSection>
 
-              {/* Position Details */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Position Details</h3>
-                <div className="grid gap-4">
+                <FormSection title="Position details">
                   <div>
                     <select
                       {...register('position', { required: 'Please select a position' })}
-                      className="input w-full"
+                      className="input"
                     >
                       <option value="">Select position of interest *</option>
                       <option value="Cleaning Professional">Cleaning Professional</option>
@@ -369,14 +366,12 @@ export default function CareersPage() {
                       <option value="Operations Coordinator">Operations Coordinator</option>
                       <option value="Other">Other</option>
                     </select>
-                    {errors.position && (
-                      <p className="text-red-600 text-sm mt-1">{errors.position.message}</p>
-                    )}
+                    {fieldError(errors.position?.message)}
                   </div>
                   <div>
                     <select
                       {...register('experience', { required: 'Please select your experience level' })}
-                      className="input w-full"
+                      className="input"
                     >
                       <option value="">Years of relevant experience *</option>
                       <option value="Less than 1 year">Less than 1 year</option>
@@ -385,14 +380,12 @@ export default function CareersPage() {
                       <option value="5-10 years">5-10 years</option>
                       <option value="10+ years">10+ years</option>
                     </select>
-                    {errors.experience && (
-                      <p className="text-red-600 text-sm mt-1">{errors.experience.message}</p>
-                    )}
+                    {fieldError(errors.experience?.message)}
                   </div>
                   <div>
                     <select
                       {...register('availability', { required: 'Please select your availability' })}
-                      className="input w-full"
+                      className="input"
                     >
                       <option value="">Availability *</option>
                       <option value="Full-time">Full-time (40+ hours/week)</option>
@@ -403,135 +396,71 @@ export default function CareersPage() {
                       <option value="2 weeks">Available in 2 weeks</option>
                       <option value="1 month">Available in 1 month</option>
                     </select>
-                    {errors.availability && (
-                      <p className="text-red-600 text-sm mt-1">{errors.availability.message}</p>
-                    )}
+                    {fieldError(errors.availability?.message)}
                   </div>
-                </div>
-              </div>
+                </FormSection>
 
-              {/* Address Information */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Address Information</h3>
-                <div className="grid gap-4">
-                  <input
-                    {...register('address')}
-                    placeholder="Address"
-                    className="input w-full"
-                  />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <input
-                      {...register('city')}
-                      placeholder="City"
-                      className="input w-full"
-                    />
-                    <input
-                      {...register('postcode')}
-                      placeholder="Postcode"
-                      className="input w-full"
-                    />
+                <FormSection title="Address">
+                  <input {...register('address')} placeholder="Address" className="input" />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <input {...register('city')} placeholder="City" className="input" />
+                    <input {...register('postcode')} placeholder="Postcode" className="input" />
                   </div>
-                  <input
-                    {...register('referredBy')}
-                    placeholder="Referred By (Optional)"
-                    className="input w-full"
-                  />
-                </div>
-              </div>
+                  <input {...register('referredBy')} placeholder="Referred by (optional)" className="input" />
+                </FormSection>
 
-              {/* Work Eligibility */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Work Eligibility</h3>
-                <div className="grid gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Are you legally eligible to work in the U.K.?</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('workEligible')} value="Yes" className="w-4 h-4" />
-                        <span>Yes</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('workEligible')} value="No" className="w-4 h-4" />
-                        <span>No</span>
-                      </label>
+                <FormSection title="Work eligibility">
+                  {(
+                    [
+                      { name: 'workEligible', label: 'Are you legally eligible to work in the U.K.?' },
+                      { name: 'driverLicense', label: 'Do you have a valid driver’s license?' },
+                      { name: 'publicLiability', label: 'Do you have public liability insurance?' },
+                      { name: 'dbs', label: 'Do you have a valid DBS (Disclosure and Barring Service) check?' },
+                    ] as const
+                  ).map(({ name, label }) => (
+                    <div key={name}>
+                      <p className="mb-2 text-sm font-medium text-ink">{label}</p>
+                      <div className="flex gap-5">
+                        {['Yes', 'No'].map((option) => (
+                          <label key={option} className="flex items-center gap-2 text-sm">
+                            <input type="radio" {...register(name)} value={option} className="h-4 w-4 accent-(--color-accent)" />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Do you have a valid driver&apos;s license?</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('driverLicense')} value="Yes" className="w-4 h-4" />
-                        <span>Yes</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('driverLicense')} value="No" className="w-4 h-4" />
-                        <span>No</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Do you have public liability insurance?</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('publicLiability')} value="Yes" className="w-4 h-4" />
-                        <span>Yes</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('publicLiability')} value="No" className="w-4 h-4" />
-                        <span>No</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Do you have a valid DBS (Disclosure and Barring Service) check?</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('dbs')} value="Yes" className="w-4 h-4" />
-                        <span>Yes</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="radio" {...register('dbs')} value="No" className="w-4 h-4" />
-                        <span>No</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  ))}
+                </FormSection>
 
-              {/* Work Preferences */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Work Preferences</h3>
-                <div className="grid gap-4">
+                <FormSection title="Work preferences">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Hours per week desired</label>
-                    <div className="flex flex-wrap gap-3">
+                    <p className="mb-2 text-sm font-medium text-ink">Hours per week desired</p>
+                    <div className="flex flex-wrap gap-4">
                       {['0-10', '10-20', '20-30', '30-40', '40+'].map((range) => (
-                        <label key={range} className="flex items-center gap-2">
-                          <input type="checkbox" {...register('hoursPerWeek')} value={range} className="w-4 h-4" />
+                        <label key={range} className="flex items-center gap-2 text-sm">
+                          <input type="checkbox" {...register('hoursPerWeek')} value={range} className="h-4 w-4 accent-(--color-accent)" />
                           <span>{range}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Preferred days</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" {...register('preferredDays')} value="Weekdays" className="w-4 h-4" />
-                        <span>Weekdays</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input type="checkbox" {...register('preferredDays')} value="Weekends" className="w-4 h-4" />
-                        <span>Weekends</span>
-                      </label>
+                    <p className="mb-2 text-sm font-medium text-ink">Preferred days</p>
+                    <div className="flex gap-5">
+                      {['Weekdays', 'Weekends'].map((day) => (
+                        <label key={day} className="flex items-center gap-2 text-sm">
+                          <input type="checkbox" {...register('preferredDays')} value={day} className="h-4 w-4 accent-(--color-accent)" />
+                          <span>{day}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Preferred time</label>
-                    <div className="flex flex-wrap gap-4">
+                    <p className="mb-2 text-sm font-medium text-ink">Preferred time</p>
+                    <div className="flex flex-wrap gap-5">
                       {['Morning', 'Afternoon', 'Evening'].map((time) => (
-                        <label key={time} className="flex items-center gap-2">
-                          <input type="checkbox" {...register('preferredTime')} value={time} className="w-4 h-4" />
+                        <label key={time} className="flex items-center gap-2 text-sm">
+                          <input type="checkbox" {...register('preferredTime')} value={time} className="h-4 w-4 accent-(--color-accent)" />
                           <span>{time}</span>
                         </label>
                       ))}
@@ -540,181 +469,74 @@ export default function CareersPage() {
                   <textarea
                     {...register('cleaningAreas')}
                     placeholder="Areas of preference for cleaning jobs (optional)"
-                    className="input min-h-[100px] w-full"
+                    className="input min-h-[100px]"
                   />
-                </div>
-              </div>
+                </FormSection>
 
-              {/* Work History */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Work History / Experience</h3>
-                <p className="text-sm text-gray-600 mb-4">Please list your 3 most recent employers below.</p>
-                {/* Employer 1 */}
-                <div className="mb-6 pb-6 border-b">
-                  <h4 className="font-semibold text-gray-800 mb-3">Employer 1</h4>
-                  <div className="grid gap-3">
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <input
-                        {...register('employer1Name')}
-                        placeholder="Employer's Name"
-                        className="input w-full"
-                      />
-                      <input
-                        {...register('employer1Phone')}
-                        placeholder="Phone"
-                        className="input w-full"
-                      />
+                <FormSection title="Work history" hint="Please list your 3 most recent employers below.">
+                  {(
+                    [
+                      { prefix: 'employer1', label: 'Employer 1' },
+                      { prefix: 'employer2', label: 'Employer 2' },
+                      { prefix: 'employer3', label: 'Employer 3' },
+                    ] as const
+                  ).map(({ prefix, label }, index, all) => (
+                    <div key={prefix} className={index < all.length - 1 ? 'border-b border-line pb-5' : ''}>
+                      <h4 className="mb-3 text-sm font-semibold text-ink">{label}</h4>
+                      <div className="grid gap-3">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <input {...register(`${prefix}Name`)} placeholder="Employer's name" className="input" />
+                          <input {...register(`${prefix}Phone`)} placeholder="Phone" className="input" />
+                        </div>
+                        <input {...register(`${prefix}Position`)} placeholder="Position held" className="input" />
+                        <textarea {...register(`${prefix}Duties`)} placeholder="Duties" className="input min-h-[80px]" />
+                      </div>
                     </div>
-                    <input
-                      {...register('employer1Position')}
-                      placeholder="Position Held"
-                      className="input w-full"
-                    />
-                    <textarea
-                      {...register('employer1Duties')}
-                      placeholder="Duties"
-                      className="input min-h-[80px] w-full"
-                    />
-                  </div>
-                </div>
-                {/* Employer 2 */}
-                <div className="mb-6 pb-6 border-b">
-                  <h4 className="font-semibold text-gray-800 mb-3">Employer 2</h4>
-                  <div className="grid gap-3">
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <input
-                        {...register('employer2Name')}
-                        placeholder="Employer's Name"
-                        className="input w-full"
-                      />
-                      <input
-                        {...register('employer2Phone')}
-                        placeholder="Phone"
-                        className="input w-full"
-                      />
-                    </div>
-                    <input
-                      {...register('employer2Position')}
-                      placeholder="Position Held"
-                      className="input w-full"
-                    />
-                    <textarea
-                      {...register('employer2Duties')}
-                      placeholder="Duties"
-                      className="input min-h-[80px] w-full"
-                    />
-                  </div>
-                </div>
-                {/* Employer 3 */}
-                <div className="mb-6 pb-6">
-                  <h4 className="font-semibold text-gray-800 mb-3">Employer 3</h4>
-                  <div className="grid gap-3">
-                    <div className="grid md:grid-cols-2 gap-3">
-                      <input
-                        {...register('employer3Name')}
-                        placeholder="Employer's Name"
-                        className="input w-full"
-                      />
-                      <input
-                        {...register('employer3Phone')}
-                        placeholder="Phone"
-                        className="input w-full"
-                      />
-                    </div>
-                    <input
-                      {...register('employer3Position')}
-                      placeholder="Position Held"
-                      className="input w-full"
-                    />
-                    <textarea
-                      {...register('employer3Duties')}
-                      placeholder="Duties"
-                      className="input min-h-[80px] w-full"
-                    />
-                  </div>
-                </div>
-              </div>
+                  ))}
+                </FormSection>
 
-              {/* Cleaning Knowledge & Skills */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Cleaning Knowledge &amp; Skills</h3>
-                <textarea
-                  {...register('cleaningExperience')}
-                  placeholder="Describe your cleaning experience and what makes you a true professional cleaner"
-                  className="input min-h-[150px] w-full"
-                />
-              </div>
-
-              {/* References */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">References</h3>
-                <p className="text-sm text-gray-600 mb-4">Please provide two professional references (no family members).</p>
-                {/* Reference 1 */}
-                <div className="mb-4 pb-4 border-b">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <input
-                      {...register('reference1Name')}
-                      placeholder="Reference 1 Name"
-                      className="input w-full"
-                    />
-                    <input
-                      {...register('reference1Phone')}
-                      placeholder="Reference 1 Phone"
-                      className="input w-full"
-                    />
-                  </div>
-                </div>
-                {/* Reference 2 */}
-                <div className="mb-4 pb-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <input
-                      {...register('reference2Name')}
-                      placeholder="Reference 2 Name"
-                      className="input w-full"
-                    />
-                    <input
-                      {...register('reference2Phone')}
-                      placeholder="Reference 2 Phone"
-                      className="input w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Cover Letter */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Cover Letter</h3>
-                <div>
+                <FormSection title="Cleaning knowledge & skills">
                   <textarea
-                    {...register('coverLetter', {
-                      required: 'Please tell us why you\'d be a great fit',
-                      minLength: {
-                        value: 100,
-                        message: 'Please provide at least 100 characters'
-                      }
-                    })}
-                    placeholder="Tell us why you'd be a great fit for this role and what makes you passionate about this work. *"
-                    className="input min-h-[180px] w-full"
+                    {...register('cleaningExperience')}
+                    placeholder="Describe your cleaning experience and what makes you a true professional cleaner"
+                    className="input min-h-[150px]"
                   />
-                  {errors.coverLetter && (
-                    <p className="text-red-600 text-sm mt-1">{errors.coverLetter.message}</p>
-                  )}
-                </div>
-              </div>
+                </FormSection>
 
-              {/* Resume Upload */}
-              <div>
-                <h3 className="font-bold text-lg mb-4">Resume/CV</h3>
-                <div>
+                <FormSection title="References" hint="Please provide two professional references (no family members).">
+                  {(['reference1', 'reference2'] as const).map((prefix, index) => (
+                    <div key={prefix} className="grid gap-4 md:grid-cols-2">
+                      <input {...register(`${prefix}Name`)} placeholder={`Reference ${index + 1} name`} className="input" />
+                      <input {...register(`${prefix}Phone`)} placeholder={`Reference ${index + 1} phone`} className="input" />
+                    </div>
+                  ))}
+                </FormSection>
+
+                <FormSection title="Cover letter">
+                  <div>
+                    <textarea
+                      {...register('coverLetter', {
+                        required: 'Please tell us why you\'d be a great fit',
+                        minLength: {
+                          value: 100,
+                          message: 'Please provide at least 100 characters'
+                        }
+                      })}
+                      placeholder="Tell us why you'd be a great fit for this role and what makes you passionate about this work. *"
+                      className="input min-h-[180px]"
+                    />
+                    {fieldError(errors.coverLetter?.message)}
+                  </div>
+                </FormSection>
+
+                <FormSection title="Resume/CV">
                   <label className="block">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-amber hover:bg-amber/5 transition-colors cursor-pointer">
-                      <Upload className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                      <p className="font-medium mb-1">
+                    <div className="cursor-pointer rounded-(--radius-card) border-2 border-dashed border-line p-8 text-center transition-colors duration-150 hover:border-accent hover:bg-accent-tint/40">
+                      <Upload className="mx-auto mb-3 h-10 w-10 text-ink-faint" />
+                      <p className="font-medium text-ink">
                         {fileName ? fileName : 'Click to upload your resume/CV'}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        PDF, DOC, or DOCX (max 5MB)
-                      </p>
+                      <p className="mt-1 text-sm text-ink-faint">PDF, DOC, or DOCX (max 5MB)</p>
                       <input
                         type="file"
                         name="resume"
@@ -724,39 +546,43 @@ export default function CareersPage() {
                       />
                     </div>
                   </label>
-                </div>
-              </div>
+                </FormSection>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary w-full text-lg py-4"
-              >
-                {isSubmitting ? 'Submitting Application...' : 'Submit Application'}
-              </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary w-full py-3.5 text-base"
+                >
+                  {isSubmitting ? 'Submitting application…' : 'Submit application'}
+                </button>
 
-              {submitError && (
-                <p className="text-red-600 text-center font-medium">{submitError}</p>
-              )}
+                {submitError && (
+                  <p className="text-center font-medium text-red-700">{submitError}</p>
+                )}
 
-              <p className="text-sm text-gray-500 text-center">
-                By submitting this form, you agree to our <a href="/privacy" className="text-amber hover:underline">Privacy Policy</a> and <a href="/terms" className="text-amber hover:underline">Terms of Service</a>.
-              </p>
-            </form>
-          )}
+                <p className="text-center text-sm text-ink-faint">
+                  By submitting this form, you agree to our{' '}
+                  <a href="/privacy" className="font-medium text-accent hover:text-accent-dark">Privacy policy</a> and{' '}
+                  <a href="/terms" className="font-medium text-accent hover:text-accent-dark">Terms of service</a>.
+                </p>
+              </form>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Equal Opportunity Statement */}
-      <div className="bg-gray-50 py-12">
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <h3 className="font-bold text-xl mb-4">Equal Opportunity Employer</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            Eleventh Hour is committed to creating a diverse and inclusive workplace. We are an equal opportunity employer and do not discriminate on the basis of race, national origin, gender, gender identity, sexual orientation, protected veteran status, disability, age, or other legally protected status.
+      {/* Equal opportunity */}
+      <section className="bg-surface py-14">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h3 className="text-base">Equal opportunity employer</h3>
+          <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+            Eleventh Hour is committed to creating a diverse and inclusive workplace. We are an equal
+            opportunity employer and do not discriminate on the basis of race, national origin, gender,
+            gender identity, sexual orientation, protected veteran status, disability, age, or other
+            legally protected status.
           </p>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

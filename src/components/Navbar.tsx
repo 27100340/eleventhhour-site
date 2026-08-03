@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
-import { Wrench, Leaf, Paintbrush, Plug, Flame, Bug, KeySquare, Refrigerator, Trees, ChevronDown, Menu, X } from 'lucide-react'
+import { Wrench, Leaf, Paintbrush, Plug, Flame, PawPrint, KeySquare, Refrigerator, Trees, ChevronDown, Menu, X } from 'lucide-react'
 
 const navServices = [
   { slug: 'cleaning', label: 'Cleaning', Icon: Paintbrush, desc: 'Professional cleaning services' },
@@ -10,7 +10,7 @@ const navServices = [
   { slug: 'plumbing-heating', label: 'Plumbing & Heating', Icon: Flame, desc: 'Plumbing repairs & installations' },
   { slug: 'gas-boiler', label: 'Gas & Boiler', Icon: Flame, desc: 'Gas safety & boiler servicing' },
   { slug: 'electrical', label: 'Electrical', Icon: Plug, desc: 'Electrical work & fault finding' },
-  { slug: 'pest-control', label: 'Pest Control', Icon: Bug, desc: 'Pest removal & prevention' },
+  { slug: 'pet-care', label: 'Pet Care & Cleaning', Icon: PawPrint, desc: 'Pet-safe cleaning & odour removal' },
   { slug: 'locksmith', label: 'Locksmith', Icon: KeySquare, desc: '24/7 lockout & security services' },
   { slug: 'appliance-repair', label: 'Appliance Repair', Icon: Refrigerator, desc: 'Home appliance diagnostics' },
   { slug: 'landscaping', label: 'Landscaping', Icon: Trees, desc: 'Complete landscaping projects' },

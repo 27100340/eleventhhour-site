@@ -33,7 +33,7 @@
   --animate-fade-in: fade-in 0.5s ease-in-out;
   --animate-slide-up: slide-up 0.3s ease-out;
 
-  /* ---- LEGACY tokens: still referenced by pages awaiting redesign.
+  /* ---- LEGACY tokens: still referenced by /book + /admin (Phases 4–5).
      Remove in the final sweep once no page uses brand-* classes. ---- */
   --color-brand-amber: #E2852B;
   --color-brand-amber-dark: #cf741f;
@@ -41,15 +41,6 @@
   --color-brand-cream: #FAF9F5;
   --color-brand-stone: #E0E0E0;
   --color-brand-sage: #D7E1C5;
-  --color-brand-50: #fff7ed;
-  --color-brand-100: #ffedd5;
-  --color-brand-500: #E2852B;
-  --color-brand-600: #cf741f;
-  --color-brand-brown: #C4A57B;
-  --color-brand-brown-dark: #8B6F47;
-  --color-brand-brown-light: #F5E6D3;
-  --color-brand-brown-cream: #FBF5EE;
-  --font-montserrat: var(--font-instrument), system-ui, sans-serif;
   --font-playfair: var(--font-archivo), system-ui, sans-serif;
   --font-lora: var(--font-archivo), system-ui, sans-serif;
   --shadow-soft-lg: 0 10px 40px -15px rgba(0, 0, 0, 0.1), 0 4px 25px -5px rgba(0, 0, 0, 0.04);
@@ -190,22 +181,5 @@
 
   .eyebrow {
     @apply text-xs font-semibold uppercase tracking-[0.14em] text-accent;
-  }
-
-  /* ---- LEGACY component classes kept for pages awaiting redesign ---- */
-  .gradient-bg {
-    background: linear-gradient(135deg, var(--color-paper) 0%, #ffffff 50%, var(--color-paper) 100%);
-  }
-
-  .glass {
-    @apply backdrop-blur-xl bg-paper/80 border border-line/60;
-  }
-
-  .text-gradient {
-    @apply text-accent;
-  }
-
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-accent/25 focus:ring-offset-2;
   }
 }
