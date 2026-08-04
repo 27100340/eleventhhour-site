@@ -14,21 +14,21 @@ const faqs = [
 ]
 
 const householdTiles: Tile[] = [
-  { title: 'Regular Cleaning', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/sinksoap.jpg', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
-  { title: 'Deep Cleaning', href: '/services/cleaning', img: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/deepclean.jpg', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
-  { title: 'Gardening', href: '/services/gardening', img: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=250&fit=crop', desc: 'Lawn care, hedge trimming, planting & garden clearance.' },
-  { title: 'Handyman', href: '/services/handyman', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=250&fit=crop', desc: 'Painting, furniture assembly, wall mounting & minor repairs.' },
-  { title: 'Plumbing & Heating', href: '/services/plumbing-heating', img: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&h=250&fit=crop', desc: 'Pipe repairs, boiler servicing, radiators & bathroom fittings.' },
-  { title: 'Electrical', href: '/services/electrical', img: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&h=250&fit=crop', desc: 'Lighting installations and small electrical jobs.' },
+  { title: 'Regular Cleaning', href: '/services/cleaning', img: '/images/sinksoap.jpg', desc: 'Weekly & bi-weekly home cleans with the same pro.' },
+  { title: 'Deep Cleaning', href: '/services/cleaning', img: '/images/deepclean.jpg', desc: 'Spring clean: skirtings, limescale, inside appliances & more.' },
+  { title: 'Gardening', href: '/services/gardening', img: '/images/gardening.jpg', desc: 'Lawn care, hedge trimming, planting & garden clearance.' },
+  { title: 'Handyman', href: '/services/handyman', img: '/images/handyman.jpg', desc: 'Painting, furniture assembly, wall mounting & minor repairs.' },
+  { title: 'Plumbing & Heating', href: '/services/plumbing-heating', img: '/images/plumbing.jpg', desc: 'Pipe repairs, boiler servicing, radiators & bathroom fittings.' },
+  { title: 'Electrical', href: '/services/electrical', img: '/images/electrical.jpg', desc: 'Lighting installations and small electrical jobs.' },
 ]
 
 const commercialTiles: Tile[] = [
-  { title: 'Office Cleaning', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=250&fit=crop&crop=center', desc: 'Daily/weekly office contracts with audits & sign-off.' },
-  { title: 'Retail & Showrooms', href: '/services/cleaning', img: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center', desc: 'Front-of-house shine to match your brand.' },
+  { title: 'Office Cleaning', href: '/services/cleaning', img: '/images/office.jpg', desc: 'Daily/weekly office contracts with audits & sign-off.' },
+  { title: 'Retail & Showrooms', href: '/services/cleaning', img: '/images/retail.jpg', desc: 'Front-of-house shine to match your brand.' },
   { title: 'Landscaping', href: '/services/landscaping', img: '/landscaping.jpg', desc: 'Hard & soft landscaping projects, design to build.' },
-  { title: 'Plumbing & Heating', href: '/services/plumbing-heating', img: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&h=250&fit=crop', desc: 'Commercial pipe repairs, boiler servicing & installations.' },
-  { title: 'Electrical', href: '/services/electrical', img: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&h=250&fit=crop', desc: 'Commercial lighting installations & electrical work.' },
-  { title: 'Handyman', href: '/services/handyman', img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=250&fit=crop', desc: 'Facility repairs, maintenance & commercial odd jobs.' },
+  { title: 'Plumbing & Heating', href: '/services/plumbing-heating', img: '/images/plumbing.jpg', desc: 'Commercial pipe repairs, boiler servicing & installations.' },
+  { title: 'Electrical', href: '/services/electrical', img: '/images/electrical.jpg', desc: 'Commercial lighting installations & electrical work.' },
+  { title: 'Handyman', href: '/services/handyman', img: '/images/handyman.jpg', desc: 'Facility repairs, maintenance & commercial odd jobs.' },
 ]
 
 const householdTestimonials = [
@@ -45,14 +45,14 @@ const commercialTestimonials = [
 
 const heroImages = {
   household: {
-    main: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/window-wom.jpg',
-    secondary1: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/hazmatdust.jpg',
-    secondary2: 'https://biacudctwrcjtlmzetlj.supabase.co/storage/v1/object/public/website-images/greenshit_vac.jpg',
+    main: '/images/window-woman.jpg',
+    secondary1: '/images/hazmat-dusting.jpg',
+    secondary2: '/images/green-vacuum.jpg',
   },
   commercial: {
-    main: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center',
-    secondary1: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=250&fit=crop&crop=center',
-    secondary2: 'https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/warehouse.jpg',
+    main: '/images/office.jpg',
+    secondary1: '/images/retail.jpg',
+    secondary2: '/images/warehouse.jpg',
   },
 }
 
@@ -335,7 +335,7 @@ function CoverageSection() {
             </ul>
           </div>
           <img
-            src="https://cdn.jsdelivr.net/gh/27100340/eleventhhour-images@master/london.jpg"
+            src="/images/london.jpg"
             alt="London cityscape showing our service coverage area"
             className="aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover"
             loading="lazy"

@@ -49,6 +49,11 @@ Also fixed: Navbar linked to dead `/services/pest-control` — now `/services/pe
 ## Phase 5 (DONE): Admin panel
 Sidebar shell in `admin/dashboard/page.tsx` (nav + sign-out, mobile horizontal scroll; still client-side tab state, no route changes). All remaining `alert()`s replaced with `useToast()` — zero `alert(` left in src. Restyled: login, ServicesTab (GripVertical drag handles), FormBuilderTab, BookingsTab (segmented table/calendar toggle, Badge payment chips), BookingsCalendar (active=accent-tint), CreateBookingTab (now uses shared `CategoryPicker` + `buildCategorySection` from `src/components/booking/` — same modules the public /book uses), booking editor (QtyStepper for item qtys), invoice page (Archivo header, accent rules, tick-rule; fixed `eleventhhourkleaning` URL typo), bookings list page, AnalyticsTab (accent stroke). **LEGACY token block fully deleted from globals.css** — nothing references brand-*/font-playfair/font-lora/shadow-soft-lg anymore (Phase 6 item done early).
 
+## Post-Phase-5 extras (2026-08-04)
+- All external images (Supabase storage, jsDelivr, Unsplash) localized to `public/images/` and compressed via `scripts/optimize-images.mjs` (sharp, max 1600px, q78) — 65MB → ~2MB total. No remote image URLs remain in src.
+- `scripts/manage-admins.mjs` — list/create/set-password/set-email/promote/demote/delete admin auth users using the service-role key from `.env.local`.
+- ⚠ Known issue: the auth user `baqarhassan702@gmail.com` was hand-inserted into `auth.users` with NULL token columns, which makes ALL GoTrue admin-user endpoints 500 ("Database error finding users"). Fix requires running an UPDATE on auth.users in the Supabase SQL editor (agent was permission-blocked from doing it) — see repair SQL in scripts/manage-admins.mjs usage notes or session summary.
+
 ## Phase 6 notes (the gate)
 - Browser QA every route (Claude in Chrome — extension was disconnected at Phase-2 pause; user must have it connected), both household/commercial modes, mobile width; exercise booking E2E with Stripe test card + admin flows.
 - Remove `eslint.ignoreDuringBuilds` and `typescript.ignoreBuildErrors` from `next.config.ts`; `npm run build` must pass clean. `npx tsc --noEmit` already passes as of Phase 2.

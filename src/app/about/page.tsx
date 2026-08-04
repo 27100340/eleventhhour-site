@@ -75,7 +75,7 @@ export default function AboutPage() {
               </div>
             </div>
             <img
-              src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop&crop=center"
+              src="/images/handyman.jpg"
               alt="Professional cleaning team"
               className="aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover"
               loading="lazy"

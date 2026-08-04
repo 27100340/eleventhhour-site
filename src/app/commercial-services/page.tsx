@@ -126,7 +126,7 @@ export default function CommercialServicesPage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <img
-              src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop&crop=center"
+              src="/images/office.jpg"
               alt="Professional office cleaning"
               className="order-2 aspect-[3/2] w-full rounded-(--radius-card) border border-line object-cover lg:order-1"
               loading="lazy"
