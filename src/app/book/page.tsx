@@ -5,13 +5,14 @@ import { useForm } from 'react-hook-form'
 import { parsePhoneNumber } from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { ServiceSection } from '@/components/booking/ServiceSection'
+import { CategoryPicker } from '@/components/booking/CategoryPicker'
+import { buildCategorySection } from '@/components/booking/categorySection'
 import { useToast } from '@/components/ui/Toast'
 import { Spinner } from '@/components/ui/Spinner'
 import type { Service } from '@/lib/types'
 import { computeBookingTotals } from '@/lib/pricing'
 import { StepIndicator } from './components/StepIndicator'
 import { DetailsStep } from './components/DetailsStep'
-import { CategoryPicker } from './components/CategoryPicker'
 import { DiscountBox } from './components/DiscountBox'
 import { BookingSummary } from './components/BookingSummary'
 
@@ -546,61 +547,19 @@ export default function BookPage() {
                 )}
 
                 {selectedCategory && (() => {
-                  const childServices = selectedCategory.children || []
-                  const showExtras =
-                    selectedCategory.category_type === 'deep_cleaning' ||
-                    selectedCategory.category_type === 'end_of_tenancy'
-                  const extrasStartIndex = showExtras ? 8 : 0
-
-                  // Category-specific descriptions
-                  const getDescription = () => {
-                    switch (selectedCategory.category_type) {
-                      case 'regular_cleaning':
-                        return 'Select number of hours and cleaners needed'
-                      case 'deep_cleaning':
-                      case 'end_of_tenancy':
-                        return 'Select rooms to be cleaned and any extras'
-                      case 'windows':
-                        return 'Exterior window cleaning - enter square footage'
-                      case 'gardening':
-                        return 'Select gardening services needed'
-                      case 'landscaping':
-                        return 'Professional landscaping services'
-                      case 'handyman':
-                        return 'Handyman services for your property'
-                      case 'waste_removal':
-                        return 'Waste and junk removal services'
-                      default:
-                        return ''
-                    }
-                  }
-
-                  // Build service array: include parent IF it has a price, then add children
-                  const servicesForSection = []
-
-                  if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
-                    servicesForSection.push(selectedCategory)
-                    // Children are rendered by NestedServiceSelector when expanded
-                  } else if (childServices.length > 0) {
-                    servicesForSection.push(...childServices)
-                  }
-
-                  if (servicesForSection.length === 0) {
-                    servicesForSection.push(selectedCategory)
-                  }
-
+                  const section = buildCategorySection(selectedCategory)
                   return (
                     <ServiceSection
                       key={selectedCategory.id}
                       title={selectedCategory.name}
-                      description={getDescription()}
-                      services={servicesForSection}
+                      description={section.description}
+                      services={section.services}
                       items={items || {}}
                       onItemChange={(serviceId, value) => {
                         setValue('items', { ...items, [serviceId]: value }, { shouldDirty: true })
                       }}
-                      showExtrasLabel={showExtras}
-                      extrasStartIndex={showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex}
+                      showExtrasLabel={section.showExtras}
+                      extrasStartIndex={section.extrasStartIndex}
                       showPrices={false}
                       defaultExpandedNested={true}
                     />

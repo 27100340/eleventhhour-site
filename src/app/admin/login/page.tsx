@@ -51,16 +51,34 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="mx-auto max-w-md pt-24 px-4">
-      <div className="rounded-2xl border bg-white p-6 shadow">
-        <h1 className="text-2xl font-semibold">Admin Sign In</h1>
+    <div className="mx-auto max-w-md px-6 pt-24 pb-16">
+      <div className="rounded-(--radius-card) border border-line bg-surface p-8">
+        <p className="eyebrow">Admin</p>
+        <h1 className="mt-3 text-2xl">Sign in</h1>
         <form onSubmit={onSubmit} className="mt-6 grid gap-4">
-          <input className="input" value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="Email" />
-          <input className="input" value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password" />
-          <button className="btn-primary" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
-          {err && <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p>}
-          <p className="text-xs text-slate-600">
-            Tip: after changing App Metadata in the dashboard, you must sign out & back in so the JWT includes the new role.
+          <input
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder="Email"
+            autoComplete="email"
+          />
+          <input
+            className="input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            placeholder="Password"
+            autoComplete="current-password"
+          />
+          <button className="btn-primary py-3" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+          {err && <p className="whitespace-pre-wrap text-sm font-medium text-red-700">{err}</p>}
+          <p className="text-xs text-ink-faint">
+            Tip: after changing App Metadata in the dashboard, you must sign out &amp; back in so the
+            JWT includes the new role.
           </p>
         </form>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { adminFetch } from '@/lib/admin-fetch'
+import { useToast } from '@/components/ui/Toast'
 import type { FormConfig, Service } from '@/lib/types'
 
 type Config = FormConfig['config']
@@ -36,7 +37,10 @@ function toggleValue<T>(list: T[] | undefined, value: T, checked: boolean): T[] 
   return current.filter((x) => x !== value)
 }
 
+const checkboxCls = 'h-4 w-4 accent-(--color-accent)'
+
 export default function FormBuilderTab() {
+  const toast = useToast()
   const [config, setConfig] = useState<Config | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -110,7 +114,7 @@ export default function FormBuilderTab() {
         return
       }
       await load()
-      alert('Form saved. Public booking form will reflect these changes immediately.')
+      toast.success('Form saved — the public booking form reflects these changes immediately')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unexpected error while saving')
     } finally {
@@ -118,22 +122,23 @@ export default function FormBuilderTab() {
     }
   }
 
-  if (error && !config) return <p className="text-red-600 text-sm">{error}</p>
-  if (!config) return <p>Loading…</p>
+  if (error && !config) return <p className="text-sm font-medium text-red-700">{error}</p>
+  if (!config) return <p className="text-sm text-ink-soft">Loading…</p>
 
   return (
-    <div className="grid md:grid-cols-[2fr_1fr] gap-6">
-      <div className="rounded-2xl border bg-white p-4">
-        <h2 className="font-semibold mb-3">Booking Form Designer</h2>
+    <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
+      <div className="rounded-(--radius-card) border border-line bg-surface p-5">
+        <h2 className="mb-4 text-base">Booking form designer</h2>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <p className="text-sm font-medium">Base fields</p>
-            <div className="mt-2 grid gap-1 text-sm">
+            <p className="text-sm font-medium text-ink">Base fields</p>
+            <div className="mt-2 grid gap-1.5 text-sm text-ink">
               {BASE_FIELDS.map((f) => (
                 <label key={f.key} className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    className={checkboxCls}
                     checked={(config.base_fields ?? []).includes(f.key)}
                     onChange={(e) =>
                       patch({ base_fields: toggleValue(config.base_fields, f.key, e.target.checked) })
@@ -144,12 +149,13 @@ export default function FormBuilderTab() {
               ))}
             </div>
 
-            <p className="text-sm font-medium mt-4">Frequencies</p>
+            <p className="mt-4 text-sm font-medium text-ink">Frequencies</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {FREQUENCIES.map((f) => (
-                <label key={f.key} className="flex items-center gap-2 text-sm">
+                <label key={f.key} className="flex items-center gap-2 text-sm text-ink">
                   <input
                     type="checkbox"
+                    className={checkboxCls}
                     checked={(config.frequencies ?? []).includes(f.key)}
                     onChange={(e) =>
                       patch({ frequencies: toggleValue(config.frequencies, f.key, e.target.checked) })
@@ -160,12 +166,13 @@ export default function FormBuilderTab() {
               ))}
             </div>
 
-            <p className="text-sm font-medium mt-4">Arrival windows</p>
+            <p className="mt-4 text-sm font-medium text-ink">Arrival windows</p>
             <div className="mt-2 grid grid-cols-3 gap-2">
               {ARRIVAL_WINDOWS.map((w) => (
-                <label key={w.key} className="flex items-center gap-2 text-sm">
+                <label key={w.key} className="flex items-center gap-2 text-sm text-ink">
                   <input
                     type="checkbox"
+                    className={checkboxCls}
                     checked={(config.arrival_windows ?? []).includes(w.key)}
                     onChange={(e) =>
                       patch({ arrival_windows: toggleValue(config.arrival_windows, w.key, e.target.checked) })
@@ -178,14 +185,14 @@ export default function FormBuilderTab() {
           </div>
 
           <div>
-            <p className="text-sm font-medium">Service selector type</p>
+            <p className="text-sm font-medium text-ink">Service selector type</p>
             <div className="mt-2">
               {(['quantities', 'checkboxes'] as const).map((t) => (
-                <label key={t} className="mr-4 text-sm">
+                <label key={t} className="mr-4 text-sm text-ink">
                   <input
                     type="radio"
                     name="selectorType"
-                    className="mr-2"
+                    className="mr-2 accent-(--color-accent)"
                     checked={config.service_selector === t}
                     onChange={() => patch({ service_selector: t })}
                   />
@@ -196,24 +203,34 @@ export default function FormBuilderTab() {
           </div>
         </div>
 
-        <hr className="my-6" />
+        <hr className="my-6 border-line" />
 
-        <p className="text-sm font-medium mb-2">Allowed services & default quantities</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <p className="mb-3 text-sm font-medium text-ink">Allowed services &amp; default quantities</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((s) => {
             const current = (config.allowed_services ?? []).find((x) => x.service_id === s.id)
             const selected = !!current
             return (
-              <div key={s.id} className={`rounded-xl border p-3 transition-all duration-200 ${selected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <div
+                key={s.id}
+                className={`rounded-(--radius-ctl) border p-3 transition-colors duration-150 ${
+                  selected ? 'border-accent bg-accent-tint' : 'border-line hover:border-ink/30'
+                }`}
+              >
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={selected} onChange={() => toggleService(s.id)} />
-                  <span className="font-medium">{s.name}</span>
+                  <input type="checkbox" className={checkboxCls} checked={selected} onChange={() => toggleService(s.id)} />
+                  <span className="text-sm font-medium text-ink">{s.name}</span>
                 </label>
-                <p className="text-xs text-slate-600 mt-1">£{Number(s.price).toFixed(2)} • {s.time_minutes} mins</p>
+                <p className="mt-1 text-xs text-ink-soft">
+                  £{Number(s.price).toFixed(2)} · {s.time_minutes} mins
+                </p>
                 {selected && (
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs">Default qty</span>
-                    <input type="number" min={0} className="input"
+                    <span className="text-xs text-ink-soft">Default qty</span>
+                    <input
+                      type="number"
+                      min={0}
+                      className="input"
                       value={current?.default_qty ?? 0}
                       onChange={(e) => setDefaultQty(s.id, Number(e.target.value))}
                     />
@@ -224,18 +241,21 @@ export default function FormBuilderTab() {
           })}
         </div>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}
 
         <div className="mt-6">
           <button onClick={save} disabled={saving} className="btn-primary">
-            {saving ? 'Saving…' : 'Save Form'}
+            {saving ? 'Saving…' : 'Save form'}
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-white p-4">
-        <h2 className="font-semibold mb-3">Create Booking (Admin)</h2>
-        <p className="text-sm text-slate-600">Use the public “Book Now” flow on the site to simulate, or create in the Bookings tab—there you can set discounts & time overrides.</p>
+      <div className="h-max rounded-(--radius-card) border border-line bg-surface p-5">
+        <h2 className="mb-3 text-base">Create booking (admin)</h2>
+        <p className="text-sm text-ink-soft">
+          Use the public &ldquo;Book now&rdquo; flow on the site to simulate, or create in the
+          Bookings tab — there you can set discounts &amp; time overrides.
+        </p>
       </div>
     </div>
   )

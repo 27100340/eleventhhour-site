@@ -2,6 +2,7 @@
 
 import type React from 'react'
 import { useEffect, useState } from 'react'
+import { GripVertical } from 'lucide-react'
 import { supabase } from '@/lib/supabase/browser'
 import type { Service } from '@/lib/types'
 
@@ -215,55 +216,52 @@ export default function ServicesTab() {
 
   const hierarchy = buildHierarchy()
 
+  const smallBtn =
+    'rounded-(--radius-ctl) border border-line px-3 py-1 text-sm font-medium text-ink transition-colors duration-150 hover:bg-ink/5'
+  const smallDangerBtn =
+    'rounded-(--radius-ctl) border border-line px-3 py-1 text-sm font-medium text-red-700 transition-colors duration-150 hover:bg-red-50'
+
   return (
-    <div className="grid md:grid-cols-[2fr_1fr] gap-6">
+    <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
       {/* Left: hierarchical list of services */}
-      <div className="rounded-2xl border bg-white p-4">
-        <h2 className="font-semibold mb-3">All Services (Drag to Reorder)</h2>
-        <p className="text-sm text-gray-600 mb-4">
+      <div className="rounded-(--radius-card) border border-line bg-surface p-5">
+        <h2 className="text-base">All services</h2>
+        <p className="mt-1 mb-4 text-sm text-ink-soft">
           Drag parents to reorder main categories. Drag children to reorder within their parent.
         </p>
         <div className="space-y-2">
           {hierarchy.map(({ service: parent, children }) => (
-            <div key={parent.id} className="border rounded-lg">
+            <div key={parent.id} className="overflow-hidden rounded-(--radius-ctl) border border-line">
               {/* Parent Service */}
               <div
                 draggable
                 onDragStart={() => handleDragStart(parent)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDropParent(e, parent)}
-                className={`p-3 flex items-center justify-between cursor-move hover:bg-gray-50 transition-colors bg-blue-50 ${
+                className={`flex cursor-move items-center justify-between bg-accent-tint/50 p-3 transition-colors duration-150 hover:bg-accent-tint ${
                   draggedService?.id === parent.id ? 'opacity-50' : ''
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                  </svg>
+                  <GripVertical className="h-4 w-4 shrink-0 text-ink-faint" />
                   <div>
-                    <p className="font-bold">{parent.name}</p>
-                    <p className="text-sm text-slate-600">
-                      £{Number(parent.price).toFixed(2)} • {parent.time_minutes} min • {parent.question_type} •{' '}
+                    <p className="font-semibold text-ink">{parent.name}</p>
+                    <p className="text-sm text-ink-soft">
+                      £{Number(parent.price).toFixed(2)} · {parent.time_minutes} min · {parent.question_type} ·{' '}
                       {parent.active ? 'Active' : 'Hidden'}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-faint">
                       {parent.is_category ? 'Category' : 'Service'}
-                      {parent.category_type && ` • ${String(parent.category_type).replace('_', ' ')}`}
-                      {parent.per_unit_type && parent.per_unit_type !== 'item' && ` • per ${parent.per_unit_type}`}
+                      {parent.category_type && ` · ${String(parent.category_type).replace('_', ' ')}`}
+                      {parent.per_unit_type && parent.per_unit_type !== 'item' && ` · per ${parent.per_unit_type}`}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => startEdit(parent)}
-                    className="rounded-full border px-3 py-1 text-sm hover:bg-gray-100"
-                  >
+                <div className="flex shrink-0 gap-2">
+                  <button onClick={() => startEdit(parent)} className={smallBtn}>
                     Edit
                   </button>
-                  <button
-                    onClick={() => remove(parent.id)}
-                    className="rounded-full border px-3 py-1 text-sm text-red-700 hover:bg-red-50"
-                  >
+                  <button onClick={() => remove(parent.id)} className={smallDangerBtn}>
                     Delete
                   </button>
                 </div>
@@ -271,7 +269,7 @@ export default function ServicesTab() {
 
               {/* Children Services */}
               {children.length > 0 && (
-                <div className="bg-gray-50 border-t">
+                <div className="border-t border-line bg-paper">
                   {children.map((child) => (
                     <div
                       key={child.id}
@@ -279,36 +277,28 @@ export default function ServicesTab() {
                       onDragStart={() => handleDragStart(child)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDropChild(e, child, parent.id)}
-                      className={`py-3 px-3 ml-8 flex items-center justify-between cursor-move hover:bg-gray-100 transition-colors border-b last:border-b-0 ${
+                      className={`ml-8 flex cursor-move items-center justify-between border-b border-line px-3 py-3 transition-colors duration-150 last:border-b-0 hover:bg-ink/5 ${
                         draggedService?.id === child.id ? 'opacity-50' : ''
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                        </svg>
+                        <GripVertical className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
                         <div>
-                          <p className="font-medium text-sm">{child.name}</p>
-                          <p className="text-xs text-slate-600">
-                            £{Number(child.price).toFixed(2)} • {child.time_minutes} min • {child.question_type} •{' '}
+                          <p className="text-sm font-medium text-ink">{child.name}</p>
+                          <p className="text-xs text-ink-soft">
+                            £{Number(child.price).toFixed(2)} · {child.time_minutes} min · {child.question_type} ·{' '}
                             {child.active ? 'Active' : 'Hidden'}
                           </p>
-                          <p className="text-xs text-slate-500">
-                            {child.per_unit_type && child.per_unit_type !== 'item' && `per ${child.per_unit_type}`}
-                          </p>
+                          {child.per_unit_type && child.per_unit_type !== 'item' && (
+                            <p className="text-xs text-ink-faint">per {child.per_unit_type}</p>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEdit(child)}
-                          className="rounded-full border px-2 py-1 text-xs hover:bg-gray-100"
-                        >
+                      <div className="flex shrink-0 gap-2">
+                        <button onClick={() => startEdit(child)} className={smallBtn}>
                           Edit
                         </button>
-                        <button
-                          onClick={() => remove(child.id)}
-                          className="rounded-full border px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                        >
+                        <button onClick={() => remove(child.id)} className={smallDangerBtn}>
                           Delete
                         </button>
                       </div>
@@ -318,13 +308,13 @@ export default function ServicesTab() {
               )}
             </div>
           ))}
-          {services.length === 0 && <p className="text-sm text-slate-600">No services yet.</p>}
+          {services.length === 0 && <p className="text-sm text-ink-soft">No services yet.</p>}
         </div>
       </div>
 
       {/* Right: edit/add form */}
-      <div className="rounded-2xl border bg-white p-4">
-        <h2 className="font-semibold mb-3">{editing ? 'Edit Service' : 'Add Service'}</h2>
+      <div className="h-max rounded-(--radius-card) border border-line bg-surface p-5">
+        <h2 className="mb-4 text-base">{editing ? 'Edit service' : 'Add service'}</h2>
         <div className="grid gap-3">
           <input
             className="input"
@@ -357,7 +347,7 @@ export default function ServicesTab() {
 
           {/* Question Type Selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Question Type</label>
+            <label className="mb-1.5 block text-sm font-medium text-ink">Question type</label>
             <select
               className="input"
               value={form.question_type}
@@ -371,26 +361,26 @@ export default function ServicesTab() {
 
           {/* Dropdown Options (only show if dropdown type) */}
           {form.question_type === 'dropdown' && (
-            <div className="border rounded-lg p-3 bg-gray-50">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Dropdown Options</label>
+            <div className="rounded-(--radius-ctl) border border-line bg-paper p-3">
+              <label className="mb-2 block text-sm font-medium text-ink">Dropdown options</label>
 
-              <div className="space-y-2 mb-3">
+              <div className="mb-3 space-y-2">
                 {form.dropdown_options.map((opt, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border">
-                    <span className="text-sm flex-1">
+                  <div key={idx} className="flex items-center gap-2 rounded-(--radius-ctl) border border-line bg-surface p-2">
+                    <span className="flex-1 text-sm text-ink">
                       {opt.label} ({opt.value})
                     </span>
                     <button
                       type="button"
                       onClick={() => removeDropdownOption(idx)}
-                      className="text-red-600 hover:text-red-800 text-sm"
+                      className="text-sm font-medium text-red-700 hover:text-red-800"
                     >
                       Remove
                     </button>
                   </div>
                 ))}
                 {form.dropdown_options.length === 0 && (
-                  <p className="text-xs text-gray-500">No options added yet</p>
+                  <p className="text-xs text-ink-faint">No options added yet</p>
                 )}
               </div>
 
@@ -409,11 +399,7 @@ export default function ServicesTab() {
                   value={newOptionValue}
                   onChange={(e) => setNewOptionValue(e.target.value)}
                 />
-                <button
-                  type="button"
-                  onClick={addDropdownOption}
-                  className="rounded-full border px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700"
-                >
+                <button type="button" onClick={addDropdownOption} className="btn-primary px-3 py-1 text-sm">
                   Add
                 </button>
               </div>
@@ -421,17 +407,18 @@ export default function ServicesTab() {
           )}
 
           {/* Simple nesting controls */}
-          <div className="grid md:grid-cols-2 gap-3">
-            <label className="flex items-center gap-2 text-sm">
+          <div className="grid gap-3">
+            <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
+                className="h-4 w-4 accent-(--color-accent)"
                 checked={form.is_category}
                 onChange={(e) => setForm((f) => ({ ...f, is_category: e.target.checked }))}
               />
               Is category (can contain children)
             </label>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Parent service (optional)</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Parent service (optional)</label>
               <select
                 className="input"
                 value={form.parent_id || ''}
@@ -452,9 +439,10 @@ export default function ServicesTab() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
+              className="h-4 w-4 accent-(--color-accent)"
               checked={form.active}
               onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
             />
@@ -466,7 +454,7 @@ export default function ServicesTab() {
               {editing ? 'Save' : 'Add'}
             </button>
             {editing && (
-              <button onClick={reset} className="rounded-full border px-4 py-3">
+              <button onClick={reset} className="btn-secondary">
                 Cancel
               </button>
             )}

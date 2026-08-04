@@ -103,8 +103,7 @@ export default function BookingsCalendar() {
           .filter(Boolean)
 
         setEvents(parsed as RBCEvent[])
-      } catch (e) {
-        console.error('calendar fetch failed', e)
+      } catch {
         setEvents([])
       } finally {
         setLoading(false)
@@ -151,7 +150,7 @@ export default function BookingsCalendar() {
         className = 'bg-yellow-100 border-yellow-400'
         break
       case 'active':
-        className = 'bg-blue-100 border-blue-400'
+        className = 'bg-accent-tint border-accent'
         break
       case 'completed':
         className = 'bg-green-100 border-green-500'
@@ -182,8 +181,8 @@ export default function BookingsCalendar() {
   }, [])
 
   return (
-    <div className="rounded-2xl border p-3">
-      {loading && <div className="text-xs text-slate-500 mb-2">Loading…</div>}
+    <div className="rounded-(--radius-card) border border-line bg-surface p-3">
+      {loading && <div className="mb-2 text-xs text-ink-faint">Loading…</div>}
       <Calendar
         localizer={localizer}
         events={events}

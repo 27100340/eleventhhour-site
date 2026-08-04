@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { adminFetch } from '@/lib/admin-fetch'
+import { Badge } from '@/components/ui/Badge'
 
 type Row = {
   id: string
@@ -23,6 +24,13 @@ type Row = {
 }
 
 const BookingsCalendar = dynamic(() => import('./BookingsCalendar'), { ssr: false })
+
+const paymentTones = {
+  pending: 'warning',
+  paid: 'success',
+  failed: 'danger',
+  refunded: 'neutral',
+} as const
 
 export default function BookingsTab() {
   const [rows, setRows] = useState<Row[]>([])
@@ -49,8 +57,13 @@ export default function BookingsTab() {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name/email/phone/postcode" className="input max-w-sm" />
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search name/email/phone/postcode"
+          className="input max-w-sm"
+        />
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input w-auto">
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
           <option value="active">Active</option>
@@ -59,90 +72,81 @@ export default function BookingsTab() {
         </select>
         <button onClick={load} className="btn-primary">Filter</button>
 
-        <div className="ml-auto flex gap-2">
-          <button
-            className={`rounded-full border px-3 py-1 text-sm font-medium transition-all duration-200 ${
-              mode === 'table'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-            }`}
-            onClick={() => setMode('table')}
-          >
-            Table
-          </button>
-          <button
-            className={`rounded-full border px-3 py-1 text-sm font-medium transition-all duration-200 ${
-              mode === 'calendar'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/25'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-            }`}
-            onClick={() => setMode('calendar')}
-          >
-            Calendar
-          </button>
+        <div className="ml-auto inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5">
+          {(['table', 'calendar'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              aria-pressed={mode === m}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors duration-150 ${
+                mode === m ? 'bg-ink text-paper' : 'text-ink-soft hover:text-ink'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
         </div>
       </div>
 
       {mode === 'table' && (
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 overflow-x-auto rounded-(--radius-card) border border-line bg-surface">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left border-b">
-                <th className="py-2 pr-3">Created</th>
-                <th className="py-2 pr-3">Service Date</th>
-                <th className="py-2 pr-3">Customer</th>
-                <th className="py-2 pr-3">Contact</th>
-                <th className="py-2 pr-3">Location</th>
-                <th className="py-2 pr-3">Status</th>
-                <th className="py-2 pr-3">Payment</th>
-                <th className="py-2 pr-3">Total</th>
-                <th className="py-2 pr-3">Time</th>
-                <th className="py-2 pr-3"></th>
+              <tr className="border-b border-line bg-paper text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3">Service date</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Contact</th>
+                <th className="px-4 py-3">Location</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3">Total</th>
+                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={10} className="py-6 text-center text-slate-500">Loading…</td></tr>
+                <tr><td colSpan={10} className="px-4 py-6 text-center text-ink-faint">Loading…</td></tr>
               )}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={10} className="py-6 text-center text-slate-500">No bookings yet</td></tr>
+                <tr><td colSpan={10} className="px-4 py-6 text-center text-ink-faint">No bookings yet</td></tr>
               )}
               {rows.map((r) => {
                 const displayTotal = typeof r.admin_total_override === 'number' ? r.admin_total_override : r.total || 0
-                const paymentStatus = r.payment_status || 'pending'
-                const paymentColors = {
-                  pending: 'bg-yellow-100 text-yellow-800',
-                  paid: 'bg-green-100 text-green-800',
-                  failed: 'bg-red-100 text-red-800',
-                  refunded: 'bg-gray-100 text-gray-800',
-                }
+                const paymentStatus = (r.payment_status || 'pending') as keyof typeof paymentTones
                 return (
-                  <tr key={r.id} className="border-b hover:bg-slate-50">
-                    <td className="py-2 pr-3">{new Date(r.created_at).toLocaleString()}</td>
-                    <td className="py-2 pr-3">{r.service_date ? new Date(r.service_date).toLocaleString() : <span className="text-slate-500">—</span>}</td>
-                    <td className="py-2 pr-3">{r.first_name} {r.last_name}</td>
-                    <td className="py-2 pr-3">
+                  <tr key={r.id} className="border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-paper">
+                    <td className="px-4 py-2.5 text-ink-soft">{new Date(r.created_at).toLocaleString()}</td>
+                    <td className="px-4 py-2.5">
+                      {r.service_date ? new Date(r.service_date).toLocaleString() : <span className="text-ink-faint">—</span>}
+                    </td>
+                    <td className="px-4 py-2.5 font-medium text-ink">{r.first_name} {r.last_name}</td>
+                    <td className="px-4 py-2.5">
                       <div className="flex flex-col">
                         <span>{r.email}</span>
-                        <span className="text-xs text-slate-600">{r.phone}</span>
+                        <span className="text-xs text-ink-faint">{r.phone}</span>
                       </div>
                     </td>
-                    <td className="py-2 pr-3">{r.postcode} • {r.city}</td>
-                    <td className="py-2 pr-3">
+                    <td className="px-4 py-2.5">{r.postcode} · {r.city}</td>
+                    <td className="px-4 py-2.5">
                       <span className="capitalize">{r.status}</span>
                       {r.source === 'admin' && (
-                        <span className="ml-1 text-xs text-blue-600">(Admin)</span>
+                        <span className="ml-1 text-xs text-accent">(admin)</span>
                       )}
                     </td>
-                    <td className="py-2 pr-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${paymentColors[paymentStatus as keyof typeof paymentColors]}`}>
-                        {paymentStatus}
-                      </span>
+                    <td className="px-4 py-2.5">
+                      <Badge tone={paymentTones[paymentStatus] ?? 'neutral'}>{paymentStatus}</Badge>
                     </td>
-                    <td className="py-2 pr-3">£{Number(displayTotal).toFixed(2)}</td>
-                    <td className="py-2 pr-3">{r.total_time_minutes || 0} mins</td>
-                    <td className="py-2 pr-3">
-                      <Link href={`/admin/bookings/${r.id}`} className="rounded-full border px-3 py-1 text-sm">Open</Link>
+                    <td className="px-4 py-2.5 font-medium text-ink">£{Number(displayTotal).toFixed(2)}</td>
+                    <td className="px-4 py-2.5">{r.total_time_minutes || 0} mins</td>
+                    <td className="px-4 py-2.5">
+                      <Link
+                        href={`/admin/bookings/${r.id}`}
+                        className="rounded-(--radius-ctl) border border-line px-3 py-1 text-sm font-medium transition-colors duration-150 hover:bg-ink/5"
+                      >
+                        Open
+                      </Link>
                     </td>
                   </tr>
                 )

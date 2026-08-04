@@ -2,10 +2,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { adminFetch } from '@/lib/admin-fetch'
 import { useAdminGuard } from '@/lib/use-admin-guard'
+import { useToast } from '@/components/ui/Toast'
+import { Badge } from '@/components/ui/Badge'
+import { QtyStepper } from '@/components/booking/QtyStepper'
 
-type Service ={ id: string; name: string; price: number; time_minutes: number }
+type Service = { id: string; name: string; price: number; time_minutes: number }
 type Item = { service_id: string; qty: number; unit_price: number; time_minutes: number; name?: string }
 type Booking = {
   id: string
@@ -31,8 +35,25 @@ type Booking = {
   notes: string | null
 }
 
+const invoiceStatusTones = {
+  paid: 'success',
+  sent: 'accent',
+  void: 'danger',
+  draft: 'neutral',
+} as const
+
+function EditorCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-(--radius-card) border border-line bg-surface p-5">
+      <p className="mb-3 font-medium text-ink">{title}</p>
+      {children}
+    </div>
+  )
+}
+
 export default function BookingEditor() {
   useAdminGuard()
+  const toast = useToast()
   const router = useRouter()
   const params = useParams() as { id?: string }
   const bookingId = (params?.id as string) || ''
@@ -86,27 +107,27 @@ export default function BookingEditor() {
     return () => { abort = true }
   }, [bookingId])
 
-  function upsertItem(service_id: string, delta: number) {
+  function setItemQty(service_id: string, qty: number) {
+    const clamped = Math.max(0, Math.floor(qty))
     setItems(prev => {
-      const idx = prev.findIndex(i => i.service_id === service_id)
-      if (idx === -1) {
+      const current = prev.find(i => i.service_id === service_id)
+      if (!current && clamped > 0) {
         const svc = services.find(s => s.id === service_id)
         if (!svc) return prev
-        const qty = Math.max(0, delta)
-        if (qty === 0) return prev
         return [...prev, {
           service_id,
-          qty,
+          qty: clamped,
           unit_price: Number(svc.price),
           time_minutes: svc.time_minutes,
           name: svc.name,
         }]
-      } else {
-        const next = [...prev]
-        next[idx] = { ...next[idx], qty: Math.max(0, next[idx].qty + delta) }
-        if (next[idx].qty === 0) next.splice(idx, 1)
-        return next
       }
+      if (current) {
+        return prev
+          .map(i => (i.service_id === service_id ? { ...i, qty: clamped } : i))
+          .filter(i => i.qty > 0)
+      }
+      return prev
     })
   }
 
@@ -130,7 +151,7 @@ export default function BookingEditor() {
         subtotal: computed.subtotal,
         total: computed.total, // keep the calculated total in DB
         total_time_minutes: computed.total_time_minutes,
-        admin_total_override: booking.admin_total_override, // << NEW
+        admin_total_override: booking.admin_total_override,
         items: items.map(i => ({
           service_id: i.service_id,
           qty: i.qty,
@@ -145,6 +166,7 @@ export default function BookingEditor() {
       })
       const json: { error?: { message?: string } } = await res.json()
       if (!res.ok) throw new Error(json?.error?.message || 'Save failed')
+      toast.success('Booking saved')
       router.refresh()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Save failed')
@@ -173,7 +195,7 @@ export default function BookingEditor() {
       // Navigate to the new invoice
       router.push(`/admin/invoices/${data.id}`)
     } catch (e: any) {
-      alert(e?.message || 'Failed to create invoice')
+      toast.error(e?.message || 'Failed to create invoice')
     } finally {
       setInvoicing(false)
     }
@@ -182,7 +204,7 @@ export default function BookingEditor() {
   async function onProcessStripePayment() {
     if (!booking) return
     if (!booking.email) {
-      alert('Please add a customer email before processing payment')
+      toast.error('Please add a customer email before processing payment')
       return
     }
 
@@ -213,7 +235,7 @@ export default function BookingEditor() {
         throw new Error('No payment URL received')
       }
     } catch (e: any) {
-      alert(e?.message || 'Failed to process payment')
+      toast.error(e?.message || 'Failed to process payment')
       setProcessingPayment(false)
     }
   }
@@ -234,53 +256,62 @@ export default function BookingEditor() {
     }
   }
 
-  if (!bookingId) return <div className="p-6">Loading route…</div>
-  if (loading) return <div className="p-6">Loading…</div>
-  if (err) return <div className="p-6 text-red-600">{err}</div>
-  if (!booking) return <div className="p-6">Not found</div>
+  if (!bookingId) return <div className="p-6 text-ink-soft">Loading route…</div>
+  if (loading) return <div className="p-6 text-ink-soft">Loading…</div>
+  if (err && !booking) return <div className="p-6 font-medium text-red-700">{err}</div>
+  if (!booking) return <div className="p-6 text-ink-soft">Not found</div>
 
   return (
-    <div className="mx-auto max-w-6xl p-4">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link className="rounded-full border px-3 py-1" href="/admin/dashboard">← Back</Link>
-          <h1 className="text-2xl font-semibold">Edit Booking</h1>
+          <Link
+            className="flex items-center gap-1.5 rounded-(--radius-ctl) border border-line px-3 py-1.5 text-sm font-medium transition-colors duration-150 hover:bg-ink/5"
+            href="/admin/dashboard"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Link>
+          <h1 className="text-2xl">Edit booking</h1>
         </div>
         <div className="flex gap-2">
-          <button onClick={onDelete} className="rounded-full border px-4 py-2">Delete</button>
-          <button onClick={onSave} className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+          <button onClick={onDelete} className="btn-secondary text-red-700 border-red-700/60 hover:bg-red-700 hover:text-white">
+            Delete
+          </button>
+          <button onClick={onSave} className="btn-primary" disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
         </div>
       </div>
 
-      <div className="mt-6 grid md:grid-cols-3 gap-6">
+      {err && <p className="mt-3 text-sm font-medium text-red-700">{err}</p>}
+
+      <div className="mt-6 grid gap-6 md:grid-cols-3">
         {/* Left */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">Customer</p>
-            <div className="grid md:grid-cols-2 gap-3">
+        <div className="space-y-4 md:col-span-2">
+          <EditorCard title="Customer">
+            <div className="grid gap-3 md:grid-cols-2">
               <input className="input" value={booking.first_name || ''} onChange={e=>setBooking({...booking, first_name: e.target.value})} placeholder="First name" />
               <input className="input" value={booking.last_name || ''} onChange={e=>setBooking({...booking, last_name: e.target.value})} placeholder="Last name" />
               <input className="input" value={booking.email || ''} onChange={e=>setBooking({...booking, email: e.target.value})} placeholder="Email" />
               <input className="input" value={booking.phone || ''} onChange={e=>setBooking({...booking, phone: e.target.value})} placeholder="Phone" />
             </div>
-          </div>
+          </EditorCard>
 
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">Address</p>
-            <div className="grid md:grid-cols-3 gap-3">
+          <EditorCard title="Address">
+            <div className="grid gap-3 md:grid-cols-3">
               <input className="input" value={booking.address || ''} onChange={e=>setBooking({...booking, address: e.target.value})} placeholder="Address" />
               <input className="input" value={booking.city || ''} onChange={e=>setBooking({...booking, city: e.target.value})} placeholder="City" />
               <input className="input" value={booking.postcode || ''} onChange={e=>setBooking({...booking, postcode: e.target.value})} placeholder="Postcode" />
             </div>
-          </div>
+          </EditorCard>
 
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">When</p>
-            <div className="grid md:grid-cols-3 gap-3">
+          <EditorCard title="When">
+            <div className="grid gap-3 md:grid-cols-3">
               <select className="input" value={booking.frequency} onChange={e=>setBooking({...booking, frequency: e.target.value as Booking['frequency']})}>
-                <option value="one_time">one_time</option>
+                <option value="one_time">one time</option>
                 <option value="weekly">weekly</option>
-                <option value="bi_weekly">bi_weekly</option>
+                <option value="bi_weekly">bi weekly</option>
                 <option value="monthly">monthly</option>
               </select>
               <select className="input" value={booking.arrival_window} onChange={e=>setBooking({...booking, arrival_window: e.target.value as Booking['arrival_window']})}>
@@ -293,13 +324,12 @@ export default function BookingEditor() {
                 onChange={e=>setBooking({...booking, service_date: e.target.value ? new Date(e.target.value).toISOString() : null})}
               />
             </div>
-          </div>
+          </EditorCard>
 
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">Status & Payment</p>
-            <div className="grid md:grid-cols-3 gap-3">
+          <EditorCard title="Status & payment">
+            <div className="grid gap-3 md:grid-cols-3">
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Booking Status</label>
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Booking status</label>
                 <select className="input" value={booking.status} onChange={e=>setBooking({...booking, status: e.target.value as Booking['status']})}>
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
@@ -308,7 +338,7 @@ export default function BookingEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Payment Status</label>
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Payment status</label>
                 <select
                   className="input"
                   value={booking.payment_status || 'pending'}
@@ -321,22 +351,22 @@ export default function BookingEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Source</label>
-                <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium capitalize">
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Source</label>
+                <div className="rounded-(--radius-ctl) bg-paper px-3.5 py-2.5 text-sm font-medium capitalize text-ink">
                   {booking.source || 'web'}
                 </div>
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-3 mt-3">
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Discount (£)</label>
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Discount (£)</label>
                 <input className="input" type="number" step="0.01" placeholder="0.00"
                   value={booking.discount ?? 0}
                   onChange={e=>setBooking({...booking, discount: Number(e.target.value)})}
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600 mb-1 block">Time Override (mins)</label>
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Time override (mins)</label>
                 <input className="input" type="number" placeholder="Auto-calculated"
                   value={booking.admin_time_override ?? ''}
                   onChange={e=>setBooking({...booking, admin_time_override: e.target.value === '' ? null : Number(e.target.value)})}
@@ -346,87 +376,71 @@ export default function BookingEditor() {
 
             {/* Quick payment confirmation buttons for draft bookings */}
             {booking.status === 'draft' && booking.payment_status === 'pending' && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium text-blue-900 mb-2">Quick Actions for Draft Booking</p>
-                <div className="flex gap-2">
+              <div className="mt-4 rounded-(--radius-ctl) bg-accent-tint p-3.5">
+                <p className="mb-2 text-sm font-medium text-accent-dark">Quick actions for draft booking</p>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setBooking({...booking, payment_status: 'paid', status: 'active'})}
-                    className="rounded-full bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700"
+                    className="btn-primary px-4 py-2 text-sm"
                   >
-                    Mark as Paid & Activate
+                    Mark as paid &amp; activate
                   </button>
                   <button
                     onClick={() => setBooking({...booking, status: 'active'})}
-                    className="rounded-full border px-4 py-2 text-sm hover:bg-gray-50"
+                    className="btn-secondary px-4 py-2 text-sm"
                   >
-                    Activate (Keep Payment Pending)
+                    Activate (keep payment pending)
                   </button>
                 </div>
               </div>
             )}
 
             <div className="mt-3">
-              <label className="text-xs text-gray-600 mb-1 block">Notes</label>
+              <label className="mb-1 block text-xs font-medium text-ink-soft">Notes</label>
               <textarea className="input" rows={4} placeholder="Add notes about this booking..."
                 value={booking.notes ?? ''} onChange={e=>setBooking({...booking, notes: e.target.value})}/>
             </div>
-          </div>
+          </EditorCard>
         </div>
 
         {/* Right */}
         <aside className="space-y-4">
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium mb-3">Services</p>
-            <div className="space-y-2 max-h-[360px] overflow-auto pr-1">
+          <EditorCard title="Services">
+            <div className="max-h-[360px] space-y-2 overflow-auto pr-1">
               {services.map(s => {
                 const existing = items.find(i => i.service_id === s.id)?.qty || 0
                 return (
                   <div key={s.id} className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{s.name}</p>
-                      <p className="text-xs text-slate-600">£{Number(s.price).toFixed(2)} · {s.time_minutes} mins</p>
+                      <p className="truncate text-sm font-medium text-ink">{s.name}</p>
+                      <p className="text-xs text-ink-soft">£{Number(s.price).toFixed(2)} · {s.time_minutes} mins</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button className="rounded-full border w-7 h-7" onClick={()=>upsertItem(s.id, -1)}>-</button>
-                      <input className="input w-14 text-center" type="number" min={0} value={existing}
-                        onChange={e=>{
-                          const qty = Math.max(0, Math.floor(Number(e.target.value) || 0))
-                          const current = items.find(i => i.service_id === s.id)
-                          if (!current && qty > 0) {
-                            setItems(prev => [...prev, { service_id: s.id, qty, unit_price: Number(s.price), time_minutes: s.time_minutes, name: s.name }])
-                          } else if (current) {
-                            setItems(prev => prev.map(i => i.service_id === s.id ? { ...i, qty } : i).filter(i => i.qty > 0))
-                          }
-                        }}
-                      />
-                      <button className="rounded-full border w-7 h-7" onClick={()=>upsertItem(s.id, +1)}>+</button>
-                    </div>
+                    <QtyStepper qty={existing} onChange={(qty) => setItemQty(s.id, qty)} compact />
                   </div>
                 )
               })}
             </div>
-          </div>
+          </EditorCard>
 
-          <div className="rounded-2xl border p-4">
-            <p className="font-medium">Totals</p>
-            <div className="mt-2 text-sm space-y-1">
+          <EditorCard title="Totals">
+            <div className="space-y-1.5 text-sm">
               <div className="flex items-center justify-between">
-                <span>Subtotal</span>
-                <span>£{(computed.subtotal).toFixed(2)}</span>
+                <span className="text-ink-soft">Subtotal</span>
+                <span className="text-ink">£{(computed.subtotal).toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Time (calc)</span>
-                <span>{computed.time} mins</span>
+                <span className="text-ink-soft">Time (calc)</span>
+                <span className="text-ink">{computed.time} mins</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Time (final)</span>
-                <span>{computed.total_time_minutes} mins</span>
+                <span className="text-ink-soft">Time (final)</span>
+                <span className="text-ink">{computed.total_time_minutes} mins</span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span>Final price override</span>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <span className="text-ink-soft">Final price override</span>
                 <input
-                  className="input w-32 text-right"
+                  className="input w-28 text-right"
                   type="number" step="0.01" placeholder="£"
                   value={booking.admin_total_override ?? ''}
                   onChange={e => setBooking({
@@ -436,71 +450,66 @@ export default function BookingEditor() {
                 />
               </div>
 
-              <div className="flex items-center justify-between font-semibold">
-                <span>Total (display)</span>
-                <span>£{computed.finalTotal.toFixed(2)}</span>
+              <div className="flex items-center justify-between border-t border-line pt-2 font-semibold">
+                <span className="text-ink">Total (display)</span>
+                <span className="font-display text-lg text-accent-dark">£{computed.finalTotal.toFixed(2)}</span>
               </div>
             </div>
-          </div>
+          </EditorCard>
 
           {/* Invoices section */}
           {invoices.length > 0 && (
-            <div className="rounded-2xl border p-4">
-              <p className="font-medium mb-3">Invoices</p>
+            <EditorCard title="Invoices">
               <div className="space-y-2">
                 {invoices.map((inv) => (
                   <Link
                     key={inv.id}
                     href={`/admin/invoices/${inv.id}`}
-                    className="flex items-center justify-between p-3 bg-gray-50 hover:bg-brand-sage/20 rounded-lg transition-colors"
+                    className="flex items-center justify-between rounded-(--radius-ctl) bg-paper p-3 transition-colors duration-150 hover:bg-accent-tint"
                   >
                     <div>
-                      <p className="font-medium text-brand-charcoal">{inv.invoice_number || inv.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-xs text-gray-500">{new Date(inv.created_at).toLocaleDateString('en-GB')}</p>
+                      <p className="text-sm font-medium text-ink">{inv.invoice_number || inv.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="text-xs text-ink-faint">{new Date(inv.created_at).toLocaleDateString('en-GB')}</p>
                     </div>
-                    <span className={`text-xs font-semibold uppercase px-2 py-1 rounded ${
-                      inv.status === 'paid' ? 'bg-green-100 text-green-700' :
-                      inv.status === 'sent' ? 'bg-blue-100 text-blue-700' :
-                      inv.status === 'void' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
+                    <Badge tone={invoiceStatusTones[inv.status as keyof typeof invoiceStatusTones] ?? 'neutral'} className="uppercase">
                       {inv.status}
-                    </span>
+                    </Badge>
                   </Link>
                 ))}
               </div>
-            </div>
+            </EditorCard>
           )}
         </aside>
       </div>
+
       {/* Actions footer */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={onSave}
             disabled={saving || loading || !booking}
-            className="rounded-full bg-brand-amber text-white px-5 py-2 text-sm font-semibold hover:bg-brand-amber-dark disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn-primary"
           >
-            {saving ? 'Saving…' : 'Save Booking'}
+            {saving ? 'Saving…' : 'Save booking'}
           </button>
           <button
             onClick={onCreateInvoice}
             disabled={invoicing || loading}
-            className="rounded-full border px-5 py-2 text-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn-secondary"
           >
-            {invoicing ? 'Creating Invoice…' : 'Create Invoice'}
+            {invoicing ? 'Creating invoice…' : 'Create invoice'}
           </button>
           {booking?.payment_status === 'pending' && (
             <button
               onClick={onProcessStripePayment}
               disabled={processingPayment || loading}
-              className="rounded-full bg-green-600 text-white px-5 py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary"
             >
-              {processingPayment ? 'Processing…' : 'Process Stripe Payment'}
+              {processingPayment ? 'Processing…' : 'Process Stripe payment'}
             </button>
           )}
         </div>
-        <Link href="/admin/bookings" className="text-sm text-slate-600 hover:underline">Back to list</Link>
+        <Link href="/admin/bookings" className="text-sm font-medium text-accent hover:text-accent-dark">Back to list</Link>
       </div>
     </div>
   )

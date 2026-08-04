@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase/browser'
 import { adminFetch } from '@/lib/admin-fetch'
 import { computeBookingTotals } from '@/lib/pricing'
@@ -8,8 +9,22 @@ import type { Service } from '@/lib/types'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { ServiceSection } from '@/components/booking/ServiceSection'
+import { CategoryPicker } from '@/components/booking/CategoryPicker'
+import { buildCategorySection } from '@/components/booking/categorySection'
+import { useToast } from '@/components/ui/Toast'
+import { Spinner } from '@/components/ui/Spinner'
+
+function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-(--radius-card) border border-line bg-surface p-5">
+      {title && <h3 className="mb-4 text-base">{title}</h3>}
+      {children}
+    </div>
+  )
+}
 
 export default function CreateBookingTab() {
+  const toast = useToast()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -90,8 +105,6 @@ export default function CreateBookingTab() {
           qty = 1
         } else if (s.question_type === 'checkbox') {
           qty = value ? 1 : 0
-        } else if (s.question_type === 'dropdown') {
-          qty = typeof value === 'number' ? value : Number(value) || 0
         } else {
           qty = typeof value === 'number' ? value : Number(value) || 0
         }
@@ -175,18 +188,18 @@ export default function CreateBookingTab() {
   async function createDraftBooking() {
     // Validate required fields
     if (!form.firstName || !form.lastName || !form.phone) {
-      alert('Please fill in customer name and phone')
+      toast.error('Please fill in customer name and phone')
       return
     }
 
     // For regular cleaning, check that both hours and cleaners are selected
     if (regularCategory && selectedCategoryId === regularCategory.id) {
       if (!regular) {
-        alert('Please select number of hours and cleaners for regular cleaning')
+        toast.error('Please select number of hours and cleaners for regular cleaning')
         return
       }
     } else if (!selectedServices.length) {
-      alert('Please select at least one service')
+      toast.error('Please select at least one service')
       return
     }
 
@@ -283,9 +296,9 @@ export default function CreateBookingTab() {
               total,
             }),
           })
-        } catch (invoiceError) {
-          console.error('Error creating invoice:', invoiceError)
+        } catch {
           // Don't fail the booking creation if invoice fails
+          toast.info('Booking created, but the invoice could not be generated')
         }
       }
 
@@ -311,7 +324,7 @@ export default function CreateBookingTab() {
         }
       }
 
-      alert(`Draft booking created successfully! ID: ${booking.id}`)
+      toast.success('Draft booking created')
 
       // Reset form
       setForm({
@@ -334,445 +347,314 @@ export default function CreateBookingTab() {
 
       window.location.href = `/admin/bookings/${booking.id}`
     } catch (error: any) {
-      console.error('Error creating booking:', error)
-      alert(`Error: ${error.message}`)
+      toast.error(error?.message || 'Failed to create booking')
     } finally {
       setLoading(false)
     }
   }
 
+  const selectedCategory = selectedCategoryId
+    ? allCategories.find((c) => c.id === selectedCategoryId) ?? null
+    : null
+
   return (
-    <div className="grid lg:grid-cols-[2fr_1fr] gap-6">
-      <div className="rounded-2xl border-2 border-brand-stone bg-white p-6">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-brand-charcoal mb-1">Create Booking</h2>
-          <p className="text-sm text-gray-600">Fill in the details below to create a new booking</p>
+    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid h-max gap-5">
+        <div>
+          <h2 className="text-xl">Create booking</h2>
+          <p className="mt-1 text-sm text-ink-soft">Fill in the details below to create a new booking</p>
         </div>
 
-        <div className="grid gap-6">
-          {/* Customer Information */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
-            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Customer Information</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <input
-                className="input"
-                placeholder="First name *"
-                value={form.firstName}
-                onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-              />
-              <input
-                className="input"
-                placeholder="Last name *"
-                value={form.lastName}
-                onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-4 mt-4">
-              <input
-                className="input"
-                type="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              />
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Phone *</label>
-                <PhoneInput
-                  defaultCountry="GB"
-                  value={form.phone}
-                  onChange={(v) => setForm((f) => ({ ...f, phone: v || '' }))}
-                  className="input"
-                  placeholder="Phone number"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Service Location */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
-            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Service Location</h3>
-            <div className="grid gap-4">
-              <input
-                className="input"
-                placeholder="Address"
-                value={form.address}
-                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-              />
-              <div className="grid md:grid-cols-2 gap-4">
-                <input
-                  className="input"
-                  placeholder="City"
-                  value={form.city}
-                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                />
-                <input
-                  className="input"
-                  placeholder="Postcode"
-                  value={form.postcode}
-                  onChange={(e) => setForm((f) => ({ ...f, postcode: e.target.value }))}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Service Details */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
-            <h3 className="font-bold text-lg text-brand-charcoal mb-4">When & Where</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Service Date</label>
-                <input
-                  className="input"
-                  type="datetime-local"
-                  value={form.serviceDate}
-                  onChange={(e) => setForm((f) => ({ ...f, serviceDate: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Frequency</label>
-                <select
-                  className="input"
-                  value={form.frequency}
-                  onChange={(e) => setForm((f) => ({ ...f, frequency: e.target.value as any }))}
-                >
-                  <option value="one_time">One Time</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="bi_weekly">Bi-Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Arrival Window</label>
-                <select
-                  className="input"
-                  value={form.arrivalWindow}
-                  onChange={(e) => setForm((f) => ({ ...f, arrivalWindow: e.target.value as any }))}
-                >
-                  <option value="exact">Exact Time</option>
-                  <option value="morning">Morning</option>
-                  <option value="afternoon">Afternoon</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 mb-1 block">Discount (£)</label>
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={form.discount}
-                  onChange={(e) => setForm((f) => ({ ...f, discount: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Services Selection */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-white p-5">
-            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Select Services *</h3>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Choose one service category below, then configure the services for this booking.
-              </p>
-
-              {allCategories.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-brand-charcoal mb-2">Service Categories (select one)</p>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                    {allCategories.map((category) => {
-                      const isSelected = selectedCategoryId === category.id
-                      const categoryIcons: Record<string, string> = {
-                        regular_cleaning: '🧹',
-                        deep_cleaning: '🧼',
-                        end_of_tenancy: '📦',
-                        windows: '🪟',
-                        gardening: '🌿',
-                        landscaping: '🌳',
-                        handyman: '🛠️',
-                        waste_removal: '🗑️',
-                      }
-                      const icon = categoryIcons[category.category_type || ''] || '📋'
-
-                      return (
-                        <button
-                          key={category.id}
-                          type="button"
-                          onClick={() => handleCategoryChange(category.id)}
-                          className={`text-left rounded-2xl border-2 px-4 py-3 text-sm transition-all ${
-                            isSelected
-                              ? 'border-brand-amber bg-brand-amber/10 ring-2 ring-brand-amber/40'
-                              : 'border-slate-200 bg-white hover:border-brand-amber/60 hover:bg-brand-amber/5'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl">{icon}</span>
-                            <p className="font-semibold">{category.name}</p>
-                          </div>
-                          {isSelected && (
-                            <p className="text-xs text-brand-amber font-medium">Selected</p>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {selectedCategoryId && allCategories.length > 0 && (() => {
-                  const selectedCategory = allCategories.find(
-                    (c) => c.id === selectedCategoryId,
-                  )
-                  if (!selectedCategory) return null
-
-                  const childServices = selectedCategory.children || []
-                  const showExtras =
-                    selectedCategory.category_type === 'deep_cleaning' ||
-                    selectedCategory.category_type === 'end_of_tenancy'
-                  const extrasStartIndex = showExtras ? 8 : 0
-
-                  const getDescription = () => {
-                    switch (selectedCategory.category_type) {
-                      case 'regular_cleaning':
-                        return 'Select number of hours and cleaners needed'
-                      case 'deep_cleaning':
-                      case 'end_of_tenancy':
-                        return 'Select rooms to be cleaned and any extras'
-                      case 'windows':
-                        return 'Exterior window cleaning - enter square footage'
-                      case 'gardening':
-                        return 'Select gardening services needed'
-                      case 'landscaping':
-                        return 'Professional landscaping services'
-                      case 'handyman':
-                        return 'Handyman services for this booking'
-                      case 'waste_removal':
-                        return 'Waste and junk removal services'
-                      default:
-                        return 'Configure services for this category'
-                    }
-                  }
-
-                  const servicesForSection: Service[] = []
-
-                  if (selectedCategory.price > 0 || selectedCategory.time_minutes > 0) {
-                    servicesForSection.push(selectedCategory)
-                    // Don't add children here - NestedServiceSelector will handle them when expanded
-                  } else if (childServices.length > 0) {
-                    // If parent has no price/time, add children directly
-                    servicesForSection.push(...childServices)
-                  }
-
-                  if (servicesForSection.length === 0) {
-                    servicesForSection.push(selectedCategory)
-                  }
-
-                  return (
-                    <ServiceSection
-                      key={selectedCategory.id}
-                      title={selectedCategory.name}
-                      description={getDescription()}
-                      services={servicesForSection}
-                      items={form.items}
-                      onItemChange={updateItem}
-                      showExtrasLabel={showExtras}
-                      extrasStartIndex={
-                        showExtras && servicesForSection[0]?.id === selectedCategory.id ? 1 : extrasStartIndex
-                      }
-                      showPrices={false}
-                    />
-                  )
-                })()}
-
-                {services.length === 0 && (
-                  <div className="text-sm text-slate-600 p-4 text-center border rounded-xl">
-                    No services found. Check your services configuration.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-brand-amber/5 p-5">
-            <label className="text-sm font-semibold text-brand-charcoal mb-2 block">Special Instructions</label>
-            <textarea
-              className="input min-h-[100px]"
-              placeholder="Add any notes or special instructions..."
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+        {/* Customer information */}
+        <SectionCard title="Customer information">
+          <div className="grid gap-4 md:grid-cols-2">
+            <input
+              className="input"
+              placeholder="First name *"
+              value={form.firstName}
+              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+            />
+            <input
+              className="input"
+              placeholder="Last name *"
+              value={form.lastName}
+              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
             />
           </div>
-
-          {/* Payment & Invoice Options */}
-          <div className="rounded-2xl border-2 border-brand-stone bg-gradient-to-r from-brand-amber/10 to-brand-amber/5 p-5">
-            <h3 className="font-bold text-lg text-brand-charcoal mb-4">Payment & Invoice Options</h3>
-            <div className="space-y-3">
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border hover:border-blue-400 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={form.generateInvoice}
-                  onChange={(e) => setForm((f) => ({ ...f, generateInvoice: e.target.checked }))}
-                  className="mt-1 w-5 h-5 accent-blue-600"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Generate Invoice</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Automatically create an invoice for this booking that can be viewed and printed later
-                  </p>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg bg-white border hover:border-green-400 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={form.processStripePayment}
-                  onChange={(e) => setForm((f) => ({ ...f, processStripePayment: e.target.checked }))}
-                  className="mt-1 w-5 h-5 accent-green-600"
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Process Stripe Payment</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Redirect to Stripe checkout page to process payment immediately (same as customer booking flow)
-                  </p>
-                </div>
-              </label>
-
-              {form.processStripePayment && !form.email && (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <p className="text-xs text-amber-800">
-                    <strong>Note:</strong> Email address is recommended for Stripe payment receipts
-                  </p>
-                </div>
-              )}
+          <div className="mt-4 grid gap-4">
+            <input
+              className="input"
+              type="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Phone *</label>
+              <PhoneInput
+                defaultCountry="GB"
+                value={form.phone}
+                onChange={(v) => setForm((f) => ({ ...f, phone: v || '' }))}
+                className="input"
+                placeholder="Phone number"
+              />
             </div>
           </div>
+        </SectionCard>
 
-          <button onClick={createDraftBooking} disabled={loading} className="w-full rounded-full bg-brand-amber text-white px-6 py-3 text-lg font-semibold hover:bg-brand-amber-dark disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Creating Booking...
-              </span>
-            ) : form.processStripePayment ? (
-              'Create Booking & Process Payment'
-            ) : (
-              'Create Draft Booking'
+        {/* Service location */}
+        <SectionCard title="Service location">
+          <div className="grid gap-4">
+            <input
+              className="input"
+              placeholder="Address"
+              value={form.address}
+              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                className="input"
+                placeholder="City"
+                value={form.city}
+                onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+              />
+              <input
+                className="input"
+                placeholder="Postcode"
+                value={form.postcode}
+                onChange={(e) => setForm((f) => ({ ...f, postcode: e.target.value }))}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* When */}
+        <SectionCard title="When">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Service date</label>
+              <input
+                className="input"
+                type="datetime-local"
+                value={form.serviceDate}
+                onChange={(e) => setForm((f) => ({ ...f, serviceDate: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Frequency</label>
+              <select
+                className="input"
+                value={form.frequency}
+                onChange={(e) => setForm((f) => ({ ...f, frequency: e.target.value as any }))}
+              >
+                <option value="one_time">One time</option>
+                <option value="weekly">Weekly</option>
+                <option value="bi_weekly">Bi-weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Arrival window</label>
+              <select
+                className="input"
+                value={form.arrivalWindow}
+                onChange={(e) => setForm((f) => ({ ...f, arrivalWindow: e.target.value as any }))}
+              >
+                <option value="exact">Exact time</option>
+                <option value="morning">Morning</option>
+                <option value="afternoon">Afternoon</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-ink">Discount (£)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.discount}
+                onChange={(e) => setForm((f) => ({ ...f, discount: Number(e.target.value) }))}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Services selection */}
+        <SectionCard title="Select services *">
+          <div className="space-y-4">
+            <p className="text-sm text-ink-soft">
+              Choose one service category below, then configure the services for this booking.
+            </p>
+
+            {allCategories.length > 0 && (
+              <CategoryPicker
+                categories={allCategories}
+                selectedId={selectedCategoryId}
+                onSelect={handleCategoryChange}
+              />
             )}
-          </button>
-        </div>
+
+            {selectedCategory && (() => {
+              const section = buildCategorySection(selectedCategory)
+              return (
+                <ServiceSection
+                  key={selectedCategory.id}
+                  title={selectedCategory.name}
+                  description={section.description}
+                  services={section.services}
+                  items={form.items}
+                  onItemChange={updateItem}
+                  showExtrasLabel={section.showExtras}
+                  extrasStartIndex={section.extrasStartIndex}
+                  showPrices={false}
+                />
+              )
+            })()}
+
+            {services.length === 0 && (
+              <div className="rounded-(--radius-card) border border-line p-4 text-center text-sm text-ink-soft">
+                No services found. Check your services configuration.
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* Notes */}
+        <SectionCard title="Special instructions">
+          <textarea
+            className="input min-h-[100px]"
+            placeholder="Add any notes or special instructions..."
+            value={form.notes}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+        </SectionCard>
+
+        {/* Payment & invoice options */}
+        <SectionCard title="Payment & invoice options">
+          <div className="space-y-3">
+            <label className="flex cursor-pointer items-start gap-3 rounded-(--radius-ctl) border border-line p-3.5 transition-colors duration-150 hover:border-accent/50">
+              <input
+                type="checkbox"
+                checked={form.generateInvoice}
+                onChange={(e) => setForm((f) => ({ ...f, generateInvoice: e.target.checked }))}
+                className="mt-1 h-4 w-4 accent-(--color-accent)"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-ink">Generate invoice</p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  Automatically create an invoice for this booking that can be viewed and printed later
+                </p>
+              </div>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-(--radius-ctl) border border-line p-3.5 transition-colors duration-150 hover:border-accent/50">
+              <input
+                type="checkbox"
+                checked={form.processStripePayment}
+                onChange={(e) => setForm((f) => ({ ...f, processStripePayment: e.target.checked }))}
+                className="mt-1 h-4 w-4 accent-(--color-accent)"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-ink">Process Stripe payment</p>
+                <p className="mt-0.5 text-xs text-ink-soft">
+                  Redirect to Stripe checkout page to process payment immediately (same as customer booking flow)
+                </p>
+              </div>
+            </label>
+
+            {form.processStripePayment && !form.email && (
+              <div className="flex items-start gap-2.5 rounded-(--radius-ctl) bg-amber-50 p-3.5">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                <p className="text-xs text-amber-800">
+                  <strong>Note:</strong> Email address is recommended for Stripe payment receipts
+                </p>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        <button onClick={createDraftBooking} disabled={loading} className="btn-primary w-full py-3.5 text-base">
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Spinner />
+              Creating booking…
+            </span>
+          ) : form.processStripePayment ? (
+            'Create booking & process payment'
+          ) : (
+            'Create draft booking'
+          )}
+        </button>
       </div>
 
-      {/* Summary Sidebar */}
-      <aside className="bg-white rounded-2xl border-2 border-brand-stone p-6 shadow-lg h-max sticky top-24">
-        <h3 className="text-lg font-bold text-brand-charcoal mb-4">Booking Summary</h3>
+      {/* Summary sidebar */}
+      <aside className="sticky top-24 h-max rounded-(--radius-card) border border-line bg-surface p-6 shadow-soft">
+        <h3 className="text-base">Booking summary</h3>
 
         {selectedServices.length > 0 ? (
           <>
-            <div className="space-y-3 mb-6">
+            <ul className="mt-4 space-y-3">
               {selectedServices.map((s) => (
-                <div key={s.id} className="flex items-center justify-between py-2 border-b">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{s.name}</p>
-                    <p className="text-xs text-gray-500">Qty: {s.qty}</p>
+                <li key={s.id} className="flex items-center justify-between gap-2 border-b border-line pb-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{s.name}</p>
+                    <p className="text-xs text-ink-faint">Qty: {s.qty}</p>
                   </div>
-                  <span className="text-sm font-semibold">£{(s.qty * s.price).toFixed(2)}</span>
-                </div>
+                  <span className="text-sm font-semibold text-ink">£{(s.qty * s.price).toFixed(2)}</span>
+                </li>
               ))}
-            </div>
+            </ul>
 
-            <div className="space-y-2 border-t pt-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">£{subtotal.toFixed(2)}</span>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-ink-soft">Subtotal</span>
+                <span className="font-medium text-ink">£{subtotal.toFixed(2)}</span>
               </div>
               {form.discount > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
+                <div className="flex justify-between font-medium text-accent">
                   <span>Discount</span>
                   <span>-£{form.discount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Estimated Time</span>
-                <span className="font-medium">
+              <div className="flex justify-between">
+                <span className="text-ink-soft">Estimated time</span>
+                <span className="font-medium text-ink">
                   {Math.floor(totalTime / 60)}h {totalTime % 60}m
                 </span>
               </div>
-              <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-                <span>Total</span>
-                <span className="text-blue-600">£{total.toFixed(2)}</span>
+              <div className="flex justify-between border-t border-line pt-3">
+                <span className="font-semibold text-ink">Total</span>
+                <span className="font-display text-xl font-semibold text-accent-dark">£{total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800 mb-2">
-                <strong>Booking Options:</strong>
-              </p>
-              <ul className="text-xs text-blue-700 space-y-1">
+            <div className="mt-5 rounded-(--radius-ctl) bg-accent-tint p-3.5">
+              <p className="mb-2 text-xs font-semibold text-accent-dark">Booking options</p>
+              <ul className="space-y-1.5 text-xs text-accent-dark/90">
                 {form.generateInvoice && (
-                  <li className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <li className="flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5" />
                     Invoice will be generated
                   </li>
                 )}
                 {form.processStripePayment ? (
-                  <li className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                  <li className="flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5" />
                     Will redirect to Stripe payment
                   </li>
                 ) : (
-                  <li className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Payment status: Pending
+                  <li className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Payment status: pending
                   </li>
                 )}
               </ul>
             </div>
           </>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-sm text-gray-600 font-medium">Select services to see summary</p>
+          <div className="py-8 text-center">
+            <p className="text-sm text-ink-soft">Select services to see summary</p>
           </div>
         )}
       </aside>

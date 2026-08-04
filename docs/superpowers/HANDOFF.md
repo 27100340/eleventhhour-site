@@ -1,6 +1,6 @@
 # REVAMP HANDOFF — resume here
 
-**Last updated:** 2026-08-03 (end of Phase 4)
+**Last updated:** 2026-08-03 (end of Phase 5)
 
 > **⚠ PUSH BLOCKED:** this session could not push (no `origin` remote existed in this clone; adding one was denied by the permission classifier). Phases 1–4 exist only locally. User must run:
 > `git remote add origin https://github.com/27100340/eleventhhour-site.git && git push -u origin revamp/full-site`
@@ -18,8 +18,8 @@ Eleventh Hour (eleventhhour-site): Next.js 15 App Router + Tailwind v4 (CSS-firs
 | 2. Design system (fonts, tokens, ui/, Navbar/Footer) | ✅ DONE | `f06a6a6` |
 | 3. Public pages redesign | ✅ DONE | see git log |
 | 4. Booking flow redesign + refactor | ✅ DONE | see git log |
-| 5. Admin panel redesign | ⬜ NEXT | — |
-| 6. Browser QA sweep + build gate | ⬜ | — |
+| 5. Admin panel redesign | ✅ DONE | see git log |
+| 6. Browser QA sweep + build gate | ⬜ NEXT | — |
 
 ## What Phases 1–2 established (do not undo)
 
@@ -46,8 +46,8 @@ Also fixed: Navbar linked to dead `/services/pest-control` — now `/services/pe
 ## Phase 4 (DONE): Booking flow
 `book/page.tsx` split into `book/components/` (StepIndicator, DetailsStep, CategoryPicker, DiscountBox, BookingSummary); 5 `alert()`s → `useToast()`; `has('service_date')` wired (datetime field now respects the form-builder toggle; fallback config includes `service_date` so it shows when no admin row exists). Preserved exactly: silent Formspree capture on step advance, discount validation, terms checkbox, payload shapes, category-exclusivity + cleaner-default logic. `ServiceSection`/`NestedServiceSelector` restyled onto tokens with new shared `QtyStepper` (booking components no longer use brand-*). `booking-success` restyled (ink header + tick-rule), duplicate invoice-builders merged, support email fixed. Step state simplified to 1|2 (indicator shows Payment as step 3 on Stripe). Unused `.step` classes removed from globals.css.
 
-## Phase 5 notes
-Admin: sidebar shell replacing pill tabs (`admin/dashboard/page.tsx`), restyle all tabs + booking editor + invoice page + login. Replace remaining `alert()`s (CreateBookingTab ×5, DiscountCodesTab ×6, booking editor ×3, invoice ×1, FormBuilderTab ×1) with `useToast()`. Admin pages use `useAdminGuard` (`src/lib/use-admin-guard.ts`).
+## Phase 5 (DONE): Admin panel
+Sidebar shell in `admin/dashboard/page.tsx` (nav + sign-out, mobile horizontal scroll; still client-side tab state, no route changes). All remaining `alert()`s replaced with `useToast()` — zero `alert(` left in src. Restyled: login, ServicesTab (GripVertical drag handles), FormBuilderTab, BookingsTab (segmented table/calendar toggle, Badge payment chips), BookingsCalendar (active=accent-tint), CreateBookingTab (now uses shared `CategoryPicker` + `buildCategorySection` from `src/components/booking/` — same modules the public /book uses), booking editor (QtyStepper for item qtys), invoice page (Archivo header, accent rules, tick-rule; fixed `eleventhhourkleaning` URL typo), bookings list page, AnalyticsTab (accent stroke). **LEGACY token block fully deleted from globals.css** — nothing references brand-*/font-playfair/font-lora/shadow-soft-lg anymore (Phase 6 item done early).
 
 ## Phase 6 notes (the gate)
 - Browser QA every route (Claude in Chrome — extension was disconnected at Phase-2 pause; user must have it connected), both household/commercial modes, mobile width; exercise booking E2E with Stripe test card + admin flows.

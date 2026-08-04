@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminFetch } from '@/lib/admin-fetch'
 import { useAdminGuard } from '@/lib/use-admin-guard'
@@ -38,15 +38,18 @@ export default function AdminBookingsPage() {
     })()
   }, [q, status])
 
-  const visible = useMemo(() => rows, [rows])
-
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-      <h1 className="text-2xl font-semibold">Bookings</h1>
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-6">
+      <h1 className="text-2xl">Bookings</h1>
 
-      <div className="flex gap-3 items-center">
-        <input className="input" placeholder="Search name, email, phone, city…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+      <div className="flex items-center gap-3">
+        <input
+          className="input max-w-sm"
+          placeholder="Search name, email, phone, city…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <select className="input w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
           <option value="active">Active</option>
@@ -55,10 +58,10 @@ export default function AdminBookingsPage() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border">
+      <div className="overflow-x-auto rounded-(--radius-card) border border-line bg-surface">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr className="[&>th]:px-3 [&>th]:py-2 text-left">
+          <thead className="border-b border-line bg-paper">
+            <tr className="text-left text-xs font-semibold uppercase tracking-wide text-ink-faint [&>th]:px-4 [&>th]:py-3">
               <th>Customer</th>
               <th>Contact</th>
               <th>When</th>
@@ -70,35 +73,42 @@ export default function AdminBookingsPage() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((r) => {
+            {rows.map((r) => {
               const name = [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || '—'
               const when = r.service_date ? new Date(r.service_date) : null
               const whenStr = when ? when.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—'
               const freq = r.frequency.replace('_', ' ')
               const mins = Number(r.total_time_minutes || 0)
               return (
-                <tr key={r.id} className="[&>td]:px-3 [&>td]:py-2 border-t">
-                  <td>{name}</td>
-                  <td className="text-slate-600">
+                <tr
+                  key={r.id}
+                  className="border-t border-line transition-colors duration-150 hover:bg-paper [&>td]:px-4 [&>td]:py-2.5"
+                >
+                  <td className="font-medium text-ink">{name}</td>
+                  <td className="text-ink-soft">
                     <div>{r.email || '—'}</div>
                     <div>{r.phone || '—'}</div>
                   </td>
                   <td>
                     <div>{whenStr}</div>
-                    <div className="text-slate-500 text-xs">{[r.postcode, r.city].filter(Boolean).join(', ')}</div>
+                    <div className="text-xs text-ink-faint">{[r.postcode, r.city].filter(Boolean).join(', ')}</div>
                   </td>
                   <td>{mins > 0 ? `${mins} mins` : '—'}</td>
                   <td className="capitalize">{freq}</td>
                   <td className="capitalize">{r.status}</td>
-                  <td className="text-right">£{Number(r.total || 0).toFixed(2)}</td>
+                  <td className="text-right font-medium text-ink">£{Number(r.total || 0).toFixed(2)}</td>
                   <td className="text-right">
-                    <Link className="text-blue-600 hover:underline" href={`/admin/bookings/${r.id}`}>Edit</Link>
+                    <Link className="font-medium text-accent hover:text-accent-dark" href={`/admin/bookings/${r.id}`}>
+                      Edit
+                    </Link>
                   </td>
                 </tr>
               )
             })}
-            {visible.length === 0 && (
-              <tr><td colSpan={8} className="text-center text-slate-500 py-10">No bookings</td></tr>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={8} className="py-10 text-center text-ink-faint">No bookings</td>
+              </tr>
             )}
           </tbody>
         </table>

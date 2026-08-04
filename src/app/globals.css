@@ -32,18 +32,6 @@
 
   --animate-fade-in: fade-in 0.5s ease-in-out;
   --animate-slide-up: slide-up 0.3s ease-out;
-
-  /* ---- LEGACY tokens: still referenced by /book + /admin (Phases 4–5).
-     Remove in the final sweep once no page uses brand-* classes. ---- */
-  --color-brand-amber: #E2852B;
-  --color-brand-amber-dark: #cf741f;
-  --color-brand-charcoal: #2C2C2C;
-  --color-brand-cream: #FAF9F5;
-  --color-brand-stone: #E0E0E0;
-  --color-brand-sage: #D7E1C5;
-  --font-playfair: var(--font-archivo), system-ui, sans-serif;
-  --font-lora: var(--font-archivo), system-ui, sans-serif;
-  --shadow-soft-lg: 0 10px 40px -15px rgba(0, 0, 0, 0.1), 0 4px 25px -5px rgba(0, 0, 0, 0.04);
 }
 
 @keyframes fade-in {

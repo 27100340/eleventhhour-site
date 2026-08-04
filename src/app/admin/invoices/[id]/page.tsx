@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Printer, Download, ArrowLeft, Mail } from 'lucide-react'
+import { Printer, ArrowLeft } from 'lucide-react'
 import { adminFetch } from '@/lib/admin-fetch'
 import { useAdminGuard } from '@/lib/use-admin-guard'
+import { useToast } from '@/components/ui/Toast'
 
 type Invoice = {
   id: string
@@ -44,8 +45,16 @@ type Item = {
   parent_service_name?: string | null
 }
 
+const statusText: Record<Invoice['status'], string> = {
+  paid: 'text-accent-dark',
+  sent: 'text-ink',
+  void: 'text-red-700',
+  draft: 'text-ink-soft',
+}
+
 export default function InvoiceDetailPage() {
   useAdminGuard()
+  const toast = useToast()
   const params = useParams() as { id?: string }
   const invoiceId = (params?.id as string) || ''
 
@@ -92,14 +101,14 @@ export default function InvoiceDetailPage() {
       if (!res.ok) throw new Error('Failed to update status')
       setInvoice({ ...invoice, status: newStatus })
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to update status')
+      toast.error(e instanceof Error ? e.message : 'Failed to update status')
     }
   }
 
-  if (!invoiceId) return <div className="p-6">Loading route…</div>
-  if (loading) return <div className="p-6">Loading invoice…</div>
-  if (err) return <div className="p-6 text-red-600">{err}</div>
-  if (!invoice) return <div className="p-6">Invoice not found</div>
+  if (!invoiceId) return <div className="p-6 text-ink-soft">Loading route…</div>
+  if (loading) return <div className="p-6 text-ink-soft">Loading invoice…</div>
+  if (err) return <div className="p-6 font-medium text-red-700">{err}</div>
+  if (!invoice) return <div className="p-6 text-ink-soft">Invoice not found</div>
 
   const booking = invoice.bookings
   const finalAmount = typeof booking.admin_total_override === 'number' ? booking.admin_total_override : booking.total
@@ -107,36 +116,42 @@ export default function InvoiceDetailPage() {
   return (
     <>
       {/* No-print toolbar */}
-      <div className="print:hidden bg-white border-b sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
+      <div className="sticky top-0 z-10 border-b border-line bg-surface print:hidden">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 text-brand-charcoal hover:text-brand-amber transition-colors">
+            <Link
+              href="/admin/dashboard"
+              className="flex items-center gap-2 text-sm font-medium text-ink transition-colors duration-150 hover:text-accent"
+            >
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              Back to dashboard
             </Link>
-            <span className="text-gray-400">|</span>
-            <Link href={`/admin/bookings/${booking.id}`} className="text-sm text-gray-600 hover:text-brand-amber transition-colors">
-              View Booking
+            <span className="text-line">|</span>
+            <Link
+              href={`/admin/bookings/${booking.id}`}
+              className="text-sm text-ink-soft transition-colors duration-150 hover:text-accent"
+            >
+              View booking
             </Link>
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={showBreakdown}
                 onChange={(e) => setShowBreakdown(e.target.checked)}
-                className="w-4 h-4 text-brand-amber focus:ring-brand-amber rounded"
+                className="h-4 w-4 accent-(--color-accent)"
               />
-              Show Item Breakdown
+              Show item breakdown
             </label>
 
-            <span className="text-gray-300">|</span>
+            <span className="text-line">|</span>
 
             <select
               value={invoice.status}
               onChange={(e) => handleStatusChange(e.target.value as Invoice['status'])}
-              className="input text-sm py-2"
+              className="input w-auto py-2 text-sm"
             >
               <option value="draft">Draft</option>
               <option value="sent">Sent</option>
@@ -144,79 +159,78 @@ export default function InvoiceDetailPage() {
               <option value="void">Void</option>
             </select>
 
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-amber text-white rounded-xl font-medium hover:bg-brand-amber-dark transition-colors"
-            >
+            <button onClick={handlePrint} className="btn-primary">
               <Printer className="h-4 w-4" />
-              Print Invoice
+              Print invoice
             </button>
           </div>
         </div>
       </div>
 
       {/* Printable invoice */}
-      <div className="min-h-screen bg-gray-50 print:bg-white py-8 print:py-0">
-        <div className="mx-auto max-w-5xl bg-white shadow-soft-lg print:shadow-none rounded-2xl print:rounded-none p-12 print:p-0">
+      <div className="min-h-screen py-8 print:bg-white print:py-0">
+        <div className="mx-auto max-w-5xl rounded-(--radius-card) border border-line bg-surface p-12 print:rounded-none print:border-0 print:p-0">
           {/* Header */}
-          <div className="flex items-start justify-between mb-12 pb-8 border-b-2 border-brand-amber print:border-b">
+          <div className="mb-2 flex items-start justify-between pb-8">
             <div>
-              <h1 className="text-4xl font-bold text-brand-charcoal font-playfair mb-2">
-                Eleventh Hour Cleaning
-              </h1>
-              <p className="text-gray-600">Premium Cleaning Services</p>
-              <p className="text-sm text-gray-500 mt-2">London, UK</p>
-              <p className="text-sm text-gray-500">hello@eleventhhourcleaning.co.uk</p>
-              <p className="text-sm text-gray-500">Landline: 020 3355 1526</p>
-              <p className="text-sm text-gray-500">WhatsApp: 07400 760630</p>
+              <h1 className="font-display text-3xl font-semibold text-ink">Eleventh Hour Cleaning</h1>
+              <p className="mt-1 text-ink-soft">Premium cleaning services</p>
+              <div className="mt-3 space-y-0.5 text-sm text-ink-faint">
+                <p>London, UK</p>
+                <p>hello@eleventhhourcleaning.co.uk</p>
+                <p>Landline: 020 3355 1526</p>
+                <p>WhatsApp: 07400 760630</p>
+              </div>
             </div>
 
             <div className="text-right">
-              <div className="inline-block px-4 py-2 bg-brand-sage/30 rounded-xl mb-3">
-                <span className={`text-sm font-semibold uppercase tracking-wide ${
-                  invoice.status === 'paid' ? 'text-green-700' :
-                  invoice.status === 'sent' ? 'text-blue-700' :
-                  invoice.status === 'void' ? 'text-red-700' :
-                  'text-gray-700'
-                }`}>
-                  {invoice.status}
-                </span>
-              </div>
-              <h2 className="text-3xl font-bold text-brand-charcoal font-lora mb-1">INVOICE</h2>
-              <p className="text-lg font-semibold text-brand-amber">{invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}</p>
+              <span
+                className={`inline-block rounded-full bg-accent-tint px-4 py-1.5 text-sm font-semibold uppercase tracking-wide ${statusText[invoice.status]}`}
+              >
+                {invoice.status}
+              </span>
+              <h2 className="mt-3 font-display text-2xl font-semibold text-ink">Invoice</h2>
+              <p className="text-lg font-semibold text-accent-dark">
+                {invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}
+              </p>
             </div>
           </div>
+          <div aria-hidden="true" className="tick-rule mb-12" />
 
           {/* Invoice details */}
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
+          <div className="mb-12 grid gap-8 md:grid-cols-2">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Bill To</h3>
-              <div className="text-brand-charcoal">
-                <p className="font-semibold text-lg">{booking.first_name} {booking.last_name}</p>
-                <p className="text-gray-600 mt-1">{booking.address}</p>
-                <p className="text-gray-600">{booking.city}, {booking.postcode}</p>
-                <p className="text-gray-600 mt-2">{booking.email}</p>
-                <p className="text-gray-600">{booking.phone}</p>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Bill to</h3>
+              <div className="text-ink">
+                <p className="text-lg font-semibold">{booking.first_name} {booking.last_name}</p>
+                <p className="mt-1 text-ink-soft">{booking.address}</p>
+                <p className="text-ink-soft">{booking.city}, {booking.postcode}</p>
+                <p className="mt-2 text-ink-soft">{booking.email}</p>
+                <p className="text-ink-soft">{booking.phone}</p>
               </div>
             </div>
 
-            <div className="text-right md:text-left">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Invoice Details</h3>
-              <div className="space-y-1 text-brand-charcoal">
-                <div className="flex justify-between md:justify-start md:gap-8">
-                  <span className="text-gray-600">Invoice Date:</span>
-                  <span className="font-medium">{invoice.issued_date ? new Date(invoice.issued_date).toLocaleDateString('en-GB') : new Date(invoice.created_at).toLocaleDateString('en-GB')}</span>
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Invoice details</h3>
+              <div className="space-y-1 text-sm">
+                <div className="flex gap-8">
+                  <span className="w-28 text-ink-soft">Invoice date:</span>
+                  <span className="font-medium text-ink">
+                    {invoice.issued_date
+                      ? new Date(invoice.issued_date).toLocaleDateString('en-GB')
+                      : new Date(invoice.created_at).toLocaleDateString('en-GB')}
+                  </span>
                 </div>
                 {invoice.due_date && (
-                  <div className="flex justify-between md:justify-start md:gap-8">
-                    <span className="text-gray-600">Due Date:</span>
-                    <span className="font-medium">{new Date(invoice.due_date).toLocaleDateString('en-GB')}</span>
+                  <div className="flex gap-8">
+                    <span className="w-28 text-ink-soft">Due date:</span>
+                    <span className="font-medium text-ink">{new Date(invoice.due_date).toLocaleDateString('en-GB')}</span>
                   </div>
                 )}
                 {booking.service_date && (
-                  <div className="flex justify-between md:justify-start md:gap-8">
-                    <span className="text-gray-600">Service Date:</span>
-                    <span className="font-medium">{new Date(booking.service_date).toLocaleDateString('en-GB')}</span>
+                  <div className="flex gap-8">
+                    <span className="w-28 text-ink-soft">Service date:</span>
+                    <span className="font-medium text-ink">{new Date(booking.service_date).toLocaleDateString('en-GB')}</span>
                   </div>
                 )}
               </div>
@@ -228,11 +242,11 @@ export default function InvoiceDetailPage() {
             {showBreakdown ? (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-brand-amber">
-                    <th className="text-left py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Service</th>
-                    <th className="text-center py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Qty</th>
-                    <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Unit Price</th>
-                    <th className="text-right py-4 px-2 text-sm font-semibold text-gray-600 uppercase tracking-wide">Total</th>
+                  <tr className="border-b-2 border-accent">
+                    <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Service</th>
+                    <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide text-ink-faint">Qty</th>
+                    <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-ink-faint">Unit price</th>
+                    <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-ink-faint">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -243,13 +257,13 @@ export default function InvoiceDetailPage() {
                       : serviceName
 
                     return (
-                      <tr key={item.id} className="border-b border-gray-200">
-                        <td className="py-4 px-2 text-brand-charcoal">
-                          {displayName}
+                      <tr key={item.id} className="border-b border-line">
+                        <td className="px-2 py-3.5 text-ink">{displayName}</td>
+                        <td className="px-2 py-3.5 text-center text-ink-soft">{item.qty}</td>
+                        <td className="px-2 py-3.5 text-right text-ink-soft">£{Number(item.unit_price).toFixed(2)}</td>
+                        <td className="px-2 py-3.5 text-right font-medium text-ink">
+                          £{(item.qty * Number(item.unit_price)).toFixed(2)}
                         </td>
-                        <td className="text-center py-4 px-2 text-gray-700">{item.qty}</td>
-                        <td className="text-right py-4 px-2 text-gray-700">£{Number(item.unit_price).toFixed(2)}</td>
-                        <td className="text-right py-4 px-2 font-medium text-brand-charcoal">£{(item.qty * Number(item.unit_price)).toFixed(2)}</td>
                       </tr>
                     )
                   })}
@@ -257,7 +271,9 @@ export default function InvoiceDetailPage() {
               </table>
             ) : (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 border-b-2 border-brand-amber pb-2">Services</h3>
+                <h3 className="mb-4 border-b-2 border-accent pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                  Services
+                </h3>
                 <ul className="space-y-2">
                   {items.map((item) => {
                     const serviceName = item.services?.name || 'Service'
@@ -266,14 +282,10 @@ export default function InvoiceDetailPage() {
                       : serviceName
 
                     return (
-                      <li key={item.id} className="flex items-center gap-3 py-2 border-b border-gray-100">
-                        <span className="w-2 h-2 bg-brand-amber rounded-full"></span>
-                        <span className="text-brand-charcoal flex-1">
-                          {displayName}
-                        </span>
-                        <span className="text-gray-600 text-sm">
-                          Qty: {item.qty}
-                        </span>
+                      <li key={item.id} className="flex items-center gap-3 border-b border-line py-2">
+                        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />
+                        <span className="flex-1 text-ink">{displayName}</span>
+                        <span className="text-sm text-ink-soft">Qty: {item.qty}</span>
                       </li>
                     )
                   })}
@@ -283,22 +295,22 @@ export default function InvoiceDetailPage() {
           </div>
 
           {/* Totals */}
-          <div className="flex justify-end mb-12">
+          <div className="mb-12 flex justify-end">
             <div className="w-full md:w-80">
               <div className="space-y-3">
-                <div className="flex justify-between text-gray-700">
+                <div className="flex justify-between text-ink-soft">
                   <span>Subtotal:</span>
                   <span>£{Number(booking.subtotal).toFixed(2)}</span>
                 </div>
                 {booking.discount > 0 && (
-                  <div className="flex justify-between text-gray-700">
+                  <div className="flex justify-between text-ink-soft">
                     <span>Discount:</span>
-                    <span className="text-green-600">-£{Number(booking.discount).toFixed(2)}</span>
+                    <span className="font-medium text-accent">-£{Number(booking.discount).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t-2 border-brand-amber pt-3 flex justify-between text-xl font-bold text-brand-charcoal">
+                <div className="flex justify-between border-t-2 border-accent pt-3 text-xl font-bold text-ink">
                   <span>Total:</span>
-                  <span className="text-brand-amber">£{Number(finalAmount).toFixed(2)} {invoice.currency}</span>
+                  <span className="text-accent-dark">£{Number(finalAmount).toFixed(2)} {invoice.currency}</span>
                 </div>
               </div>
             </div>
@@ -306,33 +318,33 @@ export default function InvoiceDetailPage() {
 
           {/* Notes */}
           {invoice.notes && (
-            <div className="mb-8 p-6 bg-brand-cream rounded-xl">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Notes</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{invoice.notes}</p>
+            <div className="mb-8 rounded-(--radius-card) bg-paper p-6">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Notes</h3>
+              <p className="whitespace-pre-wrap text-ink-soft">{invoice.notes}</p>
             </div>
           )}
 
           {/* Payment details */}
-          <div className="border-t border-gray-200 pt-8">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Payment Information</h3>
-            <div className="grid md:grid-cols-2 gap-6 text-sm text-gray-600">
+          <div className="border-t border-line pt-8">
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Payment information</h3>
+            <div className="grid gap-6 text-sm text-ink-soft md:grid-cols-2">
               <div>
-                <p className="font-medium text-brand-charcoal mb-1">Stripe Payment & Bank Transfer:</p>
+                <p className="mb-1 font-medium text-ink">Stripe payment &amp; bank transfer:</p>
                 <p>Account Title: Eleventh Hour Cleaning and Maintenance Services Ltd.</p>
                 <p>Sort Code: XX-XX-XX</p>
                 <p>Account Number: XXXXXXXX</p>
               </div>
               <div>
-                <p className="font-medium text-brand-charcoal mb-1">Terms:</p>
+                <p className="mb-1 font-medium text-ink">Terms:</p>
                 <p className="mt-2">Reference: {invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}</p>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
+          <div className="mt-12 border-t border-line pt-8 text-center text-sm text-ink-faint">
             <p>Thank you for choosing Eleventh Hour Cleaning</p>
-            <p className="mt-1">www.eleventhhourkleaning.co.uk</p>
+            <p className="mt-1">www.eleventhhourcleaning.co.uk</p>
           </div>
         </div>
       </div>

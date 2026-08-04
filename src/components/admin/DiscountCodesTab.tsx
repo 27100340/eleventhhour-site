@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react'
 import { Plus, Edit2, Trash2, Tag, Calendar, TrendingUp, Users, X } from 'lucide-react'
 import { adminFetch } from '@/lib/admin-fetch'
+import { useToast } from '@/components/ui/Toast'
+import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
 
 type DiscountCode = {
   id: string
@@ -19,7 +22,24 @@ type DiscountCode = {
   created_at: string
 }
 
+function StatTile({ Icon, label, value }: { Icon: typeof Tag; label: string; value: number }) {
+  return (
+    <div className="rounded-(--radius-card) border border-line bg-surface p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-(--radius-ctl) bg-accent-tint">
+          <Icon className="h-5 w-5 text-accent" />
+        </div>
+        <div>
+          <p className="text-sm text-ink-soft">{label}</p>
+          <p className="font-display text-2xl font-semibold text-ink">{value}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DiscountCodesTab() {
+  const toast = useToast()
   const [codes, setCodes] = useState<DiscountCode[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -49,8 +69,8 @@ export default function DiscountCodesTab() {
       if (res.ok) {
         setCodes(data.codes || [])
       }
-    } catch (error) {
-      console.error('Error loading codes:', error)
+    } catch {
+      toast.error('Failed to load discount codes')
     } finally {
       setLoading(false)
     }
@@ -121,15 +141,14 @@ export default function DiscountCodesTab() {
       const data = await res.json()
 
       if (res.ok) {
-        alert(editingCode ? 'Discount code updated!' : 'Discount code created!')
+        toast.success(editingCode ? 'Discount code updated' : 'Discount code created')
         setShowModal(false)
         loadCodes()
       } else {
-        alert(data.error || 'Failed to save discount code')
+        toast.error(data.error || 'Failed to save discount code')
       }
-    } catch (error) {
-      console.error('Error saving code:', error)
-      alert('Failed to save discount code')
+    } catch {
+      toast.error('Failed to save discount code')
     }
   }
 
@@ -142,14 +161,13 @@ export default function DiscountCodesTab() {
       })
 
       if (res.ok) {
-        alert('Discount code deleted!')
+        toast.success('Discount code deleted')
         loadCodes()
       } else {
-        alert('Failed to delete discount code')
+        toast.error('Failed to delete discount code')
       }
-    } catch (error) {
-      console.error('Error deleting code:', error)
-      alert('Failed to delete discount code')
+    } catch {
+      toast.error('Failed to delete discount code')
     }
   }
 
@@ -168,7 +186,7 @@ export default function DiscountCodesTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <Spinner className="h-7 w-7 text-accent" />
       </div>
     )
   }
@@ -176,185 +194,133 @@ export default function DiscountCodesTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Discount Codes</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-xl">Discount codes</h2>
+          <p className="mt-1 text-sm text-ink-soft">
             Create and manage promotional discount codes for customer bookings
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Discount Code
+        <button onClick={openCreateModal} className="btn-primary">
+          <Plus className="h-4 w-4" />
+          Create discount code
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Tag className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Codes</p>
-              <p className="text-2xl font-bold text-gray-900">{codes.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Active Codes</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {codes.filter((c) => c.active && !isExpired(c.valid_until)).length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Uses</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {codes.reduce((sum, c) => sum + c.times_used, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 border shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Expiring Soon</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {codes.filter((c) => {
-                  if (!c.valid_until) return false
-                  const daysUntilExpiry = Math.ceil(
-                    (new Date(c.valid_until).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                  )
-                  return daysUntilExpiry > 0 && daysUntilExpiry <= 7
-                }).length}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile Icon={Tag} label="Total codes" value={codes.length} />
+        <StatTile
+          Icon={TrendingUp}
+          label="Active codes"
+          value={codes.filter((c) => c.active && !isExpired(c.valid_until)).length}
+        />
+        <StatTile Icon={Users} label="Total uses" value={codes.reduce((sum, c) => sum + c.times_used, 0)} />
+        <StatTile
+          Icon={Calendar}
+          label="Expiring soon"
+          value={codes.filter((c) => {
+            if (!c.valid_until) return false
+            const daysUntilExpiry = Math.ceil(
+              (new Date(c.valid_until).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            )
+            return daysUntilExpiry > 0 && daysUntilExpiry <= 7
+          }).length}
+        />
       </div>
 
-      {/* Codes List */}
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+      {/* Codes list */}
+      <div className="overflow-hidden rounded-(--radius-card) border border-line bg-surface">
         {codes.length === 0 ? (
-          <div className="text-center py-12">
-            <Tag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No discount codes yet</h3>
-            <p className="text-gray-600 mb-6">Create your first discount code to get started</p>
-            <button onClick={openCreateModal} className="btn-primary inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Create Discount Code
+          <div className="py-12 text-center">
+            <Tag className="mx-auto mb-4 h-10 w-10 text-ink-faint" />
+            <h3 className="mb-1 text-base">No discount codes yet</h3>
+            <p className="mb-6 text-sm text-ink-soft">Create your first discount code to get started</p>
+            <button onClick={openCreateModal} className="btn-primary">
+              <Plus className="h-4 w-4" />
+              Create discount code
             </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="border-b border-line bg-paper">
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Code</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Description</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Discount</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Usage</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Valid Until</th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Code</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Description</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Discount</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Usage</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Valid until</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">Status</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-ink-faint">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {codes.map((code) => {
                   const expired = isExpired(code.valid_until)
                   const limitReached = code.usage_limit && code.times_used >= code.usage_limit
 
                   return (
-                    <tr key={code.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
+                    <tr key={code.id} className="border-b border-line transition-colors duration-150 last:border-b-0 hover:bg-paper">
+                      <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-blue-600">{code.code}</span>
-                          {!code.active && (
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Inactive</span>
-                          )}
+                          <span className="font-mono font-semibold text-accent-dark">{code.code}</span>
+                          {!code.active && <Badge tone="neutral">Inactive</Badge>}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {code.description || <span className="text-gray-400 italic">No description</span>}
+                      <td className="px-5 py-4 text-sm text-ink-soft">
+                        {code.description || <span className="italic text-ink-faint">No description</span>}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-4">
                         <div className="text-sm">
-                          <span className="font-semibold text-gray-900">{formatDiscountValue(code)}</span>
+                          <span className="font-semibold text-ink">{formatDiscountValue(code)}</span>
                           {code.min_order_amount > 0 && (
-                            <p className="text-xs text-gray-500">Min: £{code.min_order_amount.toFixed(2)}</p>
+                            <p className="text-xs text-ink-faint">Min: £{code.min_order_amount.toFixed(2)}</p>
                           )}
                           {code.max_discount_amount && code.discount_type === 'percentage' && (
-                            <p className="text-xs text-gray-500">Max: £{code.max_discount_amount.toFixed(2)}</p>
+                            <p className="text-xs text-ink-faint">Max: £{code.max_discount_amount.toFixed(2)}</p>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="font-medium">{code.times_used}</span>
-                        {code.usage_limit ? ` / ${code.usage_limit}` : ' / ∞'}
-                        {limitReached && (
-                          <p className="text-xs text-red-600 mt-1">Limit reached</p>
-                        )}
+                      <td className="px-5 py-4 text-sm">
+                        <span className="font-medium text-ink">{code.times_used}</span>
+                        <span className="text-ink-soft">{code.usage_limit ? ` / ${code.usage_limit}` : ' / ∞'}</span>
+                        {limitReached && <p className="mt-1 text-xs font-medium text-red-700">Limit reached</p>}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-5 py-4 text-sm">
                         {code.valid_until ? (
                           <div>
-                            <span className={expired ? 'text-red-600' : 'text-gray-700'}>
+                            <span className={expired ? 'font-medium text-red-700' : 'text-ink-soft'}>
                               {new Date(code.valid_until).toLocaleDateString('en-GB')}
                             </span>
-                            {expired && <p className="text-xs text-red-600 mt-1">Expired</p>}
+                            {expired && <p className="mt-1 text-xs font-medium text-red-700">Expired</p>}
                           </div>
                         ) : (
-                          <span className="text-gray-400">No expiry</span>
+                          <span className="text-ink-faint">No expiry</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-5 py-4">
                         {code.active && !expired && !limitReached ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Active
-                          </span>
+                          <Badge tone="accent">Active</Badge>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Inactive
-                          </span>
+                          <Badge tone="neutral">Inactive</Badge>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditModal(code)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit"
+                            className="rounded-(--radius-ctl) p-2 text-ink-soft transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
+                            aria-label={`Edit ${code.code}`}
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(code.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
+                            className="rounded-(--radius-ctl) p-2 text-red-700 transition-colors duration-150 hover:bg-red-50"
+                            aria-label={`Delete ${code.code}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
@@ -367,28 +333,27 @@ export default function DiscountCodesTab() {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">
-                {editingCode ? 'Edit Discount Code' : 'Create Discount Code'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-(--radius-card) bg-surface shadow-soft">
+            <div className="sticky top-0 flex items-center justify-between border-b border-line bg-surface px-6 py-4">
+              <h3 className="text-lg">
+                {editingCode ? 'Edit discount code' : 'Create discount code'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="rounded-(--radius-ctl) p-2 text-ink-faint transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 p-6">
               {/* Code */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Discount Code *
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-ink">Discount code *</label>
                 <input
                   type="text"
                   required
@@ -397,16 +362,12 @@ export default function DiscountCodesTab() {
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Will be automatically converted to uppercase
-                </p>
+                <p className="mt-1 text-xs text-ink-faint">Will be automatically converted to uppercase</p>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-ink">Description</label>
                 <textarea
                   className="input"
                   rows={2}
@@ -417,11 +378,9 @@ export default function DiscountCodesTab() {
               </div>
 
               {/* Discount Type & Value */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Type *
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Discount type *</label>
                   <select
                     required
                     className="input"
@@ -431,14 +390,12 @@ export default function DiscountCodesTab() {
                     }
                   >
                     <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount (£)</option>
+                    <option value="fixed">Fixed amount (£)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount Value *
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Discount value *</label>
                   <input
                     type="number"
                     required
@@ -449,18 +406,16 @@ export default function DiscountCodesTab() {
                     value={formData.discount_value}
                     onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="mt-1 text-xs text-ink-faint">
                     {formData.discount_type === 'percentage' ? 'Percentage off' : 'Fixed amount in £'}
                   </p>
                 </div>
               </div>
 
               {/* Min Order & Max Discount */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Order Amount (£)
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Minimum order amount (£)</label>
                   <input
                     type="number"
                     min="0"
@@ -470,14 +425,12 @@ export default function DiscountCodesTab() {
                     value={formData.min_order_amount}
                     onChange={(e) => setFormData({ ...formData, min_order_amount: e.target.value })}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave 0 for no minimum</p>
+                  <p className="mt-1 text-xs text-ink-faint">Leave 0 for no minimum</p>
                 </div>
 
                 {formData.discount_type === 'percentage' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Max Discount Amount (£)
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-ink">Max discount amount (£)</label>
                     <input
                       type="number"
                       min="0"
@@ -487,16 +440,14 @@ export default function DiscountCodesTab() {
                       value={formData.max_discount_amount}
                       onChange={(e) => setFormData({ ...formData, max_discount_amount: e.target.value })}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Cap maximum discount</p>
+                    <p className="mt-1 text-xs text-ink-faint">Cap maximum discount</p>
                   </div>
                 )}
               </div>
 
               {/* Usage Limit */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Usage Limit
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-ink">Usage limit</label>
                 <input
                   type="number"
                   min="1"
@@ -505,17 +456,15 @@ export default function DiscountCodesTab() {
                   value={formData.usage_limit}
                   onChange={(e) => setFormData({ ...formData, usage_limit: e.target.value })}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1 text-xs text-ink-faint">
                   Maximum number of times code can be used (leave empty for unlimited)
                 </p>
               </div>
 
               {/* Valid Dates */}
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valid From *
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Valid from *</label>
                   <input
                     type="datetime-local"
                     required
@@ -526,46 +475,38 @@ export default function DiscountCodesTab() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valid Until
-                  </label>
+                  <label className="mb-1.5 block text-sm font-medium text-ink">Valid until</label>
                   <input
                     type="datetime-local"
                     className="input"
                     value={formData.valid_until}
                     onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave empty for no expiry</p>
+                  <p className="mt-1 text-xs text-ink-faint">Leave empty for no expiry</p>
                 </div>
               </div>
 
               {/* Active Status */}
               <div>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 accent-blue-600"
+                    className="h-4 w-4 accent-(--color-accent)"
                     checked={formData.active}
                     onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
                   />
-                  <span className="text-sm font-medium text-gray-700">Active</span>
+                  <span className="text-sm font-medium text-ink">Active</span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1 ml-6">
-                  Inactive codes cannot be used by customers
-                </p>
+                <p className="ml-6 mt-1 text-xs text-ink-faint">Inactive codes cannot be used by customers</p>
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex items-center gap-3 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-full border-2 border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                >
+              <div className="flex items-center gap-3 border-t border-line pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1 py-3">
                   Cancel
                 </button>
-                <button type="submit" className="flex-1 btn-primary">
-                  {editingCode ? 'Update Code' : 'Create Code'}
+                <button type="submit" className="btn-primary flex-1 py-3">
+                  {editingCode ? 'Update code' : 'Create code'}
                 </button>
               </div>
             </form>
