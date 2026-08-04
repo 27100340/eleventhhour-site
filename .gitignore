@@ -36,6 +36,7 @@ yarn-error.log*
 
 # local ops tooling (uses service-role key, keep out of the repo)
 /scripts/manage-admins.mjs
+/admin_user_mgmt.txt
 
 # vercel
 .vercel
