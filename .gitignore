@@ -34,6 +34,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local ops tooling (uses service-role key, keep out of the repo)
+/scripts/manage-admins.mjs
+
 # vercel
 .vercel
 
